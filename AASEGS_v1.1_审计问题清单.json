@@ -1,0 +1,413 @@
+{
+  "baseline_version": "1.1.0",
+  "target_version": "1.1.1",
+  "audit_scope": "规范文本与实施设计；不代表真实环境已通过验证",
+  "issues": [
+    {
+      "id": "AASEGS-AUD-001",
+      "title": "全文强制规则未纳入统一注册表",
+      "original_location": "00-总纲 A；04-监督与审计 C；全部专题规范",
+      "severity": "P0",
+      "finding": "目录只列 20 条新增控制，原 v1.0 强制要求尚待补入，无法证明规则覆盖完整。",
+      "remediation": "为所有 MUST/MUST NOT、强制审批和禁止条款分配唯一 Rule ID；登记来源、范围、风险、控制、证据、失败行为、测试和状态；建立文档与注册表双向差异检查。",
+      "acceptance_criteria": "全文强制条款与注册表双向差异为零；追踪覆盖率 100%；所有 P0/P1 规则均有控制和测试引用。",
+      "closure_criteria": "提交覆盖率报告、差异报告和人工抽样复核记录。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "REG-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-002",
+      "title": "控制状态混淆定义、配置、测试与验证",
+      "original_location": "control-catalog.yaml；04-监督与审计 C",
+      "severity": "P0",
+      "finding": "单一 enforced 状态容易把“写在文档里”误报为“运行时有效”。",
+      "remediation": "拆分 documented/configured/tested/verified/degraded/excepted；规定状态转换、证据、有效期和降级条件。",
+      "acceptance_criteria": "缺少执行器、测试或有效证据时不能进入 verified；配置漂移或证据过期触发降级。",
+      "closure_criteria": "状态机测试和负向测试通过；报告可区分六种状态。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "REG-02"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-003",
+      "title": "控制目录缺少统一机器契约",
+      "original_location": "control-catalog.yaml；scripts/validate_controls.py",
+      "severity": "P1",
+      "finding": "五项字段要求没有统一 schema、枚举、唯一性与引用完整性标准。",
+      "remediation": "建立版本化 schema；至少含 rule_id、source_location、requirement、scope、risk_level、owner、enforcement、evidence、failure、tests、status、exception_ref、last_verified_at。",
+      "acceptance_criteria": "缺字段、重复 ID、未知状态、无测试引用、非法风险等级均使校验失败；合法样例通过。",
+      "closure_criteria": "schema、校验器及正反例测试合并。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "REG-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-004",
+      "title": "授权撤销缺少资源端校验与竞态契约",
+      "original_location": "01-Agent 管理 B；03-质量与安全 C；04-监督与审计 D",
+      "severity": "P0",
+      "finding": "撤销传播延迟已有描述，但资源端如何校验授权、何时确认撤销、执行中请求如何处理不明确。",
+      "remediation": "定义资源端/独立网关授权检查；撤销处理中拒绝新副作用；已发出且结果未知的请求进入状态核对，不盲重试。",
+      "acceptance_criteria": "无租约、过期、撤销、超范围、撤销延迟和执行中撤销测试均阻断新的受保护副作用。",
+      "closure_criteria": "隔离环境集成测试通过并留存资源端拒绝证据。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "AUTH-01",
+        "AUTH-02"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-005",
+      "title": "工具能力清单缺少风险等级准入矩阵",
+      "original_location": "01-Agent 管理 D；00-总纲 D/F",
+      "severity": "P1",
+      "finding": "enforced/advisory/unsupported 尚未对应 R0-R3 的必需能力集合，且声明可能未经独立验证。",
+      "remediation": "建立 R0-R3 能力矩阵；每项能力附验证来源、版本和有效期；关键能力缺失或证据过期时拒绝准入/降低风险等级。",
+      "acceptance_criteria": "测试覆盖缺失能力、advisory 冒充 enforced、版本变化和证据过期。",
+      "closure_criteria": "能力矩阵、校验规则和 Claude Code/Codex 实际配置验证记录通过复核。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "TOOL-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-006",
+      "title": "共享记忆生命周期与撤销传播不完整",
+      "original_location": "01-Agent 管理 C（CTX-01～03）",
+      "severity": "P1",
+      "finding": "未完整规定状态转换、并发审核、缓存/索引/摘要失效及活动 Run 的影响。",
+      "remediation": "定义 DRAFT/PENDING_REVIEW/APPROVED/REVOKED/EXPIRED；审核授权、版本 CAS、撤销传播和缓存失效。",
+      "acceptance_criteria": "测试覆盖未知来源、未审核晋升、并发更新、撤销后缓存命中、摘要残留和来源失效。",
+      "closure_criteria": "记忆状态机与检索/缓存集成测试通过。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "MEM-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-007",
+      "title": "任务状态机缺少完整转换矩阵",
+      "original_location": "02-工作流治理 A/E",
+      "severity": "P1",
+      "finding": "附加状态存在，但每条合法转换、角色、证据、重试性和终态约束不完整。",
+      "remediation": "建立机器可读转换表，包含前置条件、角色、证据、CAS、拒绝结果和重试条件；明确取消、关闭与补偿状态关系。",
+      "acceptance_criteria": "非法跳转、无证据跳转、并发覆盖、终态重开和未授权解除暂停均失败关闭。",
+      "closure_criteria": "状态机测试通过且日志完整记录 from/to/actor/decision/evidence。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "SMT-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-008",
+      "title": "交接确认、写锁租约与 fencing 语义不足",
+      "original_location": "02-工作流治理 C（WF-01/02）",
+      "severity": "P1",
+      "finding": "锁过期旧写者、锁服务故障、交接超时和拒绝后的责任回收未定义。",
+      "remediation": "定义 ACCEPT/REJECT/EXPIRED/REVOKED；采用 fencing token 或等价机制；锁服务不可用时禁止并发写入。",
+      "acceptance_criteria": "并发写、租约过期旧写者、重复确认、未接收超时和锁服务中断测试通过。",
+      "closure_criteria": "故障注入证明不会无序覆盖。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "CNC-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-009",
+      "title": "外部副作用幂等未覆盖原子登记与未知结果",
+      "original_location": "02-工作流治理 C/D；04-监督与审计 D",
+      "severity": "P0",
+      "finding": "幂等键不足以保证并发唯一性；远端成功、本地记录失败时缺少恢复契约。",
+      "remediation": "定义 operation ledger 唯一约束和状态机；结果未知进入 RECONCILIATION_REQUIRED/人工核对；说明远端不支持幂等时的策略。",
+      "acceptance_criteria": "覆盖并发重复请求、响应丢失、本地登记失败、查询不可用和目标系统不支持幂等；禁止盲目重放。",
+      "closure_criteria": "至少一个真实代表性副作用端到端测试通过并保存远端结果证据。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "EFF-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-010",
+      "title": "Checkpoint 缺少一致性快照与恢复前对账",
+      "original_location": "02-工作流治理 D/E",
+      "severity": "P0",
+      "finding": "记录哈希和副作用清单不等于一致性快照，也不证明远端状态未变化。",
+      "remediation": "定义快照原子性/冻结、版本、校验和、持久化确认和损坏处理；恢复前校验授权、策略、基线和远端副作用。",
+      "acceptance_criteria": "覆盖生成中断、损坏、基线变更、授权过期、远端状态漂移及补偿失败。",
+      "closure_criteria": "恢复演练通过；检查点与恢复决策可追溯关联。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "CKP-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-011",
+      "title": "熔断阈值和异常分类未完全机器化",
+      "original_location": "02-工作流治理 D/E；04-监督与审计 E",
+      "severity": "P1",
+      "finding": "部分触发条件没有事件代码、窗口、阈值、解除权限和复验规则。",
+      "remediation": "逐项定义事件、窗口、阈值、动作、通知对象、解除权限和复验；严重越权立即阻断。",
+      "acceptance_criteria": "阈值边界、事件乱序、解除授权和严重越权即时熔断测试通过。",
+      "closure_criteria": "配置、测试结果和隔离环境演练记录齐全。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "BRK-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-012",
+      "title": "质量门禁缺少受保护的项目级可信基线",
+      "original_location": "03-质量与安全 A/B/D；04-监督与审计 D",
+      "severity": "P0",
+      "finding": "缺少固化的必需检查、执行器版本、阈值、例外及基线版本；实际仓库保护状态未证实。",
+      "remediation": "建立受保护 quality baseline，绑定 SHA、CI 身份/版本、测试配置和必需检查来源；基线变化触发独立审批与复验。",
+      "acceptance_criteria": "修改 CI 输出 success、删除测试、降低阈值、伪造状态、改变 SHA 复用旧结果均阻止合并。",
+      "closure_criteria": "真实试点仓库配置经独立检查，负向测试证据齐全。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "BASE-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-013",
+      "title": "Reviewer 独立性仅以会话分离定义",
+      "original_location": "03-质量与安全 B；04-监督与审计 F",
+      "severity": "P1",
+      "finding": "会话分离不保证身份、凭证、输入和审核记录独立。",
+      "remediation": "要求身份/凭证分离、只读访问、读取可信需求/差异/CI、结果由开发 Run 无权修改的系统保存并绑定 SHA。",
+      "acceptance_criteria": "开发 Run 冒用 Reviewer、篡改结论、伪造测试结果、SHA 变化复用旧审核均被拒绝。",
+      "closure_criteria": "权限矩阵和负向测试通过；高风险人工复核可追溯。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "RVW-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-014",
+      "title": "审计证据完整性、保留与不可用行为不足",
+      "original_location": "04-监督与审计 B/C/D",
+      "severity": "P0",
+      "finding": "只追加原则没有明确独立写入身份、篡改检测、时间来源、保留/删除、备份恢复和后端不可用策略。",
+      "remediation": "定义事件来源身份、完整性校验、时间同步、保留删除、备份恢复；审计不可用时对依赖证据的操作失败关闭。",
+      "acceptance_criteria": "篡改/删除/截断、伪造来源、服务不可用和恢复测试均符合预期。",
+      "closure_criteria": "审计后端配置、完整性报告、恢复演练及故障关闭测试通过。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "EVD-01",
+        "EVD-02"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-015",
+      "title": "安全事件响应缺少完整责任和恢复流程",
+      "original_location": "00-总纲 C/E；03-质量与安全 D；04-监督与审计 A/B/F",
+      "severity": "P0",
+      "finding": "已有撤销与留证原则，但没有事件等级、响应时限、影响范围排查和恢复审批闭环。",
+      "remediation": "建立事件分级、主责/替代负责人、通知时限、隔离、凭证轮换、受影响 Run/commit/数据排查、证据保全、恢复审批和复盘。",
+      "acceptance_criteria": "隔离演练覆盖凭证泄露、越权写入、审计中断和数据暴露；每项都有恢复和复盘结果。",
+      "closure_criteria": "Security Owner 批准响应手册，演练问题已分派并验证关闭。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "INC-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-016",
+      "title": "数据生命周期与跨项目隔离缺少统一控制",
+      "original_location": "01-Agent 管理 C/D；03-质量与安全 C；04-监督与审计 B",
+      "severity": "P0",
+      "finding": "秘密保护和脱敏未覆盖源码、客户数据、模型输入输出、缓存、记忆、制品、日志的全生命周期。",
+      "remediation": "建立数据分类处理矩阵；Run 绑定 project_id/repository_id/适用时 tenant_id；隔离工作区、记忆、缓存、凭证、制品和审计访问。",
+      "acceptance_criteria": "跨项目访问、缓存污染、删除后再现、超期保留和未经批准的数据传输测试符合策略。",
+      "closure_criteria": "数据矩阵获责任人批准，隔离和删除测试通过。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "ISO-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-017",
+      "title": "策略/模型/工具变更对活动 Run 和证据影响不明",
+      "original_location": "00-总纲 E；01-Agent 管理 B；03-质量与安全 B；04-监督与审计 C",
+      "severity": "P1",
+      "finding": "只明确重大安全热修复，普通升级、回滚及证据失效范围不完整。",
+      "remediation": "定义变更分类、影响分析、灰度/回滚、活动 Run 处置和证据失效规则；变化后决定继续、暂停或重新授权。",
+      "acceptance_criteria": "紧急撤销、兼容更新、模型升级、回滚及旧证据复用测试产生确定决策和审计事件。",
+      "closure_criteria": "变更状态机与测试通过，记录绑定版本、审批和回滚证据。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "CHG-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-018",
+      "title": "人工审批与例外到期缺少系统级失效保证",
+      "original_location": "00-总纲 D/E；04-监督与审计 F",
+      "severity": "P1",
+      "finding": "审批对象绑定原则存在，但审批身份验证、冲突检查、到期自动失效及审批系统不可用行为不完整。",
+      "remediation": "审批绑定 task/risk/scope/policy/commit/approver/expires；对象变化、撤销或到期自动失效；执行器校验。",
+      "acceptance_criteria": "伪造审批、审批人不合格、SHA 变化、到期、撤销和服务不可用均阻断受保护操作。",
+      "closure_criteria": "审批/仓库门禁集成测试通过，例外自动失效且可审计。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "APR-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-019",
+      "title": "治理指标缺少阈值、责任人和超限动作",
+      "original_location": "04-监督与审计 E；00-总纲 F",
+      "severity": "P2",
+      "finding": "已有指标清单，但无统一公式、数据源、窗口、owner、阈值与触发动作。",
+      "remediation": "建立指标字典，定义计算、数据源、窗口、owner、阈值、升级动作和恢复条件；避免单一指标排名。",
+      "acceptance_criteria": "指标可复现，模拟超限触发告警/复核。",
+      "closure_criteria": "指标字典、阈值配置和超限演练完成审核。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "MTR-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-020",
+      "title": "成熟度等级和试点准入缺少机器可判定门槛",
+      "original_location": "00-总纲 F；04-监督与审计 C/D",
+      "severity": "P0",
+      "finding": "G2/G3 目标与测试清单存在，但必需控制集、证据有效期和失败降级规则未固化。",
+      "remediation": "定义 G0-G4 必需控制/测试、有效期、例外上限、审批角色和降级规则；静态检查不能代替运行时验收。",
+      "acceptance_criteria": "任一 P0 控制未验证时不能达到相应准入等级；评估结果可重复。",
+      "closure_criteria": "等级矩阵和试点评估报告经独立复核。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "GATE-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-021",
+      "title": "试点缺少统一证据包和验收报告模板",
+      "original_location": "00-总纲最小导入步骤/试点前提；04-监督与审计 D",
+      "severity": "P1",
+      "finding": "十项试点任务和测试要求已列出，但证据目录、报告字段、缺陷分派和关闭审批未统一。",
+      "remediation": "定义证据包：环境/版本、范围、控制状态、用例结果、原始证据引用、失败/例外、owner、复验和批准结论。",
+      "acceptance_criteria": "报告可复现每项测试；失败映射到问题 ID/负责人；无证据不得通过。",
+      "closure_criteria": "一个受控真实仓库完成证据包并由独立 Reviewer/Owner 签署。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "PKG-01"
+      ],
+      "coverage": "definition_only"
+    },
+    {
+      "id": "AASEGS-AUD-022",
+      "title": "证据过期和控制退化缺少持续复验规则",
+      "original_location": "00-总纲最小导入步骤；01-Agent 管理 D；04-监督与审计 C/E",
+      "severity": "P1",
+      "finding": "上线前测试有要求，但持续复验周期、变更触发和自动降级机制不足。",
+      "remediation": "定义 last_verified_at、valid_until、verified_against_version 和触发条件；控制漂移或证据过期时标记 degraded。",
+      "acceptance_criteria": "证据过期、配置漂移和工具升级使状态降级；复验通过前无法恢复 verified。",
+      "closure_criteria": "周期/事件触发复验策略及 CI 测试通过。",
+      "status": "OPEN",
+      "owner": null,
+      "target_version": "1.1.1",
+      "evidence_refs": [],
+      "covered_by": [
+        "RVF-01"
+      ],
+      "coverage": "definition_only"
+    }
+  ],
+  "coverage_summary": {
+    "generated_from": "control-catalog.yaml v1.1.1",
+    "total_issues": 22,
+    "with_control_definition": 22,
+    "with_runtime_evidence": 0,
+    "closed": 0,
+    "note": "covered_by 仅表示已有规范性控制应答；status 仍为 OPEN，关闭需满足各自 closure_criteria 并提供可复核证据。"
+  }
+}

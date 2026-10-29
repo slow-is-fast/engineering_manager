@@ -1,0 +1,6 @@
+{
+  "checkpoint_id":"CP-102-1","task_id":"ENG-102","run_id":"run-789",
+  "policy_hash":"EXAMPLE_POLICY_SHA256","base_commit":"EXAMPLE_SHA",
+  "verified_artifacts":[],"external_effects":[],"pending_operations":[],
+  "evidence_refs":[],"resume_requires_reauthorization":true
+}

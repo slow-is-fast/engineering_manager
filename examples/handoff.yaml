@@ -1,0 +1,6 @@
+{
+  "handoff_id":"HO-102","task_id":"ENG-102","from_run":"run-planner-1",
+  "to_role":"developer","source_commit":"EXAMPLE_SHA","policy_hash":"EXAMPLE_POLICY_SHA256",
+  "artifacts":["docs/adr-012.md"],"acceptance":["Refresh token rotates"],
+  "unresolved_questions":[],"valid_until":"EXAMPLE_TIME","receiver_ack":null
+}

@@ -1,0 +1,1025 @@
+{
+  "version": "1.1.1",
+  "status": "design_not_enforced",
+  "controls": [
+    {
+      "id": "ID-01",
+      "requirement_ref": "ID-01",
+      "owner": "Identity broker",
+      "enforcer": "identity_gateway",
+      "evidence": "signed run identity and task binding",
+      "failure": "deny and alert",
+      "test": "T-ID-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "ID-02",
+      "requirement_ref": "ID-02",
+      "owner": "Security owner",
+      "enforcer": "resource_policy",
+      "evidence": "scoped expiring lease",
+      "failure": "deny",
+      "test": "T-ID-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "ID-03",
+      "requirement_ref": "ID-03",
+      "owner": "Identity broker",
+      "enforcer": "revocation_gateway",
+      "evidence": "revocation receipt",
+      "failure": "quarantine and deny",
+      "test": "T-ID-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "CTX-01",
+      "requirement_ref": "CTX-01",
+      "owner": "Context loader",
+      "enforcer": "provenance_filter",
+      "evidence": "context provenance manifest",
+      "failure": "classify untrusted",
+      "test": "T-CTX-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "CTX-02",
+      "requirement_ref": "CTX-02",
+      "owner": "Knowledge owner",
+      "enforcer": "memory_approval",
+      "evidence": "signed memory promotion record",
+      "failure": "deny shared promotion",
+      "test": "T-CTX-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "CTX-03",
+      "requirement_ref": "CTX-03",
+      "owner": "Memory store",
+      "enforcer": "memory_lifecycle_filter",
+      "evidence": "memory tombstone and retrieval log",
+      "failure": "filter and suspend",
+      "test": "T-CTX-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "WF-01",
+      "requirement_ref": "WF-01",
+      "owner": "Workflow owner",
+      "enforcer": "handoff_validator",
+      "evidence": "handoff acceptance event",
+      "failure": "reject handoff",
+      "test": "T-WF-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "WF-02",
+      "requirement_ref": "WF-02",
+      "owner": "Repository admin",
+      "enforcer": "worktree_lock",
+      "evidence": "lease and base SHA",
+      "failure": "deny conflicting write",
+      "test": "T-WF-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "WF-03",
+      "requirement_ref": "WF-03",
+      "owner": "Execution service",
+      "enforcer": "idempotency_registry",
+      "evidence": "unique operation receipt",
+      "failure": "suppress duplicate",
+      "test": "T-WF-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "REC-01",
+      "requirement_ref": "REC-01",
+      "owner": "Execution service",
+      "enforcer": "checkpoint_validator",
+      "evidence": "signed checkpoint and base SHA",
+      "failure": "pause recovery",
+      "test": "T-REC-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "REC-02",
+      "requirement_ref": "REC-02",
+      "owner": "Execution service",
+      "enforcer": "retry_controller",
+      "evidence": "attempt log and external lookup",
+      "failure": "block retry",
+      "test": "T-REC-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "REC-03",
+      "requirement_ref": "REC-03",
+      "owner": "Execution service",
+      "enforcer": "circuit_breaker",
+      "evidence": "breaker open log",
+      "failure": "stop new side effects",
+      "test": "T-REC-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "REC-04",
+      "requirement_ref": "REC-04",
+      "owner": "Human owner",
+      "enforcer": "compensation_gate",
+      "evidence": "compensation plan approval",
+      "failure": "reject irreversible work",
+      "test": "T-REC-04",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "QA-01",
+      "requirement_ref": "QA-01",
+      "owner": "Repository admin",
+      "enforcer": "trusted_ci_gate",
+      "evidence": "CI app plus commit SHA",
+      "failure": "block merge",
+      "test": "T-QA-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "QA-02",
+      "requirement_ref": "QA-02",
+      "owner": "Repository admin",
+      "enforcer": "baseline_change_gate",
+      "evidence": "review and diff record",
+      "failure": "block merge",
+      "test": "T-QA-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "QA-03",
+      "requirement_ref": "QA-03",
+      "owner": "Quality owner",
+      "enforcer": "review_identity_gate",
+      "evidence": "reviewer run and SHA",
+      "failure": "reject self review",
+      "test": "T-QA-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "QA-04",
+      "requirement_ref": "QA-04",
+      "owner": "Quality owner",
+      "enforcer": "acceptance_evidence_gate",
+      "evidence": "criterion-to-evidence mapping",
+      "failure": "block close",
+      "test": "T-QA-05",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "AUD-01",
+      "requirement_ref": "AUD-01",
+      "owner": "Governance owner",
+      "enforcer": "catalog_validator",
+      "evidence": "catalog check output",
+      "failure": "do not mark enforced",
+      "test": "T-AUD-01",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "AUD-02",
+      "requirement_ref": "AUD-02",
+      "owner": "Governance owner",
+      "enforcer": "test_attestation_gate",
+      "evidence": "signed integration test report",
+      "failure": "block risk tier rollout",
+      "test": "T-AUD-02",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "AUD-03",
+      "requirement_ref": "AUD-03",
+      "owner": "Audit owner",
+      "enforcer": "append_only_audit",
+      "evidence": "immutable event digest",
+      "failure": "suspend reliant approval",
+      "test": "T-AUD-03",
+      "status": "not_enforced",
+      "integration_evidence_uri": null,
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": null,
+      "addresses": [],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "REG-01",
+      "requirement_ref": "REG-01",
+      "source_ref": "v1.1.1 §1 规则注册表与状态模型",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-001",
+        "AASEGS-AUD-003"
+      ],
+      "owner": "governance_owner",
+      "enforcer": "rule_registry_linter",
+      "evidence": "规则注册表导出（rule_id、来源位置、规范原文、范围、风险、owner、执行机制、证据、失败行为、验证测试、例外引用、状态）与覆盖率/双向差异报告",
+      "failure": "存在未注册的 MUST/MUST NOT、强制审批或禁止条款时，注册表检查失败，对应风险等级不得准入",
+      "test": "T-REG-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "REG-02",
+      "requirement_ref": "REG-02",
+      "source_ref": "v1.1.1 §1 规则注册表与状态模型",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-002"
+      ],
+      "owner": "governance_owner",
+      "enforcer": "control_state_service",
+      "evidence": "六态状态记录（documented/configured/tested/verified/degraded/excepted）、状态转换事件、valid_until 与 verified_against_version",
+      "failure": "缺少执行器、测试或有效证据时不得进入 verified；配置漂移、执行器失效或证据过期自动降级为 degraded",
+      "test": "T-REG-02",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "AUTH-01",
+      "requirement_ref": "AUTH-01",
+      "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-004"
+      ],
+      "owner": "security_owner",
+      "enforcer": "resource_authorization_gateway",
+      "evidence": "资源端或独立网关的授权决策记录，含 agent/run/task、操作、资源范围、风险、策略版本、授权 ID、有效期",
+      "failure": "校验失败拒绝操作并发出审计事件；仅 Prompt 或本地脚本内的检查不构成通过证据",
+      "test": "T-AUTH-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "AUTH-02",
+      "requirement_ref": "AUTH-02",
+      "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-004"
+      ],
+      "owner": "identity_broker",
+      "enforcer": "revocation_gateway",
+      "evidence": "撤销回执（revocation receipt）、revocation_pending 期间被拒绝的副作用记录、未决请求的真实状态核对记录",
+      "failure": "revocation_pending 后拒绝新副作用；已发出而结果未知的请求必须核对真实状态，无法确认凭证失效时隔离执行通道并转人工",
+      "test": "T-AUTH-02",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "TOOL-01",
+      "requirement_ref": "TOOL-01",
+      "source_ref": "v1.1.1 §3 工具能力准入",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-005"
+      ],
+      "owner": "platform_owner",
+      "enforcer": "tool_admission_policy",
+      "evidence": "每工具/模型版本的能力清单（读取范围、写入隔离、网络边界、授权检查、终止能力、审计、凭证隔离、Reviewer 独立性、可信 CI 集成）及 enforced/advisory/unsupported 标记、验证来源、适用版本、有效期；R0–R3 准入矩阵",
+      "failure": "关键能力缺失、仅 advisory 或证据过期时拒绝准入，或降低允许的风险等级",
+      "test": "T-TOOL-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "MEM-01",
+      "requirement_ref": "MEM-01",
+      "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-006"
+      ],
+      "owner": "knowledge_owner",
+      "enforcer": "memory_lifecycle_service",
+      "evidence": "DRAFT→PENDING_REVIEW→APPROVED→(REVOKED|EXPIRED) 状态转换记录、授权主体与版本、CAS 版本号、撤销传播至索引/缓存/摘要/后续 Run 的清单",
+      "failure": "无法证明传播完成时，该记忆不得用于规范性决策；并发更新 CAS 冲突时拒绝写入",
+      "test": "T-MEM-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "ISO-01",
+      "requirement_ref": "ISO-01",
+      "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-016"
+      ],
+      "owner": "data_owner",
+      "enforcer": "tenant_boundary_policy",
+      "evidence": "Run 的 project_id/repository_id/tenant_id 绑定、跨项目访问拒绝记录、数据分类处理矩阵（用途、位置、访问者、第三方约束、保留期限、删除方式、备份清除窗口）",
+      "failure": "默认拒绝跨项目/跨租户访问并告警；未分类数据按最高敏感级别处理",
+      "test": "T-ISO-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "SMT-01",
+      "requirement_ref": "SMT-01",
+      "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-007"
+      ],
+      "owner": "workflow_owner",
+      "enforcer": "state_transition_service",
+      "evidence": "机器可读转换表（from/to、允许角色、前置条件、必需证据、授权与策略校验、CAS 条件、拒绝结果、重试条件）与逐次转换记录",
+      "failure": "未声明的转换一律拒绝；终态不得由 Agent 文字声明重开",
+      "test": "T-SMT-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "CNC-01",
+      "requirement_ref": "CNC-01",
+      "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-008"
+      ],
+      "owner": "platform_owner",
+      "enforcer": "lock_service",
+      "evidence": "锁租约、fencing token、交接的 ACCEPT/REJECT/EXPIRED/REVOKED 结果记录",
+      "failure": "锁过期后旧写者被 fencing token 拒绝；锁服务不可用时禁止并发写入",
+      "test": "T-CNC-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "EFF-01",
+      "requirement_ref": "EFF-01",
+      "source_ref": "v1.1.1 §6 外部副作用、幂等与未知结果",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-009"
+      ],
+      "owner": "platform_owner",
+      "enforcer": "side_effect_ledger",
+      "evidence": "逻辑操作身份与并发唯一性登记、PREPARED/SUBMITTED/CONFIRMED/FAILED/UNKNOWN/RECONCILIATION_REQUIRED/COMPENSATING/COMPENSATED/MANUAL_REMEDIATION_REQUIRED 状态台账、核对记录",
+      "failure": "远端可能成功而响应丢失时查询真实状态；查询不可用或状态不确定时进入核对或人工处置，不得默认重放；幂等键不替代台账",
+      "test": "T-EFF-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "CKP-01",
+      "requirement_ref": "CKP-01",
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-010"
+      ],
+      "owner": "platform_owner",
+      "enforcer": "checkpoint_store",
+      "evidence": "一致性策略、版本、完整性校验值、持久化确认、损坏处理记录；恢复前的授权/策略/工作区基线/外部副作用状态四项校验记录",
+      "failure": "基线、授权或策略发生变化时暂停并重新评估；不可补偿操作进入人工处置状态",
+      "test": "T-CKP-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "BRK-01",
+      "requirement_ref": "BRK-01",
+      "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-011"
+      ],
+      "owner": "sre_owner",
+      "enforcer": "circuit_breaker",
+      "evidence": "每种熔断原因的事件代码、阈值或即时条件、观察窗口、动作、通知对象、解除权限、复验要求",
+      "failure": "严重越权立即阻断后续副作用，不等待累计阈值；解除熔断需重新授权并复验",
+      "test": "T-BRK-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "BASE-01",
+      "requirement_ref": "BASE-01",
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-012"
+      ],
+      "owner": "repository_admin",
+      "enforcer": "protected_baseline_policy",
+      "evidence": "项目级受保护质量基线（必需检查、可信 CI 来源、执行器/配置版本、测试阈值、适用 SHA、例外、变更审批规则）与基线变更触发独立审查的记录",
+      "failure": "SHA、配置或策略变化后旧检查与旧审核不得复用；基线被绕过时合并失败",
+      "test": "T-QA-04",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "RVW-01",
+      "requirement_ref": "RVW-01",
+      "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-013"
+      ],
+      "owner": "qa_owner",
+      "enforcer": "reviewer_identity_separation",
+      "evidence": "Reviewer 与开发 Run 身份/凭证分离证明、只读访问记录、由开发 Run 无权修改的系统保存并绑定被审查 SHA 的审核结论",
+      "failure": "仅会话分离不构成独立性证明；凭证不分离时审核无效",
+      "test": "T-RVW-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "EVD-01",
+      "requirement_ref": "EVD-01",
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "owner": "audit_owner",
+      "enforcer": "append_only_audit_store",
+      "evidence": "事件十字段（事件 ID、可信时间、task/run/actor、类型、策略与配置版本、资源或 SHA、决策、证据摘要、来源系统、关联 ID）；独立写入身份、完整性验证、保留与删除策略、备份恢复、访问审计",
+      "failure": "来源缺失或完整性异常时停止所依赖的审批与合并",
+      "test": "T-EVD-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "EVD-02",
+      "requirement_ref": "EVD-02",
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "owner": "audit_owner",
+      "enforcer": "audit_availability_gate",
+      "evidence": "审计服务可用性探测记录、不可用期间的失败关闭决策记录",
+      "failure": "审计不可用时，依赖可信审计的受保护操作、审批与合并按风险等级失败关闭",
+      "test": "T-EVD-02",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "INC-01",
+      "requirement_ref": "INC-01",
+      "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-015"
+      ],
+      "owner": "security_owner",
+      "enforcer": "incident_workflow",
+      "evidence": "安全事件分级、响应手册、主责与替代负责人、通知时限记录、隔离与凭证轮换记录、影响面排查、证据保全、恢复审批、复验与复盘报告",
+      "failure": "涉事 Agent 不得批准自己的恢复或关闭事件，尝试时拒绝并告警",
+      "test": "T-INC-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "CHG-01",
+      "requirement_ref": "CHG-01",
+      "source_ref": "v1.1.1 §10 策略变更、审批和例外到期",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-017"
+      ],
+      "owner": "governance_owner",
+      "enforcer": "change_impact_evaluator",
+      "evidence": "策略/工具/模型/质量基线/权限配置变更的影响分析，及每个活动 Run 的处置决定（继续、暂停、重新授权、终止）",
+      "failure": "未完成影响分析的变更不得发布；变更后未处置的活动 Run 不得继续副作用",
+      "test": "T-CHG-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "APR-01",
+      "requirement_ref": "APR-01",
+      "source_ref": "v1.1.1 §10 策略变更、审批和例外到期",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-018"
+      ],
+      "owner": "human_owner",
+      "enforcer": "approval_service",
+      "evidence": "审批记录（任务、风险、范围、策略版本、相关 SHA、批准人身份、有效期）、失效事件、例外到期通知",
+      "failure": "对象变化、撤销或到期时自动失效；审批服务不可用时受保护操作失败关闭；例外到期后停止依赖该例外的操作",
+      "test": "T-APR-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "MTR-01",
+      "requirement_ref": "MTR-01",
+      "source_ref": "v1.1.1 §11 指标、证据包与持续复验",
+      "risk_level": "P2",
+      "addresses": [
+        "AASEGS-AUD-019"
+      ],
+      "owner": "governance_owner",
+      "enforcer": "metrics_pipeline",
+      "evidence": "每项治理指标的定义：公式、数据源、窗口、owner、阈值、超限动作",
+      "failure": "缺少公式或超限动作定义的指标不得作为治理判定依据",
+      "test": "T-MTR-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "PKG-01",
+      "requirement_ref": "PKG-01",
+      "source_ref": "v1.1.1 §11 指标、证据包与持续复验",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-021"
+      ],
+      "owner": "human_owner",
+      "enforcer": "pilot_evidence_packager",
+      "evidence": "每次试点的证据包：环境与版本、风险范围、控制状态快照、测试结果、证据引用、失败与例外、复验记录、批准结论",
+      "failure": "缺少证据包不得声明试点通过或风险等级准入",
+      "test": "T-PKG-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "RVF-01",
+      "requirement_ref": "RVF-01",
+      "source_ref": "v1.1.1 §11 指标、证据包与持续复验",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-022"
+      ],
+      "owner": "governance_owner",
+      "enforcer": "control_revalidation_scheduler",
+      "evidence": "控制的 last_verified_at、valid_until、verified_against_version 及复验记录",
+      "failure": "配置漂移、权限变化、工具升级或证据过期时标记 degraded 并阻止受影响风险等级准入，直到复验通过",
+      "test": "T-RVF-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "GATE-01",
+      "requirement_ref": "GATE-01",
+      "source_ref": "v1.1.1 §12 v1.1.1 准入门槛与审计问题映射",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-020"
+      ],
+      "owner": "human_owner",
+      "enforcer": "admission_gate_evaluator",
+      "evidence": "七条准入门槛的逐项机器判定结果、未关闭 P0 清单、与审计问题状态的联动记录",
+      "failure": "任一未关闭 P0 问题阻止对应风险等级准入；门槛判定不可由文档声明替代",
+      "test": "T-GATE-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    },
+    {
+      "id": "CRED-01",
+      "requirement_ref": "CRED-01",
+      "source_ref": "v1.1 §03-C 信任边界、秘密与工具供应链（v1.1.1 注册表回填）",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-001"
+      ],
+      "owner": "security_owner",
+      "enforcer": "credential_boundary_policy",
+      "evidence": "凭证访问拒绝记录、短期凭证外部签发记录、敏感任务隔离与审计脱敏记录、凭证入库触发的轮换与事件响应记录",
+      "failure": "拒绝访问并告警；发现凭证进入提示文本或日志立即轮换并转事件响应；Agent 请求停用审计/质量检查一律拒绝",
+      "test": "T-CRED-01",
+      "status": "not_enforced",
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "integration_evidence_uri": null
+    }
+  ],
+  "baseline": "1.1.0",
+  "note": "v1.1.1 追加 23 条实施完整性控制（§1–§12）。state 六态见 v1.1.1 §1；legacy 20 条 risk_level 为 null，待治理委员会评审后回填。status=not_enforced 表示尚无运行时执行证据。"
+}

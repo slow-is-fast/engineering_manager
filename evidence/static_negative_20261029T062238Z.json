@@ -1,0 +1,32 @@
+{
+  "generated_at": "20261029T062238Z",
+  "runner": "tests/negative_static.py",
+  "lint": "scripts/validate_controls.py",
+  "all_passed": true,
+  "results": [
+    {
+      "case": "NEGATIVE-CONTROL(clean copy)",
+      "passed": true,
+      "exit": 0,
+      "detail": "PASS: 44 control definitions structurally complete; 13 declared P0; 52 rules registered (6 without runtime control); 0 inline MUST clauses all registered; runtime enforcement NOT verified"
+    },
+    {
+      "case": "T_REG_01_unregistered_must_clause",
+      "passed": true,
+      "exit": 1,
+      "detail": "AssertionError: unregistered MUST clauses found in docs: ['FAKE-01']"
+    },
+    {
+      "case": "T_REG_02_forged_verified_state",
+      "passed": true,
+      "exit": 1,
+      "detail": "AssertionError: verified without documented/configured/tested: ID-01"
+    },
+    {
+      "case": "T_AUD_01_missing_test_field",
+      "passed": true,
+      "exit": 1,
+      "detail": "AssertionError: missing fields: ID-01"
+    }
+  ]
+}

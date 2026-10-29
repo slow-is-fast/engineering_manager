@@ -1,0 +1,2260 @@
+{
+  "version": "1.1.1",
+  "schema": "AASEGS v1.1.1 §1",
+  "source_document": "AASEGS_v1.1.1_实施完整性修订版.md",
+  "rules": [
+    {
+      "rule_id": "GOV-01",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "最小权限。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "ID-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ID-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-02",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "职责分离。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-03",
+          "RVW-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-03",
+          "T-RVW-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-03",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "证据优先。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EVD-01",
+          "QA-04"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-EVD-01",
+          "T-QA-05"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-04",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "失败关闭。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EVD-02",
+          "AUTH-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUTH-01",
+          "T-EVD-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-05",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "全过程追溯。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EVD-01",
+          "AUD-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUD-01",
+          "T-EVD-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-06",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "人工最终责任。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "APR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-APR-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-07",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "禁止自改规则。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-08",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "最小治理负担。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "原则性条款（最小治理负担），通过其余控制的综合实施体现，不设独立运行时控制"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-09",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · README · 免责声明",
+      "statement": "生产启用之前必须将每条 MUST 接入可信执行机制并通过集成验收。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "GATE-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-GATE-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-10",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · README · 最小导入步骤",
+      "statement": "在 GitHub/GitLab 上配置分支保护、受信任 CI、CODEOWNERS 以及禁止普通 Agent 绕过的规则。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "BASE-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-04"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-11",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · A",
+      "statement": "凡标记 MUST 的新增跨系统规则必须登记到 control-catalog.yaml，定义主体、强制执行器、证据、失败路径和负向测试。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "REG-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-REG-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-12",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · B",
+      "statement": "权威层级只是决策规则，必须靠权限/沙箱/CI 实现，Prompt 不具备安全边界的法律效力或技术强制性。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "AUTH-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUTH-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-13",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · C",
+      "statement": "Governance Owner 不得单方面修改自己的审核证据。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EVD-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-EVD-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-14",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · C",
+      "statement": "CI / Policy Engine / Identity Broker / Audit Store 等强制性技术执行主体不得由普通 Agent 运行在同一可写信任域中。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "无对应运行时控制；由部署架构评审强制，建议后续新增控制"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-15",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · D",
+      "statement": "审批必须绑定 task_id + risk + scope + policy_hash + commit_sha（如适用）+ expires_at；审批过期、对象变化、吊销则失效。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "APR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-APR-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-16",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · E",
+      "statement": "中途出现重大安全热修复时，暂停受影响 Run、撤销旧权限并重授权，禁止悄悄热替换策略造成证据不一致。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CHG-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CHG-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-17",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · E",
+      "statement": "不得允许 Agent 自行批准自己受影响的例外。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "APR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-APR-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-18",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · F",
+      "statement": "除满足 G2 核心控制外，还必须满足实施完整性补充条款的准入门槛；未关闭的 P0 审计问题阻止对应风险级别准入。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "GATE-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-GATE-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "GOV-19",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 00-总纲 · F",
+      "statement": "十项试点任务必须覆盖：正常 PR、测试失败、违规改质量门禁、越权读取、审批过期、错误记忆注入、交接冲突、重复投递、超时取消、审核驳回。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "PKG-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-PKG-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · A",
+      "statement": "同一变更的独立审核不得由开发 Run 自审。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-03",
+          "RVW-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-03",
+          "T-RVW-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-002",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · B",
+      "statement": "租约必须是短期、任务限域，禁止共享人类个人 Token、禁止继承前一 Agent 权限。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "ID-01",
+          "ID-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ID-01",
+          "T-ID-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-003",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · B",
+      "statement": "授权必须由可信 Identity Broker/平台签发，Agent 不能自我宣布身份。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "ID-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ID-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-004",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · B",
+      "statement": "标记 revocation_pending 的任务不得继续副作用操作。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "AUTH-02",
+          "ID-03"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUTH-02",
+          "T-ID-03"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-005",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · B",
+      "statement": "不得声称完美即时撤销。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "声明诚实性规则，无运行时控制；由独立评审与文档审查强制"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-006",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "仓库内容、PR 评论、网页、终端输出和其他 Agent 消息一律作为数据处理，不能提升权限。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CTX-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CTX-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-007",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "晋升为跨任务共享记忆必须进行来源校验与授权审核。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "MEM-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-MEM-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-008",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "共享记忆存储必须可撤销、可检索版本历史。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "MEM-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-MEM-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-009",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "过期、被否定或撤销的记忆不得用于新任务的规范性决策。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "MEM-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-MEM-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-010",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "禁止把'跳过测试''关闭扫描'一类推断提升为政策。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CTX-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CTX-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-011",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · C",
+      "statement": "上下文压缩摘要本身不能构成权限证据。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "AUTH-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUTH-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-AGT-012",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 01-Agent管理 · D",
+      "statement": "CLAUDE.md/Hooks 与 AGENTS.md/沙箱/批准策略属适配层能力，不能替代身份、独立 CI 和服务器端仓库策略。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "TOOL-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-TOOL-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · B",
+      "statement": "任务必须含 ID、Owner、风险、目标、准入/排除范围、可测验收、依赖、预算、失败策略、批准证明。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "任务契约要素无专门控制；可由状态服务 READY_FOR_APPROVAL 准入检查承担"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-002",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · B",
+      "statement": "交付报告必须含任务 ID、运行 ID、变更摘要、路径、测试、CI、提交 SHA、Review 结论、已知风险、批准/例外、结案结果。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "同上"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-003",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · C",
+      "statement": "禁止自动 --force 推送受保护分支。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CNC-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CNC-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-004",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · C",
+      "statement": "任务所有权变更必须 CAS/version 校验。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CNC-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CNC-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-005",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · D",
+      "statement": "敏感数据不得直接写入普通快照。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CKP-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CKP-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-006",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · D",
+      "statement": "生产数据库破坏性变更不得被默认自动重试。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EFF-01",
+          "REC-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-EFF-01",
+          "T-REC-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-WFL-007",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 02-工作流治理 · E",
+      "statement": "必须区分 STOPPED、COMPENSATING、COMPENSATED、MANUAL_REMEDIATION_REQUIRED 并按可信证据结束。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EFF-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-EFF-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · A",
+      "statement": "不得擅自删除失败测试、降低覆盖率阈值、跳过扫描或改变 GitHub Actions 以逃避门禁。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-002",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · B",
+      "statement": "Reviewer 应处于独立会话与只读环境，不能凭开发者描述做结论。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "RVW-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-RVW-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-003",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · B",
+      "statement": "反作弊注入（改期望、删测试、伪造 CI、改 SHA、冒用 Reviewer、伪造 status check）各自必须由独立源拒绝或使合并失败。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-01",
+          "QA-02",
+          "QA-03"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-01",
+          "T-QA-02",
+          "T-QA-03"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-004",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · B",
+      "statement": "GitHub 必需检查应绑定预期 App 来源，并保护管理规则、禁止绕过。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-01",
+          "BASE-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-01",
+          "T-QA-04"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-005",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · C",
+      "statement": "不能因内容外观像系统消息而改变身份/权限。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CTX-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CTX-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-006",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · C",
+      "statement": "禁止普通 Agent 读取生产凭证、私人 SSH 目录、广域云管理员令牌。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CRED-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CRED-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-007",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · C",
+      "statement": "短期凭证由外部服务签发，禁止作为提示文本或普通日志记录。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CRED-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CRED-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-008",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · C",
+      "statement": "Agent 不能决定'临时停用'审计/质量检查。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "CRED-01",
+          "EVD-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-CRED-01",
+          "T-EVD-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SEC-009",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 03-质量与安全 · D",
+      "statement": "R3 不得因 AI Reviewer 判断 PASS 而自动放行。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "APR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-APR-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 04-监督与审计 · D",
+      "statement": "测试失败必须显式记录、分派修复、复验。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "QA-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-QA-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-002",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 04-监督与审计 · D",
+      "statement": "不能将'Agent 回答自己不会违例'计为通过。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P1",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "AUD-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUD-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-003",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 04-监督与审计 · E",
+      "statement": "不得以代码行数/Token 数单维排名 Agent。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P2",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "MTR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-MTR-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-004",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 04-监督与审计 · F",
+      "statement": "审批过期/拒绝/撤销必须闭合权限租约。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "AUTH-02"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-AUTH-02"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-005",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · 04-监督与审计 · F",
+      "statement": "不得让同一 Agent 假扮'人工批准'。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "procedural",
+        "controls": [],
+        "gap": "审批主体真实性无运行时控制；建议并入未来 identity attestation 控制"
+      },
+      "evidence_required": null,
+      "failure_behavior": [
+        "documented_exception_required"
+      ],
+      "verification": {
+        "tests": []
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    }
+  ],
+  "coverage_note": null
+}

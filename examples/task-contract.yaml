@@ -1,0 +1,8 @@
+{
+  "task_id":"ENG-102","owner":"eng-lead","risk":"R1","policy_version":"1.1.0",
+  "objective":"Implement JWT refresh token rotation", "allowed_paths":["internal/auth/**","tests/**"],
+  "forbidden_paths":["governance/**",".github/workflows/**"],
+  "acceptance":["Rotation works","Reused tokens rejected","CI passes"],
+  "run":{"agent_id":"agent-dev-2","run_id":"run-789","role":"developer","expires_at":"EXAMPLE_SET_AT_ISSUANCE","lease_ref":"EXAMPLE_TRUSTED_LEASE"},
+  "budget":{"max_attempts":3,"max_cost_usd":10},"approval_ref":"EXAMPLE_TRUSTED_APPROVAL"
+}
