@@ -36,3 +36,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/verify_executor_pin.py
+
+      - name: "T-VD-01b credential domain check (data-plane token must not write control plane)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/verify_credential_domain.py --expect-deny

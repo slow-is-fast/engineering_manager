@@ -110,3 +110,9 @@
 - **诚实边界**：账号级隔离（独立 org/账号）未部署，Agent 凭证分域待落地——VD-01 为 tested（逻辑验证），**verified 仍为 0**。
 
 详见 `evidence/vd01_20261029T163000Z.md`。
+
+### §10.1 T-VD-01b 凭证域分离（16:35 补录）
+
+- **机制**：数据面 CI 运行时凭证（github.token）只授数据面；`scripts/verify_credential_domain.py` 对控制面做无害写尝试，CI 模式断言 403 拒绝，意外成功则清理并失败关闭。
+- **本地演示**：Owner 全量凭证跨域写**成功**（drill label 即建即删，控制面核查无残留）——人横跨两域属预期，登记使用约束"该凭证不得交给数据面 Agent"。
+- **结论**：数据面运行时凭证分域已由 CI 连续证明；verified 剩余门槛：①独立 org/账号；②Agent 日常运行切换到 fine-grained PAT（只授数据面）。
