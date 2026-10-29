@@ -44,7 +44,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "ID-03",
@@ -110,7 +111,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "CTX-03",
@@ -132,7 +134,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "WF-01",
@@ -154,7 +157,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "WF-02",
@@ -176,7 +180,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "WF-03",
@@ -220,7 +225,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "REC-02",
@@ -264,7 +270,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "REC-04",
@@ -315,7 +322,8 @@
         "pr": "https://github.com/slow-is-fast/engineering_manager/pull/1",
         "report": "evidence/runtime_drill_20261029T144000Z.md",
         "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "QA-02",
@@ -344,7 +352,8 @@
         "pr": "https://github.com/slow-is-fast/engineering_manager/pull/1",
         "report": "evidence/runtime_drill_20261029T144000Z.md",
         "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "QA-03",
@@ -388,7 +397,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "AUD-01",
@@ -410,7 +420,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "AUD-02",
@@ -479,7 +490,8 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "REG-02",
@@ -503,7 +515,8 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "AUTH-01",
@@ -671,7 +684,8 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "EFF-01",
@@ -695,7 +709,8 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "CKP-01",
@@ -743,7 +758,8 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "BASE-01",
@@ -970,20 +986,21 @@
         "AASEGS-AUD-022"
       ],
       "owner": "governance_owner",
-      "enforcer": "control_revalidation_scheduler",
-      "evidence": "控制的 last_verified_at、valid_until、verified_against_version 及复验记录",
+      "enforcer": "evidence_freshness_gate (scripts/verify_evidence_freshness.py --enforce in CI)",
+      "evidence": "每条 tested 控制必须带 evidence_at；TTL P0=30/P1=90/P2=180 天，过期或缺失时间戳 → CI 失败关闭；--degrade 可将过期控制置 state.degraded=true",
       "failure": "配置漂移、权限变化、工具升级或证据过期时标记 degraded 并阻止受影响风险等级准入，直到复验通过",
       "test": "T-RVF-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40853881437",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "GATE-01",
@@ -1055,7 +1072,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "WF-05",
@@ -1079,7 +1097,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "WF-06",
@@ -1103,7 +1122,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "ATT-01",
@@ -1127,7 +1147,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "CLM-01",
@@ -1151,7 +1172,8 @@
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-29"
     }
   ],
   "baseline": "1.1.0",

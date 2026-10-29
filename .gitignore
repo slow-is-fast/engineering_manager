@@ -2,3 +2,7 @@
 evidence/*.tmp
 __pycache__/
 *.pyc
+pm/
+*.epub
+*.mobi
+*.azw3

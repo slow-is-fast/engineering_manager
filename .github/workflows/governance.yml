@@ -41,3 +41,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/verify_credential_domain.py --expect-deny
+
+      # RVF-01：证据过期即失败关闭（P0 30 天 / P1 90 天 / P2 180 天）。
+      # 到期后重新验证并更新 control-catalog.yaml 中各控制的 evidence_at 即可复绿。
+      - name: "T-RVF-01 evidence freshness (stale evidence fails closed)"
+        run: python scripts/verify_evidence_freshness.py --enforce

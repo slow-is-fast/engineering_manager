@@ -161,3 +161,10 @@ Owner 明确场景约束：**只有一名人类开发者，但有多个 Agent**�
 - **已归档失败案例**：Round 1 注入成功（无分支保护）、workflow 步骤名冒号导致 YAML 解析失败、CLM-01 lint 自指误报、控制号 WF-03 撞号、第二 PAT 不构成独立主体。
 - **未关闭**：22 项审计问题全部 OPEN（owner 已指派）；关闭须逐项满足验收条件并独立复核。
 - **下一步（Owner 可选）**：创建只读评审 PAT 以登记 RVW-02；具备条件时推进独立账号部署以解锁 verified。
+
+### §10.5 RVF-01 证据新鲜度与持续复验（18:15 补录）
+
+- **机制**：22 条 tested 控制全部补 `evidence_at`；lint 新增断言"tested 必须有时间戳"；`scripts/verify_evidence_freshness.py` 按 TTL（P0 30 / P1 90 / P2 180 天）判定，`--enforce` 过期即失败关闭并**接入 CI**，`--degrade` 可将过期控制置 `degraded=true, tested=false`。
+- **测试 5/5**：过期被拒、无时间戳被拒、新鲜不误杀、降级写回生效、仓库回归 fresh 22 / stale 0。
+- **诚实边界**：本机制判定"证据是否过期"，不等于"控制仍有效"——它强制复验发生，不是复验本身。
+- **时间表**：P0 证据 2026-11-28 起 CI 转红，须复验后更新 `evidence_at` 复绿。控制 tested 21 → **22**。

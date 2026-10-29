@@ -24,6 +24,8 @@ for c in x['controls']:
         f"bad status: {c['id']}"
     if c['status'] in ('tested', 'enforced'):
         assert c['integration_evidence_uri'], f"missing verified evidence: {c['id']}"
+        # RVF-01：没有验证时间戳的证据无法判断新鲜度，等于不可复验
+        assert c.get('evidence_at'), f"missing evidence_at (unverifiable freshness): {c['id']}"
 
     # v1.1.1 §1：控制状态必须能区分六态
     st = c.get('state')
