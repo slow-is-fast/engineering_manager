@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "2148e61dcee3e55e50cabc812cf37e2a8da5bb2d",
-  "tree_sha": "42445d2e32e9c31878c07fd5b1abc6636e63f75a",
-  "content_hash_sha256": "64e5d687febe7bbbefe26f304a35656cbec20ac3b9650928d30ac1547bbca550",
+  "commit_sha": "0cf3cba085dad5fca2f34dc58a07fe18b281ac82",
+  "tree_sha": "a3e0a7b34b7fc4d13d998b27b3f10b2da76362bc",
+  "content_hash_sha256": "b7b446739bfe5b3bb1c4b39acb7b525c1467096cb733111745984ca74c9638b2",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-29T17:05:00+08:00",
+  "pinned_at": "2026-10-29T19:05:00+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "21099cb78d7d9e74cb037d763d9f0bdd66102fbb",
-    "content_hash_sha256": "844e65427fb4cbe26b89b7c826f3695b890ce34a2da9d391c546f30cfab7c701"
+    "commit_sha": "2148e61dcee3e55e50cabc812cf37e2a8da5bb2d",
+    "content_hash_sha256": "64e5d687febe7bbbefe26f304a35656cbec20ac3b9650928d30ac1547bbca550"
   },
-  "bump_reason": "控制面新增 executor/attestation.py（ATT-01，AASEGS-SUP-005）"
+  "bump_reason": "控制面新增 executor/change.py（CHG-01，GOV-16）"
 }

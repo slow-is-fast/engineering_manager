@@ -17,6 +17,7 @@ from executor.contract import (TaskContractValidator, DeliveryReportValidator,
                                Rejected as ContractRejected)
 from executor.attestation import (ApprovalAttestationValidator,
                                   Rejected as AttestationRejected)
+from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeRejected
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -222,6 +223,50 @@ class ExecutorNegativeTests(unittest.TestCase):
         with self.assertRaises(AttestationRejected):      # 策略不符
             v.validate({**a, "policy_hash": "policy-v1.0"})
         self.assertEqual(v.validate(a), "APPROVED_BY_HUMAN")   # 正向对照
+
+    # ---- T-CHG-01：变更策略未处置活动 Run / 重大热修复仍 continue / 重授权不符 → REJECT ----
+    def _registry(self):
+        reg = RunRegistry(self.tmp / "audit.jsonl")
+        reg.register("r-1", "t-300", "policy-v1.1.0", owner="agent-alpha")
+        reg.register("r-2", "t-301", "policy-v1.1.0", owner="agent-beta")
+        reg.register("r-3", "t-302", "policy-v1.1.1", owner="agent-gamma")  # 已是新策略，不受影响
+        return reg
+
+    def test_t_chg_01_change_without_disposition_rejected(self):
+        reg = self._registry()
+        ev = ChangeEvaluator(reg, self.tmp / "audit.jsonl")
+        new = "policy-v1.1.1"
+        with self.assertRaises(ChangeRejected):            # 完全不给处置决定
+            ev.evaluate(new, {}, change_id="chg-1")
+        with self.assertRaises(ChangeRejected):            # 只处置了一个 Run，漏了另一个
+            ev.evaluate(new, {"r-1": "pause"}, change_id="chg-1")
+        with self.assertRaises(ChangeRejected):            # 处置值非法
+            ev.evaluate(new, {"r-1": "whatever", "r-2": "pause"}, change_id="chg-1")
+        # 重大安全热修复：continue 不被允许（GOV-16 核心）
+        with self.assertRaises(ChangeRejected):
+            ev.evaluate(new, {"r-1": "continue", "r-2": "pause"},
+                        severe=True, change_id="chg-hotfix")
+        # reauthorize 缺审批证明 / 策略不符 / Agent 自批
+        with self.assertRaises(ChangeRejected):
+            ev.evaluate(new, {"r-1": "reauthorize", "r-2": "pause"}, change_id="chg-2")
+        with self.assertRaises(ChangeRejected):
+            ev.evaluate(new, {"r-1": {"decision": "reauthorize",
+                                      "approval": {"approver": "slow-is-fast",
+                                                   "policy_hash": "policy-v1.0"}},
+                              "r-2": "pause"}, change_id="chg-3")
+        with self.assertRaises(ChangeRejected):
+            ev.evaluate(new, {"r-1": {"decision": "reauthorize",
+                                      "approval": {"approver": "agent-alpha",
+                                                   "policy_hash": new}},
+                              "r-2": "pause"}, change_id="chg-4")
+        # 正向对照：合法处置全部给出
+        res = ev.evaluate(new, {"r-1": {"decision": "reauthorize",
+                                        "approval": {"approver": "slow-is-fast",
+                                                     "policy_hash": new}},
+                                "r-2": "pause"}, change_id="chg-ok")
+        self.assertEqual(res["result"], "PUBLISHED")
+        self.assertEqual(res["affected"], ["r-1", "r-2"])   # r-3 已是新策略，不在列
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -890,20 +890,21 @@
         "AASEGS-AUD-017"
       ],
       "owner": "governance_owner",
-      "enforcer": "change_impact_evaluator",
-      "evidence": "策略/工具/模型/质量基线/权限配置变更的影响分析，及每个活动 Run 的处置决定（继续、暂停、重新授权、终止）",
+      "enforcer": "change_impact_evaluator (executor.change.ChangeEvaluator)",
+      "evidence": "活动 Run 注册表 + 变更影响分析：受影响 Run 逐一处置（continue/pause/reauthorize/terminate），缺省即拒；重大热修复禁 continue；reauthorize 需新策略一致的人类审批",
       "failure": "未完成影响分析的变更不得发布；变更后未处置的活动 Run 不得继续副作用",
       "test": "T-CHG-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40855655057",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "APR-01",
