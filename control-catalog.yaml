@@ -308,6 +308,13 @@
         "verified": false,
         "degraded": false,
         "excepted": false
+      },
+      "runtime_drill": {
+        "date": "2026-10-29",
+        "result": "injection_not_blocked",
+        "pr": "https://github.com/slow-is-fast/engineering_manager/pull/1",
+        "report": "evidence/runtime_drill_20261029T144000Z.md",
+        "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
       }
     },
     {
@@ -330,6 +337,13 @@
         "verified": false,
         "degraded": false,
         "excepted": false
+      },
+      "runtime_drill": {
+        "date": "2026-10-29",
+        "result": "injection_not_blocked",
+        "pr": "https://github.com/slow-is-fast/engineering_manager/pull/1",
+        "report": "evidence/runtime_drill_20261029T144000Z.md",
+        "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
       }
     },
     {
