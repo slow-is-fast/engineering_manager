@@ -78,6 +78,24 @@ for r in reg['rules']:
 
 n_gap = sum(1 for r in reg['rules'] if not r['enforcement']['controls'])
 
+# ---- 风险等级传播：控制不得宽松于其所服务规则的最高等级 ----
+# 规则层说"必须做什么"，控制层说"靠什么强制"。若控制等级标低，会连带把
+# 证据复验周期拉长（RVF-01 TTL）并绕过准入判定（GOV-18）。从严（控制 > 规则）允许。
+SEVERITY = {'P0': 0, 'P1': 1, 'P2': 2}
+served = {}
+for r in reg['rules']:
+    for cid in r['enforcement']['controls']:
+        served.setdefault(cid, set()).add(r['risk_level'])
+for c in x['controls']:
+    levels = served.get(c['id'])
+    cur = c.get('risk_level')
+    if not levels or not cur:
+        continue
+    highest = min(levels, key=lambda k: SEVERITY[k])
+    assert SEVERITY[cur] <= SEVERITY[highest], (
+        f"risk level propagation violated: control {c['id']}={cur} is looser than "
+        f"highest served rule {highest}")
+
 # ---- 文档侧双向差异：规范文档中带编号的 MUST/MUST NOT 条款必须已注册 ----
 import re
 doc_ids = set()

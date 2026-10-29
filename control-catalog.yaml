@@ -666,7 +666,7 @@
       "id": "CNC-01",
       "requirement_ref": "CNC-01",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
-      "risk_level": "P1",
+      "risk_level": "P0",
       "addresses": [
         "AASEGS-AUD-008"
       ],
@@ -789,7 +789,7 @@
       "id": "RVW-01",
       "requirement_ref": "RVW-01",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
-      "risk_level": "P1",
+      "risk_level": "P0",
       "addresses": [
         "AASEGS-AUD-013"
       ],
@@ -885,7 +885,7 @@
       "id": "CHG-01",
       "requirement_ref": "CHG-01",
       "source_ref": "v1.1.1 §10 策略变更、审批和例外到期",
-      "risk_level": "P1",
+      "risk_level": "P0",
       "addresses": [
         "AASEGS-AUD-017"
       ],
@@ -910,7 +910,7 @@
       "id": "APR-01",
       "requirement_ref": "APR-01",
       "source_ref": "v1.1.1 §10 策略变更、审批和例外到期",
-      "risk_level": "P1",
+      "risk_level": "P0",
       "addresses": [
         "AASEGS-AUD-018"
       ],
