@@ -15,7 +15,7 @@ class CatalogTests(unittest.TestCase):
         c = load()['controls']
         ids = [x['id'] for x in c]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(47, len(ids))
+        self.assertEqual(49, len(ids))
         for x in c:
             for k in ('owner', 'enforcer', 'evidence', 'failure', 'test'):
                 self.assertTrue(x[k])
@@ -43,7 +43,7 @@ class CatalogTests(unittest.TestCase):
     def test_v111_controls_declare_risk_and_audit_mapping(self):
         c = load()['controls']
         new = [x for x in c if x['id'].split('-')[0] not in LEGACY]
-        self.assertEqual(25, len(new))
+        self.assertEqual(27, len(new))
         for x in new:
             self.assertIn(x['risk_level'], ('P0', 'P1', 'P2'))
             self.assertTrue(x['source_ref'])

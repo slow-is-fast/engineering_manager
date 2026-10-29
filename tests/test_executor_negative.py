@@ -15,6 +15,8 @@ from executor.breaker import CircuitBreaker, BreakerOpen
 from executor.handoff import HandoffValidator, Rejected
 from executor.contract import (TaskContractValidator, DeliveryReportValidator,
                                Rejected as ContractRejected)
+from executor.attestation import (ApprovalAttestationValidator,
+                                  Rejected as AttestationRejected)
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -190,6 +192,67 @@ class ExecutorNegativeTests(unittest.TestCase):
         with self.assertRaises(BreakerOpen):                    # 单次即熔断
             b.allow("write-file")
 
+    # ---- T-ATT-01：同一 Agent 假扮人工批准 / 带内证明 / 未知主体 → REJECT ----
+    def _att(self):
+        return {
+            "task_id": "t-200", "approver_principal": "slow-is-fast",
+            "principal_type": "human", "decision": "APPROVED",
+            "attestation_ref": "https://github.com/slow-is-fast/engineering_manager/pull/4",
+            "channel": "pr_review", "issued_at": "2026-10-29T16:00:00Z",
+            "policy_hash": "policy-v1.1.1",
+        }
+
+    def test_t_att_01_fake_human_approval_rejected(self):
+        v = ApprovalAttestationValidator({"slow-is-fast", "reviewer-b"},
+                                         "policy-v1.1.1",
+                                         self.tmp / "audit.jsonl")
+        a = self._att()
+        with self.assertRaises(AttestationRejected):      # Agent 冒充人类主体
+            v.validate({**a, "approver_principal": "agent-alpha"})
+        with self.assertRaises(AttestationRejected):      # 主体类型非人类
+            v.validate({**a, "principal_type": "agent"})
+        with self.assertRaises(AttestationRejected):      # 主体不在人类白名单
+            v.validate({**a, "approver_principal": "someone-else"})
+        with self.assertRaises(AttestationRejected):      # 带内（自证）通道
+            v.validate({**a, "channel": "self"})
+        with self.assertRaises(AttestationRejected):      # 旁证不可核查
+            v.validate({**a, "attestation_ref": "trust me"})
+        with self.assertRaises(AttestationRejected):      # 缺字段
+            v.validate({k: x for k, x in a.items() if k != "issued_at"})
+        with self.assertRaises(AttestationRejected):      # 策略不符
+            v.validate({**a, "policy_hash": "policy-v1.0"})
+        self.assertEqual(v.validate(a), "APPROVED_BY_HUMAN")   # 正向对照
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+    # ---- T-ATT-01：同一 Agent 假扮人工批准 / 带内证明 / 未知主体 → REJECT ----
+    def _att(self):
+        return {
+            "task_id": "t-200", "approver_principal": "slow-is-fast",
+            "principal_type": "human", "decision": "APPROVED",
+            "attestation_ref": "https://github.com/slow-is-fast/engineering_manager/pull/4",
+            "channel": "pr_review", "issued_at": "2026-10-29T16:00:00Z",
+            "policy_hash": "policy-v1.1.1",
+        }
+
+    def test_t_att_01_fake_human_approval_rejected(self):
+        v = ApprovalAttestationValidator({"slow-is-fast", "reviewer-b"},
+                                         "policy-v1.1.1",
+                                         self.tmp / "audit.jsonl")
+        a = self._att()
+        with self.assertRaises(AttestationRejected):      # Agent 冒充人类主体
+            v.validate({**a, "approver_principal": "agent-alpha"})
+        with self.assertRaises(AttestationRejected):      # 主体类型非人类
+            v.validate({**a, "principal_type": "agent"})
+        with self.assertRaises(AttestationRejected):      # 主体不在人类白名单
+            v.validate({**a, "approver_principal": "someone-else"})
+        with self.assertRaises(AttestationRejected):      # 带内（自证）通道
+            v.validate({**a, "channel": "self"})
+        with self.assertRaises(AttestationRejected):      # 旁证不可核查
+            v.validate({**a, "attestation_ref": "trust me"})
+        with self.assertRaises(AttestationRejected):      # 缺字段
+            v.validate({k: x for k, x in a.items() if k != "issued_at"})
+        with self.assertRaises(AttestationRejected):      # 策略不符
+            v.validate({**a, "policy_hash": "policy-v1.0"})
+        self.assertEqual(v.validate(a), "APPROVED_BY_HUMAN")   # 正向对照

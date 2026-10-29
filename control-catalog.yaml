@@ -1104,6 +1104,54 @@
         "degraded": false,
         "excepted": false
       }
+    },
+    {
+      "id": "ATT-01",
+      "requirement_ref": "AASEGS-SUP-005",
+      "owner": "Governance owner",
+      "enforcer": "approval_attestation_check (executor.attestation.ApprovalAttestationValidator)",
+      "evidence": "审批主体须在人类白名单、principal_type=human、旁证可核查且通道带外；Agent 冒充/带内自证/未知主体均 REJECT",
+      "failure": "block approval (fail closed)",
+      "test": "T-ATT-01",
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40844523493",
+      "source_ref": "v1.1.1 （AASEGS-SUP-005）",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-018"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "CLM-01",
+      "requirement_ref": "AASEGS-AGT-005",
+      "owner": "Governance owner",
+      "enforcer": "claims_honesty_lint (scripts/check_claims.py)",
+      "evidence": "文档与证据中无证据支撑的绝对化能力声明（即时撤销/100%/零延迟…）被检出",
+      "failure": "block merge (fail closed)",
+      "test": "T-CLM-01",
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40844523493",
+      "source_ref": "v1.1.1 （AASEGS-AGT-005）",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-002"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
     }
   ],
   "baseline": "1.1.0",
