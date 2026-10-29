@@ -31,3 +31,8 @@ jobs:
 
       - name: Static negative tests (T-REG-01 / T-REG-02 / T-AUD-01)
         run: python tests/negative_static.py
+
+      - name: T-VD-01 executor pin verification (control plane: aasegs-gov-plane)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/verify_executor_pin.py

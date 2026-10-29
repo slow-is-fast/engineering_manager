@@ -16,6 +16,7 @@
 | 目录版本 | control-catalog **v1.1.1**（44 条控制）、rule-registry **v1.1.1**（52 条规则） |
 | 审计基线 | AASEGS v1.1.0 审计问题清单 22 项 |
 | 演练工具 | `scripts/validate_controls.py`、`tests/`（16 测试）、`tests/negative_static.py`、`executor/`（六组件） |
+| 控制面 | `slow-is-fast/aasegs-gov-plane`（VD-01，2026-10-29 批准后部署，见 §10） |
 
 ## 2 · 风险范围
 
@@ -23,7 +24,7 @@
 
 ## 3 · 控制状态快照
 
-**44 条控制：tested 15 / not_enforced 29。**
+**44 条控制：tested 15 / not_enforced 29。**（§10 批准后跟进：VD-01 登记后为 **45 条控制，tested 16 / not_enforced 28**）
 
 | 类别 | 条目 | 状态 |
 |---|---|---|
@@ -31,7 +32,7 @@
 | 执行器类（WF/CNC/CTX/REC/EFF/BRK 系） | WF-01、WF-02、CNC-01、CTX-02、CTX-03、REC-01、REC-03、EFF-01、BRK-01 | tested 9 |
 | 其余（身份、审计存储、事件响应、指标等） | 29 条 | not_enforced |
 
-六态分布：tested 15、documented 29、verified **0**、configured 1（BASE-01 部分配置）。
+六态分布：tested 15、documented 29、verified **0**、configured 1（BASE-01 部分配置）。§10 后：tested 16（+VD-01，configured 1）、documented 28。
 
 **tested 与 verified 的边界**：tested = 控制逻辑在负向用例中按预期拒绝注入；verified 需要独立信任域部署（GOV-14 gap 适用）。执行器与被治理代码同仓库，其 9 条 tested 属"逻辑验证"。
 
@@ -97,3 +98,15 @@
 | 三、落实 P0 控制 | ✅ 完成（CI + 分支保护 + 执行器；P0 控制 13 条中 8 条 tested） |
 | 四、真实仓库试点 | 🟨 **进行中**（R0/R1 层 5 条运行时用例有结论，含失败案例；身份/审计存储类未动） |
 | 五、按试点结果修订 | ⬜ 未开始（注意：现有 v1.1.1 是审计驱动修订；试点驱动的修订应为 v1.1.2/v1.2） |
+
+## 10 · 批准后跟进：VD-01 执行器独立信任域部署（2026-10-29 16:20–16:45）
+
+§8 批准的下一批试点第①项已开工并完成首轮：
+
+- **控制面仓库** `slow-is-fast/aasegs-gov-plane`：executor 六组件 + 10 条负向用例 + 控制面 CI（run 40841631946 绿）+ 分支保护（required check + CODEOWNERS 审批 + 禁 force push/删除）。
+- **pin 绑定**：数据面 `governance/executor_pin.json` 绑定控制面不可变 commit `4cf9bbe9…`（含 tree SHA 与内容哈希）。
+- **T-VD-01**：正向 PASS；负向 2/2 被拒（篡改 commit_sha、篡改 content_hash 均失败关闭）；已接入数据面 CI。
+- **登记**：控制 44→45（VD-01，P0，tested），GOV-14 gap 消除（gap 规则 6→5），测试断言同步（45/25）。
+- **诚实边界**：账号级隔离（独立 org/账号）未部署，Agent 凭证分域待落地——VD-01 为 tested（逻辑验证），**verified 仍为 0**。
+
+详见 `evidence/vd01_20261029T163000Z.md`。

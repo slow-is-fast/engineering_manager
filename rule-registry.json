@@ -587,13 +587,16 @@
       "owner": "governance_owner",
       "enforcement": {
         "type": "procedural",
-        "controls": [],
-        "gap": "无对应运行时控制；由部署架构评审强制，建议后续新增控制",
+        "controls": [
+          "VD-01"
+        ],
+        "gap": null,
         "gap_uplift": {
           "priority": 1,
           "decision": "新增控制 VD-01（信任域分离）。执行器独立部署是全部 verified 授予的前提，且直接解锁 GOV-14 gap 与 9 条执行器类控制的 verified 推进。试点方向：执行器部署到独立信任域（独立账号/主机）。",
           "decided_by": "slow-is-fast",
-          "decided_at": "2026-10-29"
+          "decided_at": "2026-10-29",
+          "uplift_status": "done (VD-01 registered & tested, 2026-10-29)"
         }
       },
       "evidence_required": null,
