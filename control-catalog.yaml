@@ -1042,7 +1042,7 @@
       "failure": "block merge (fail closed)",
       "test": "T-VD-01",
       "status": "tested",
-      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40841631946",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40842738391",
       "source_ref": "v1.1.1 00-总纲 C（GOV-14 信任域分离）",
       "risk_level": "P0",
       "addresses": [
