@@ -3,11 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "4cf9bbe9f7c1fabffafad99350d5e97a73dc9d88",
-  "tree_sha": "6f83b2132a1a66bd995717671fc18e98cc5b3dc1",
-  "content_hash_sha256": "123be3c118d2bbe138b8ec73a96afc182f84f515e8c21858851f244d1f5863ef",
+  "commit_sha": "21099cb78d7d9e74cb037d763d9f0bdd66102fbb",
+  "tree_sha": "7f355f011cf17aa56390a4a5681f728f25b623dd",
+  "content_hash_sha256": "844e65427fb4cbe26b89b7c826f3695b890ce34a2da9d391c546f30cfab7c701",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-29T16:25:00+08:00",
+  "pinned_at": "2026-10-29T16:48:00+08:00",
   "pinned_by": "slow-is-fast",
-  "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。"
+  "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
+  "previous": {
+    "commit_sha": "4cf9bbe9f7c1fabffafad99350d5e97a73dc9d88",
+    "content_hash_sha256": "123be3c118d2bbe138b8ec73a96afc182f84f515e8c21858851f244d1f5863ef"
+  },
+  "bump_reason": "控制面新增 executor/contract.py（WF-03/WF-04，AASEGS-WFL-001/002）"
 }

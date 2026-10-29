@@ -15,7 +15,7 @@ class CatalogTests(unittest.TestCase):
         c = load()['controls']
         ids = [x['id'] for x in c]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(45, len(ids))
+        self.assertEqual(47, len(ids))
         for x in c:
             for k in ('owner', 'enforcer', 'evidence', 'failure', 'test'):
                 self.assertTrue(x[k])

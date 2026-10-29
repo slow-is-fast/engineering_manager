@@ -116,3 +116,11 @@
 - **机制**：数据面 CI 运行时凭证（github.token）只授数据面；`scripts/verify_credential_domain.py` 对控制面做无害写尝试，CI 模式断言 403 拒绝，意外成功则清理并失败关闭。
 - **本地演示**：Owner 全量凭证跨域写**成功**（drill label 即建即删，控制面核查无残留）——人横跨两域属预期，登记使用约束"该凭证不得交给数据面 Agent"。
 - **结论**：数据面运行时凭证分域已由 CI 连续证明；verified 剩余门槛：①独立 org/账号；②Agent 日常运行切换到 fine-grained PAT（只授数据面）。
+
+### §10.2 WF-05/WF-06 契约要素校验（16:50 补录）
+
+- **执行器源码归属控制面**：`executor/contract.py`（控制面提交 `21099cb…`），数据面同步并 bump pin（`previous` 记录旧值 + `bump_reason`）；控制面 CI run 40844523493 绿，负向用例 10 → 12。
+- **T-WF-05**（WFL-001 任务契约 11 要素）：缺项/占位值/非法风险等级/批准证明不全/**作者自批** 共 5 项注入全部 REJECT，正向对照 ACCEPT。
+- **T-WF-06**（WFL-002 交付报告 11 要素）：缺 SHA/伪造 SHA/非法结案/类型错误 4 项注入全部 REJECT，正向对照（空列表合法）ACCEPT。
+- **过程错误**：初版控制号 WF-03/WF-04 与既有 WF-03 撞号，被 `duplicate id` 断言拦下，改为 WF-05/WF-06。
+- gap 规则 5 → **3**（剩 GOV-08 原则性、AGT-005、SUP-005，均有 uplift 决策）。控制总数 45 → **47**，tested 16 → **18**。

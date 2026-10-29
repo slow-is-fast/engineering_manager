@@ -1056,6 +1056,54 @@
         "degraded": false,
         "excepted": false
       }
+    },
+    {
+      "id": "WF-05",
+      "requirement_ref": "AASEGS-WFL-001",
+      "owner": "Workflow owner",
+      "enforcer": "task_contract_admission_check (executor.contract.TaskContractValidator)",
+      "evidence": "READY_FOR_APPROVAL 准入：11 项要素齐全且批准人≠owner，缺项/占位/自批均 REJECT",
+      "failure": "block transition to READY_FOR_APPROVAL (fail closed)",
+      "test": "T-WF-05",
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40844523493",
+      "source_ref": "v1.1.1 02-工作流治理 B（AASEGS-WFL-001）",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-007"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
+    },
+    {
+      "id": "WF-06",
+      "requirement_ref": "AASEGS-WFL-002",
+      "owner": "Workflow owner",
+      "enforcer": "delivery_report_check (executor.contract.DeliveryReportValidator)",
+      "evidence": "结案交付报告 11 项要素校验；伪造 SHA/非法结案结果均 REJECT",
+      "failure": "block closure (fail closed)",
+      "test": "T-WF-06",
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40844523493",
+      "source_ref": "v1.1.1 02-工作流治理 B（AASEGS-WFL-002）",
+      "risk_level": "P1",
+      "addresses": [
+        "AASEGS-AUD-021"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      }
     }
   ],
   "baseline": "1.1.0",

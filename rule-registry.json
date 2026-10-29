@@ -1380,13 +1380,16 @@
       "owner": "governance_owner",
       "enforcement": {
         "type": "procedural",
-        "controls": [],
-        "gap": "任务契约要素无专门控制；可由状态服务 READY_FOR_APPROVAL 准入检查承担",
+        "controls": [
+          "WF-05"
+        ],
+        "gap": null,
         "gap_uplift": {
           "priority": 3,
           "decision": "由任务状态服务 READY_FOR_APPROVAL 准入检查承担。在现有执行器 handoff 契约上扩展七要素校验即可落地，成本最低。",
           "decided_by": "slow-is-fast",
-          "decided_at": "2026-10-29"
+          "decided_at": "2026-10-29",
+          "uplift_status": "done (WF-05 registered & tested, 2026-10-29)"
         }
       },
       "evidence_required": null,
@@ -1420,13 +1423,16 @@
       "owner": "governance_owner",
       "enforcement": {
         "type": "procedural",
-        "controls": [],
-        "gap": "同上",
+        "controls": [
+          "WF-06"
+        ],
+        "gap": null,
         "gap_uplift": {
           "priority": 3,
           "decision": "同 WFL-001：交付报告要素由 handoff/结案检查承担，与任务契约准入检查同批实现。",
           "decided_by": "slow-is-fast",
-          "decided_at": "2026-10-29"
+          "decided_at": "2026-10-29",
+          "uplift_status": "done (WF-06 registered & tested, 2026-10-29)"
         }
       },
       "evidence_required": null,

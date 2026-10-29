@@ -13,11 +13,67 @@ from executor.memory import MemoryStore, InvalidTransition, CasConflict
 from executor.checkpoint import CheckpointStore, Corrupted, BaselineChanged
 from executor.breaker import CircuitBreaker, BreakerOpen
 from executor.handoff import HandoffValidator, Rejected
+from executor.contract import (TaskContractValidator, DeliveryReportValidator,
+                               Rejected as ContractRejected)
 
 
 class ExecutorNegativeTests(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-exec-"))
+
+    # ---- T-WF-05：任务契约要素缺失/占位/自批 → REJECT ----
+    def _task(self):
+        return {
+            "task_id": "t-100", "owner": "agent-alpha", "risk_level": "R1",
+            "objective": "把执行器契约校验接入 CI", "in_scope": ["executor/"],
+            "out_of_scope": ["docs/"], "acceptance_criteria": ["负向用例全绿"],
+            "dependencies": ["t-099"], "budget": "2h",
+            "failure_policy": "fail_closed",
+            "approval_proof": {"approver": "slow-is-fast",
+                               "policy_hash": "policy-v1.1.1",
+                               "expires_at": "2026-10-30T00:00:00Z"},
+        }
+
+    def test_t_wf_05_task_contract_rejects_incomplete(self):
+        v = TaskContractValidator(self.tmp / "audit.jsonl")
+        t = self._task()
+        with self.assertRaises(ContractRejected):        # 缺必需字段
+            v.validate({k: x for k, x in t.items() if k != "acceptance_criteria"})
+        with self.assertRaises(ContractRejected):        # 占位值"TBD"
+            v.validate({**t, "budget": "TBD"})
+        with self.assertRaises(ContractRejected):        # 风险等级非法
+            v.validate({**t, "risk_level": "R9"})
+        with self.assertRaises(ContractRejected):        # 批准证明不完整
+            v.validate({**t, "approval_proof": {"approver": "slow-is-fast"}})
+        with self.assertRaises(ContractRejected):        # 作者自批（GOV-17/AGT-001）
+            v.validate({**t, "approval_proof": {**t["approval_proof"],
+                                                "approver": "agent-alpha"}})
+        self.assertEqual(v.validate(t), "READY_FOR_APPROVAL")   # 正向对照
+
+    # ---- T-WF-06：交付报告要素缺失/假 SHA/非法结案 → REJECT ----
+    def _report(self):
+        return {
+            "task_id": "t-100", "run_id": "r-42",
+            "change_summary": "新增契约校验模块", "paths": ["executor/contract.py"],
+            "tests": ["tests/test_executor_negative.py"], "ci": "run 40843384135",
+            "commit_sha": "71e2fd5" + "a" * 33,
+            "review_verdict": "APPROVED by slow-is-fast",
+            "known_risks": [], "approval_or_exception": "approval APR-7",
+            "closure_result": "CLOSED",
+        }
+
+    def test_t_wf_06_delivery_report_rejects_incomplete(self):
+        v = DeliveryReportValidator(self.tmp / "audit.jsonl")
+        r = self._report()
+        with self.assertRaises(ContractRejected):        # 缺 commit_sha
+            v.validate({k: x for k, x in r.items() if k != "commit_sha"})
+        with self.assertRaises(ContractRejected):        # 伪造 SHA
+            v.validate({**r, "commit_sha": "zzz"})
+        with self.assertRaises(ContractRejected):        # 结案结果非法
+            v.validate({**r, "closure_result": "DONE"})
+        with self.assertRaises(ContractRejected):        # known_risks 类型不对
+            v.validate({**r, "known_risks": "none"})
+        self.assertEqual(v.validate(r), "DELIVERED")     # 正向对照（空列表合法）
 
     # ---- T-WF-01：交接契约缺 policy_hash / 终态任务 → REJECT ----
     def test_t_wf_01_handoff_rejects_incomplete_contract(self):
