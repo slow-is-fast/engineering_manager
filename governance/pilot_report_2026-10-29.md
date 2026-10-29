@@ -130,3 +130,10 @@
 - **ATT-01**（SUP-005，P0）：控制面 `executor/attestation.py`（提交 `2148e61…`，pin 已 bump）。7 项注入全部 REJECT：Agent 冒充人类主体、非人类 principal_type、主体不在白名单、带内自证通道、旁证不可核查、缺字段、策略不符；正向对照 ACCEPT。诚实边界：无 IdP 签名时只能证明"材料齐全且主体不似 Agent"，不能证明审批人本人操作。
 - **CLM-01**（AGT-005，P1）：数据面 `scripts/check_claims.py`，扫描 17 份文档检出无证据支撑的绝对化声明；负向被抓、正向（实测数据 / 免责声明）放行。lint 调参两次修正误报（存档 HTML、免责句）。
 - **账本**：控制 47 → **49**，tested 18 → **20**，P0 15；**gap 规则 3 → 1，仅剩 GOV-08 原则性条款（按设计不设运行时控制）**。
+
+### §10.4 凭证域与主体独立性演练（17:20 补录，用户提供 fine-grained PAT）
+
+- **T-VD-01b / T-ID-02 实证**：agent 凭证在数据面可写（建/删分支成功，正向对照），对控制面写被 **403 拒**。ID-02 推进为 tested。
+- **重要方法学发现**：GitHub 仓库 API 的 `permissions` 对象对 fine-grained token **不可信**（两仓都返回 push/admin=true），判定凭证域必须做**真实写尝试**，不能读 permissions 字段。
+- **T-QA-03 结论（负面但关键）**：第二 PAT **不构成独立主体**——PR #5 用 agent token 创建，Owner 凭证与 agent token 审批均被 `Can not approve your own pull request` 拒绝。平台按**主体**而非**凭证**判定审批独立性。因此 QA-03 / RVW-01 维持 not_enforced，需第二人类账号或 App 身份才能覆盖。
+- 清理：PR #5 已关闭未合入，分支已删，open PR 数 0。token 仅存在于会话，未写入任何文件/提交；**建议用后立即轮换**。
