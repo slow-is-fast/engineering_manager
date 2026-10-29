@@ -99,7 +99,7 @@
       "failure": "deny shared promotion",
       "test": "T-CTX-03",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
       "risk_level": null,
       "addresses": [],
@@ -121,7 +121,7 @@
       "failure": "filter and suspend",
       "test": "T-CTX-02",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
       "risk_level": null,
       "addresses": [],
@@ -143,7 +143,7 @@
       "failure": "reject handoff",
       "test": "T-WF-01",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
       "risk_level": null,
       "addresses": [],
@@ -165,7 +165,7 @@
       "failure": "deny conflicting write",
       "test": "T-WF-02",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
       "risk_level": null,
       "addresses": [],
@@ -209,7 +209,7 @@
       "failure": "pause recovery",
       "test": "T-REC-01",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
       "risk_level": null,
       "addresses": [],
@@ -253,7 +253,7 @@
       "failure": "stop new side effects",
       "test": "T-REC-03",
       "status": "tested",
-      "integration_evidence_uri": "PENDING-CI",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
       "risk_level": null,
       "addresses": [],
@@ -671,7 +671,7 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "PENDING-CI"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
     },
     {
       "id": "EFF-01",
@@ -695,7 +695,7 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "PENDING-CI"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
     },
     {
       "id": "CKP-01",
@@ -743,7 +743,7 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "PENDING-CI"
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884"
     },
     {
       "id": "BASE-01",
