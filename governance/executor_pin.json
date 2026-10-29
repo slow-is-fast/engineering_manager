@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "0e1aea5c1f2462a634dcfbd527d5c4a2e8cf15da",
-  "tree_sha": "77dcf737a4a1a9a5a244e5269d1b60b166f622d7",
-  "content_hash_sha256": "c0754aee9cfb9ca26a5a7e73829094e9ef226fba6a4176ba2ac08d9b6fb96a80",
+  "commit_sha": "1eb4d3b90f056f07bf7cbb14b942b57df7316db1",
+  "tree_sha": "6d44842763f8d1b5ccc73e4a64fde5a1cfd0ea3b",
+  "content_hash_sha256": "3270aa007a9c3ad45dedb180f22814c0e8483f53519f17a64c3e1bf7896978eb",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-29T19:20:00+08:00",
+  "pinned_at": "2026-10-29T19:30:00+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "0cf3cba085dad5fca2f34dc58a07fe18b281ac82",
-    "content_hash_sha256": "b7b446739bfe5b3bb1c4b39acb7b525c1467096cb733111745984ca74c9638b2"
+    "commit_sha": "0e1aea5c1f2462a634dcfbd527d5c4a2e8cf15da",
+    "content_hash_sha256": "c0754aee9cfb9ca26a5a7e73829094e9ef226fba6a4176ba2ac08d9b6fb96a80"
   },
-  "bump_reason": "控制面新增 executor/approval.py（APR-01，GOV-06/15/17 + SEC-009）"
+  "bump_reason": "控制面审计流升级为哈希链（EVD-01/02）"
 }

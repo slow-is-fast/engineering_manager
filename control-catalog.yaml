@@ -818,20 +818,21 @@
         "AASEGS-AUD-014"
       ],
       "owner": "audit_owner",
-      "enforcer": "append_only_audit_store",
-      "evidence": "事件十字段（事件 ID、可信时间、task/run/actor、类型、策略与配置版本、资源或 SHA、决策、证据摘要、来源系统、关联 ID）；独立写入身份、完整性验证、保留与删除策略、备份恢复、访问审计",
+      "enforcer": "audit_hash_chain (executor.audit.AuditLog.verify)",
+      "evidence": "事件带 seq/prev_hash/hash 形成哈希链：篡改内容、删行、重排、截断均被 verify() 检出",
       "failure": "来源缺失或完整性异常时停止所依赖的审批与合并",
       "test": "T-EVD-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40863704449",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "EVD-02",
@@ -842,20 +843,21 @@
         "AASEGS-AUD-014"
       ],
       "owner": "audit_owner",
-      "enforcer": "audit_availability_gate",
-      "evidence": "审计服务可用性探测记录、不可用期间的失败关闭决策记录",
+      "enforcer": "audit_availability_gate (read(strict=True)/ensure_available)",
+      "evidence": "审计缺失、损坏或链校验失败时抛 AuditUnavailable，调用方失败关闭，不得返回空列表假装无事",
       "failure": "审计不可用时，依赖可信审计的受保护操作、审批与合并按风险等级失败关闭",
       "test": "T-EVD-02",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40863704449",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "INC-01",

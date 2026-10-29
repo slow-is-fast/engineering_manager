@@ -19,6 +19,7 @@ from executor.attestation import (ApprovalAttestationValidator,
                                   Rejected as AttestationRejected)
 from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeRejected
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
+from executor.audit import AuditLog, AuditUnavailable
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -324,6 +325,62 @@ class ExecutorNegativeTests(unittest.TestCase):
                                                "scope": ["executor/"],
                                                "policy_hash": "policy-v1.1.1"},
                                      now=now, ai_verdict="PASS"), "APPROVED")
+
+
+    # ---- T-EVD-01：审计哈希链篡改/删行/截断必须被检出 ----
+    def test_t_evd_01_chain_tamper_detected(self):
+        path = self.tmp / "audit.jsonl"
+        log = AuditLog(path)
+        log.append("a.one", x=1)
+        log.append("a.two", x=2)
+        log.append("a.three", x=3)
+        ok, errs = log.verify()
+        self.assertTrue(ok, f"原始链应通过: {errs}")          # 正向对照
+
+        lines = path.read_text(encoding="utf8").splitlines()
+
+        # ① 篡改中间一条的内容
+        e = json.loads(lines[1]); e["x"] = 999
+        lines[1] = json.dumps(e, ensure_ascii=False)
+        path.write_text("\n".join(lines) + "\n", encoding="utf8")
+        ok, errs = log.verify()
+        self.assertFalse(ok, "篡改内容未被检出")
+        self.assertTrue(any("hash mismatch" in x for x in errs), errs)
+
+        # ② 删除中间一条（链断裂）
+        lines = path.read_text(encoding="utf8").splitlines()
+        del lines[1]
+        path.write_text("\n".join(lines) + "\n", encoding="utf8")
+        ok, errs = log.verify()
+        self.assertFalse(ok, "删行未被检出")
+
+        # ③ 重排两条
+        lines = path.read_text(encoding="utf8").splitlines()
+        lines[0], lines[1] = lines[1], lines[0]
+        path.write_text("\n".join(lines) + "\n", encoding="utf8")
+        ok, _ = log.verify()
+        self.assertFalse(ok, "重排未被检出")
+
+    # ---- T-EVD-02：审计不可用/损坏时失败关闭，不得静默 ----
+    def test_t_evd_02_audit_unavailable_fails_closed(self):
+        missing = AuditLog(self.tmp / "nope" / "audit.jsonl")
+        with self.assertRaises(AuditUnavailable):              # 文件缺失 + strict
+            missing.read(strict=True)
+        with self.assertRaises(AuditUnavailable):
+            missing.ensure_available()
+
+        path = self.tmp / "audit2.jsonl"
+        log = AuditLog(path)
+        log.append("b.one", y=1)
+        log.append("b.two", y=2)
+        self.assertTrue(log.ensure_available())                # 正向对照
+
+        path.write_text('{"broken":\n', encoding="utf8")       # 损坏
+        with self.assertRaises(AuditUnavailable):
+            log.read(strict=True)
+        ok, errs = log.verify()
+        self.assertFalse(ok, "损坏未被检出")
+        self.assertTrue(any("corrupt" in x for x in errs), errs)
 
 
 if __name__ == "__main__":
