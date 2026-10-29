@@ -1,0 +1,4 @@
+.workbuddy/
+evidence/*.tmp
+__pycache__/
+*.pyc
