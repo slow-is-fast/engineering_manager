@@ -31,6 +31,12 @@ ABSOLUTE_RE = re.compile('|'.join(ABSOLUTE_CLAIMS))
 PCT_RE = re.compile(r'100\s*%')
 CODE_LINE = re.compile(r'<box|height=|width=|`\$\{')
 ARCHIVE = '会话存档'
+# 元描述豁免：描述 lint 本身（"扫描…检出…模式…"）不等于做能力声明
+META_MARKERS = ('CLM-01', 'lint', '模式', '检出', '扫描', '正则', 'pattern',
+                '禁用词', 'check_claims')
+# 引用豁免：引号/反引号内的词是"被讨论的对象"，不是主张
+QUOTED = (re.compile(r'「[^」]*」'), re.compile(r'“[^”]*”'),
+          re.compile(r'"[^"]*"'), re.compile(r'`[^`]*`'))
 
 EVIDENCE_MARKERS = (
     'evidence:', 'evidence_ref', '实测', 'latency=', 'P95', 'p95',
@@ -41,15 +47,23 @@ NEGATION_MARKERS = ('不代表', '不等于', '并非', '不能证明', '不构�
                     '不宣称', '不做绝对')
 
 
+def strip_quoted(line: str) -> str:
+    """去掉引号/反引号内的片段：那里是"被引用的词"，不是主张。"""
+    for rx in QUOTED:
+        line = rx.sub(' ', line)
+    return line
+
+
 def hits(line: str) -> bool:
-    # 免责/否定句（"这不代表控制有效率为 100%"）不判违规：
-    # AGT-005 管的是吹嘘完美，不是提醒别人别当真
-    if any(n in line for n in NEGATION_MARKERS):
+    # 元描述（描述 lint 自身）与免责/否定句都不是能力声明
+    if any(n in line for n in NEGATION_MARKERS) or \
+            any(m in line for m in META_MARKERS):
         return False
-    if ABSOLUTE_RE.search(line):
+    text = strip_quoted(line)
+    if ABSOLUTE_RE.search(text):
         return True
     # 100% 仅在撤销语境下计入
-    return bool(PCT_RE.search(line) and REVOCATION_CTX.search(line))
+    return bool(PCT_RE.search(text) and REVOCATION_CTX.search(text))
 
 
 def backed_by_evidence(line: str, neighbor: str) -> bool:
