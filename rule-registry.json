@@ -588,7 +588,13 @@
       "enforcement": {
         "type": "procedural",
         "controls": [],
-        "gap": "无对应运行时控制；由部署架构评审强制，建议后续新增控制"
+        "gap": "无对应运行时控制；由部署架构评审强制，建议后续新增控制",
+        "gap_uplift": {
+          "priority": 1,
+          "decision": "新增控制 VD-01（信任域分离）。执行器独立部署是全部 verified 授予的前提，且直接解锁 GOV-14 gap 与 9 条执行器类控制的 verified 推进。试点方向：执行器部署到独立信任域（独立账号/主机）。",
+          "decided_by": "slow-is-fast",
+          "decided_at": "2026-10-29"
+        }
       },
       "evidence_required": null,
       "failure_behavior": [
@@ -1024,7 +1030,13 @@
       "enforcement": {
         "type": "procedural",
         "controls": [],
-        "gap": "声明诚实性规则，无运行时控制；由独立评审与文档审查强制"
+        "gap": "声明诚实性规则，无运行时控制；由独立评审与文档审查强制",
+        "gap_uplift": {
+          "priority": 4,
+          "decision": "声明诚实性规则，由独立评审与文档审查流程化强制，纳入 WP-06 持续复验机制。无运行时注入面，优先级最低。",
+          "decided_by": "slow-is-fast",
+          "decided_at": "2026-10-29"
+        }
       },
       "evidence_required": null,
       "failure_behavior": [
@@ -1366,7 +1378,13 @@
       "enforcement": {
         "type": "procedural",
         "controls": [],
-        "gap": "任务契约要素无专门控制；可由状态服务 READY_FOR_APPROVAL 准入检查承担"
+        "gap": "任务契约要素无专门控制；可由状态服务 READY_FOR_APPROVAL 准入检查承担",
+        "gap_uplift": {
+          "priority": 3,
+          "decision": "由任务状态服务 READY_FOR_APPROVAL 准入检查承担。在现有执行器 handoff 契约上扩展七要素校验即可落地，成本最低。",
+          "decided_by": "slow-is-fast",
+          "decided_at": "2026-10-29"
+        }
       },
       "evidence_required": null,
       "failure_behavior": [
@@ -1400,7 +1418,13 @@
       "enforcement": {
         "type": "procedural",
         "controls": [],
-        "gap": "同上"
+        "gap": "同上",
+        "gap_uplift": {
+          "priority": 3,
+          "decision": "同 WFL-001：交付报告要素由 handoff/结案检查承担，与任务契约准入检查同批实现。",
+          "decided_by": "slow-is-fast",
+          "decided_at": "2026-10-29"
+        }
       },
       "evidence_required": null,
       "failure_behavior": [
@@ -2236,7 +2260,13 @@
       "enforcement": {
         "type": "procedural",
         "controls": [],
-        "gap": "审批主体真实性无运行时控制；建议并入未来 identity attestation 控制"
+        "gap": "审批主体真实性无运行时控制；建议并入未来 identity attestation 控制",
+        "gap_uplift": {
+          "priority": 2,
+          "decision": "并入未来 identity attestation 控制（T-ID 系列）。审批主体真实性依赖身份服务签发，需第二凭证实测，随 WP-02 身份工作包推进。",
+          "decided_by": "slow-is-fast",
+          "decided_at": "2026-10-29"
+        }
       },
       "evidence_required": null,
       "failure_behavior": [
