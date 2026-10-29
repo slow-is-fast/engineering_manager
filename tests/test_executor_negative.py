@@ -20,6 +20,7 @@ from executor.attestation import (ApprovalAttestationValidator,
 from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeRejected
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
+from executor.scope import ScopeGuard, Denied as ScopeDenied
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -381,6 +382,36 @@ class ExecutorNegativeTests(unittest.TestCase):
         ok, errs = log.verify()
         self.assertFalse(ok, "损坏未被检出")
         self.assertTrue(any("corrupt" in x for x in errs), errs)
+
+
+    # ---- T-ISO-01：跨项目/跨租户访问默认拒绝，未绑定与通配范围亦拒绝 ----
+    def test_t_iso_01_cross_project_access_denied(self):
+        g = ScopeGuard(self.tmp / "audit.jsonl")
+        g.bind("r-10", "proj-a", "repo-a", "tenant-1")
+
+        with self.assertRaises(ScopeDenied):          # 未绑定的 Run
+            g.access("r-unknown", {"project_id": "proj-a", "tenant_id": "tenant-1"})
+        with self.assertRaises(ScopeDenied):          # 跨项目读制品/记忆
+            g.access("r-10", {"project_id": "proj-b", "tenant_id": "tenant-1",
+                              "path": "memory/shared.md"})
+        with self.assertRaises(ScopeDenied):          # 跨租户
+            g.access("r-10", {"project_id": "proj-a", "tenant_id": "tenant-2"})
+        with self.assertRaises(ScopeDenied):          # 跨仓库
+            g.access("r-10", {"project_id": "proj-a", "tenant_id": "tenant-1",
+                              "repository_id": "repo-b"})
+        with self.assertRaises(ScopeDenied):          # 通配范围（越权常见手法）
+            g.access("r-10", {"project_id": "*", "tenant_id": "tenant-1"})
+        with self.assertRaises(ScopeDenied):          # 目标缺租户标识
+            g.access("r-10", {"project_id": "proj-a"})
+        # 正向对照：同项目/同租户/同仓库，未分类数据按最高敏感处理
+        self.assertEqual(g.access("r-10", {"project_id": "proj-a",
+                                           "tenant_id": "tenant-1",
+                                           "repository_id": "repo-a",
+                                           "path": "artifacts/x.json"}), "ALLOWED")
+        ev = AuditLog(self.tmp / "audit.jsonl").read()
+        kinds = [e["event_type"] for e in ev]
+        self.assertIn("boundary_violation", kinds)              # 违规已记录
+        self.assertIn("data.unclassified_defaults_to_max", kinds)  # 未分类按最高
 
 
 if __name__ == "__main__":
