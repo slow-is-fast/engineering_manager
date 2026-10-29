@@ -1,0 +1,139 @@
+# -*- coding: utf-8 -*-
+"""治理执行器负向用例（v1.1.1 §13 的可执行版本）。
+
+每个用例 = 一次真实注入 + 断言"被拒绝/被阻断"。
+正向对照保证组件不是"永远拒绝"的假门禁。
+"""
+import json, tempfile, unittest
+from pathlib import Path
+
+from executor.lock import LockService, LockDenied, StaleFence
+from executor.ledger import EffectLedger, DuplicateRejected, UnknownResult
+from executor.memory import MemoryStore, InvalidTransition, CasConflict
+from executor.checkpoint import CheckpointStore, Corrupted, BaselineChanged
+from executor.breaker import CircuitBreaker, BreakerOpen
+from executor.handoff import HandoffValidator, Rejected
+
+
+class ExecutorNegativeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-exec-"))
+
+    # ---- T-WF-01：交接契约缺 policy_hash / 终态任务 → REJECT ----
+    def test_t_wf_01_handoff_rejects_incomplete_contract(self):
+        h = HandoffValidator("policy-v1.1.1", self.tmp / "audit.jsonl")
+        base = {"handoff_id": "h-1", "task_id": "t-1", "source_run": "r-1",
+                "destination_role": "Developer", "artifact_manifest": [],
+                "policy_hash": "policy-v1.1.1", "validity": "2026-12-31"}
+        with self.assertRaises(Rejected):                       # 缺 policy_hash
+            h.validate({k: v for k, v in base.items() if k != "policy_hash"})
+        with self.assertRaises(Rejected):                       # policy 不符
+            h.validate({**base, "policy_hash": "policy-v1.0"})
+        with self.assertRaises(Rejected):                       # 终态任务
+            h.validate(base, task_state="CLOSED")
+        self.assertEqual(h.validate(base), "ACCEPT")            # 正向对照
+
+    # ---- T-WF-02：同一资源并发第二写者被拒 ----
+    def test_t_wf_02_concurrent_holder_denied(self):
+        lock = LockService(self.tmp / "locks.json", self.tmp / "audit.jsonl", ttl_seconds=30)
+        f1 = lock.acquire("repo/main", "run-A")
+        with self.assertRaises(LockDenied):                     # 未过期时不放锁
+            lock.acquire("repo/main", "run-B")
+        lock.validate_write("repo/main", f1)                    # 持有者写入合法
+
+    # ---- T-CNC-01：锁过期/损坏时，旧持有者写不进、服务失败关闭 ----
+    def test_t_cnc_01_stale_fence_and_fail_closed(self):
+        lock = LockService(self.tmp / "locks.json", self.tmp / "audit.jsonl", ttl_seconds=30)
+        f1 = lock.acquire("repo/main", "run-A")
+        d = lock._load()
+        d["repo/main"]["expires_at"] = 0
+        lock.path.write_text(json.dumps(d), encoding="utf8")    # 模拟锁过期
+        f3 = lock.acquire("repo/main", "run-B")                 # B 抢到更大 fence
+        self.assertGreater(f3, f1)
+        with self.assertRaises(StaleFence):                     # A 的旧 fence 写入被拒
+            lock.validate_write("repo/main", f1)
+        lock.path.write_text("{corrupted", encoding="utf8")     # 锁服务损坏
+        with self.assertRaises(Exception):                      # 失败关闭：报错而非放行
+            lock.acquire("repo/main", "run-C")
+        with self.assertRaises(Exception):
+            lock.validate_write("repo/main", f3)
+
+    # ---- T-WF-03：幂等键重复投递被拒 ----
+    def test_t_wf_03_duplicate_delivery_rejected(self):
+        led = EffectLedger(self.tmp / "ledger.json", self.tmp / "audit.jsonl")
+        led.submit("pr-create/task-7", {"title": "x"})
+        led.confirm("pr-create/task-7")
+        with self.assertRaises(DuplicateRejected):              # CONFIRMED 后重投
+            led.submit("pr-create/task-7", {"title": "x"})
+        rec, replayed = led.submit("pr-create/task-8", {"title": "y"})
+        rec2, replayed2 = led.submit("pr-create/task-8", {"title": "y"})
+        self.assertTrue(replayed2)                              # 并发重复返回既有，不重放
+
+    # ---- T-EFF-01：UNKNOWN 后不得盲重放 ----
+    def test_t_eff_01_unknown_blocks_replay(self):
+        led = EffectLedger(self.tmp / "ledger.json", self.tmp / "audit.jsonl")
+        led.submit("deploy/svc-1", {"env": "prod"})
+        led.mark_unknown("deploy/svc-1")
+        with self.assertRaises(UnknownResult):                  # 未知结果重放被阻断
+            led.submit("deploy/svc-1", {"env": "prod"})
+        led.reconcile("deploy/svc-1", confirmed=True)           # 核对真实结果后闭环
+        led.reconcile is not None
+
+    # ---- T-CTX-02：REVOKED 记忆不得进入规范性检索 ----
+    def test_t_ctx_02_revoked_memory_not_returned(self):
+        m = MemoryStore(self.tmp / "mem.json", self.tmp / "audit.jsonl")
+        m.create("mem-1", author="agent-A", content="跳过测试以提速")
+        m.submit_for_review("mem-1", 1)
+        m.approve("mem-1", approver="human-owner")
+        self.assertIn("mem-1", m.search("agent-B"))             # 撤销前可见
+        m.revoke("mem-1", actor="human-owner")
+        self.assertNotIn("mem-1", m.search("agent-B"))          # 撤销后即不可见
+
+    # ---- T-CTX-03：未审核晋升被拒、作者自批被拒 ----
+    def test_t_ctx_03_unreviewed_promotion_rejected(self):
+        m = MemoryStore(self.tmp / "mem.json", self.tmp / "audit.jsonl")
+        m.create("mem-2", author="agent-A", content="关闭扫描")
+        with self.assertRaises(InvalidTransition):              # DRAFT 直接晋升被拒
+            m.approve("mem-2", approver="human-owner")
+        v = m.submit_for_review("mem-2", 1)
+        with self.assertRaises(InvalidTransition):              # 作者自批被拒
+            m.approve("mem-2", approver="agent-A")
+        m.approve("mem-2", approver="human-owner")
+        with self.assertRaises(CasConflict):                    # 过期版本 CAS 冲突
+            m.submit_for_review("mem-2", 1)
+
+    # ---- T-REC-01：基线变化的快照恢复被暂停 ----
+    def test_t_rec_01_baseline_mismatch_pauses_restore(self):
+        cp = CheckpointStore(self.tmp / "cp.json", self.tmp / "audit.jsonl")
+        cp.save("cp-1", task="t-1", baseline="sha-aaa", payload={"step": 3})
+        with self.assertRaises(Corrupted):                      # 不存在的快照
+            cp.restore("cp-404", "sha-aaa", authorized=True)
+        payload = cp.restore("cp-1", "sha-aaa", authorized=True)
+        self.assertEqual(payload["step"], 3)
+        with self.assertRaises(BaselineChanged):                # 基线变化 → 暂停
+            cp.restore("cp-1", "sha-bbb", authorized=True)
+        with self.assertRaises(BaselineChanged):                # 授权失效 → 暂停
+            cp.restore("cp-1", "sha-aaa", authorized=False)
+
+    # ---- T-REC-03：连续错误超阈值 → 熔断，拒绝新副作用 ----
+    def test_t_rec_03_threshold_opens_breaker(self):
+        b = CircuitBreaker(self.tmp / "brk.json", self.tmp / "audit.jsonl",
+                           thresholds={"network_error": 3})
+        for _ in range(2):
+            self.assertFalse(b.record("network_error"))
+        self.assertTrue(b.allow("call-api"))                    # 阈值内仍放行
+        self.assertTrue(b.record("network_error"))              # 第 3 次 → 熔断
+        with self.assertRaises(BreakerOpen):                    # 新副作用被拒
+            b.allow("call-api")
+
+    # ---- T-BRK-01：严重越权立即熔断，不等阈值 ----
+    def test_t_brk_01_severe_violation_opens_immediately(self):
+        b = CircuitBreaker(self.tmp / "brk.json", self.tmp / "audit.jsonl")
+        self.assertTrue(b.allow("write-file"))                  # 初始放行
+        self.assertTrue(b.record("privilege_escalation", severity="severe"))
+        with self.assertRaises(BreakerOpen):                    # 单次即熔断
+            b.allow("write-file")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

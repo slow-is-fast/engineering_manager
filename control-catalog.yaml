@@ -98,15 +98,15 @@
       "evidence": "signed memory promotion record",
       "failure": "deny shared promotion",
       "test": "T-CTX-03",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -120,15 +120,15 @@
       "evidence": "memory tombstone and retrieval log",
       "failure": "filter and suspend",
       "test": "T-CTX-02",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -142,15 +142,15 @@
       "evidence": "handoff acceptance event",
       "failure": "reject handoff",
       "test": "T-WF-01",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -164,15 +164,15 @@
       "evidence": "lease and base SHA",
       "failure": "deny conflicting write",
       "test": "T-WF-02",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -208,15 +208,15 @@
       "evidence": "signed checkpoint and base SHA",
       "failure": "pause recovery",
       "test": "T-REC-01",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -252,15 +252,15 @@
       "evidence": "breaker open log",
       "failure": "stop new side effects",
       "test": "T-REC-03",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "PENDING-CI",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -662,16 +662,16 @@
       "evidence": "锁租约、fencing token、交接的 ACCEPT/REJECT/EXPIRED/REVOKED 结果记录",
       "failure": "锁过期后旧写者被 fencing token 拒绝；锁服务不可用时禁止并发写入",
       "test": "T-CNC-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "PENDING-CI"
     },
     {
       "id": "EFF-01",
@@ -686,16 +686,16 @@
       "evidence": "逻辑操作身份与并发唯一性登记、PREPARED/SUBMITTED/CONFIRMED/FAILED/UNKNOWN/RECONCILIATION_REQUIRED/COMPENSATING/COMPENSATED/MANUAL_REMEDIATION_REQUIRED 状态台账、核对记录",
       "failure": "远端可能成功而响应丢失时查询真实状态；查询不可用或状态不确定时进入核对或人工处置，不得默认重放；幂等键不替代台账",
       "test": "T-EFF-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "PENDING-CI"
     },
     {
       "id": "CKP-01",
@@ -734,16 +734,16 @@
       "evidence": "每种熔断原因的事件代码、阈值或即时条件、观察窗口、动作、通知对象、解除权限、复验要求",
       "failure": "严重越权立即阻断后续副作用，不等待累计阈值；解除熔断需重新授权并复验",
       "test": "T-BRK-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "PENDING-CI"
     },
     {
       "id": "BASE-01",
@@ -1035,5 +1035,5 @@
     }
   ],
   "baseline": "1.1.0",
-  "note": "v1.1.1 追加 23 条实施完整性控制（§1–§12）。state 六态见 v1.1.1 §1；legacy 20 条 risk_level 为 null，待治理委员会评审后回填。status=not_enforced 表示尚无运行时执行证据。 | 2026-10-29: 仓库转 public，分支保护生效，INFRA-01 解除；QA-01/QA-02 经 Round 2 演练置 tested。"
+  "note": "v1.1.1 追加 23 条实施完整性控制（§1–§12）。state 六态见 v1.1.1 §1；legacy 20 条 risk_level 为 null，待治理委员会评审后回填。status=not_enforced 表示尚无运行时执行证据。 | 2026-10-29: 仓库转 public，分支保护生效，INFRA-01 解除；QA-01/QA-02 经 Round 2 演练置 tested。 | 2026-10-29 15:45: 治理执行器落地（executor/ 六组件），WF/CTX/REC/EFF/BRK 系列 9 条控制经负向用例实跑置 tested（逻辑验证；verified 需独立信任域部署）。"
 }
