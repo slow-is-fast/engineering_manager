@@ -18,6 +18,7 @@ from executor.contract import (TaskContractValidator, DeliveryReportValidator,
 from executor.attestation import (ApprovalAttestationValidator,
                                   Rejected as AttestationRejected)
 from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeRejected
+from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -266,6 +267,63 @@ class ExecutorNegativeTests(unittest.TestCase):
                                 "r-2": "pause"}, change_id="chg-ok")
         self.assertEqual(res["result"], "PUBLISHED")
         self.assertEqual(res["affected"], ["r-1", "r-2"])   # r-3 已是新策略，不在列
+
+
+    # ---- T-APR-01：审批过期/绑定漂移/范围扩张/风险升级/吊销/R3 仅 AI PASS → REJECT ----
+    def _gate(self):
+        g = ApprovalGate({"slow-is-fast"}, self.tmp / "audit.jsonl")
+        g.grant("apr-1", "slow-is-fast", "t-400", "R1", ["executor/", "tests/"],
+                "policy-v1.1.1", commit_sha="abc1234",
+                expires_at="2026-10-30T00:00:00+00:00", channel="pr_review")
+        return g
+
+    def _req(self, **over):
+        base = {"task_id": "t-400", "risk": "R1", "scope": ["executor/"],
+                "policy_hash": "policy-v1.1.1", "commit_sha": "abc1234"}
+        base.update(over)
+        return base
+
+    def test_t_apr_01_approval_gate_rejects_drift(self):
+        g = self._gate()
+        now = "2026-10-29T12:00:00+00:00"
+        with self.assertRaises(ApprovalRejected):            # 未知审批
+            g.validate("apr-999", self._req(), now=now)
+        with self.assertRaises(ApprovalRejected):            # 过期
+            g.validate("apr-1", self._req(), now="2026-11-01T00:00:00+00:00")
+        with self.assertRaises(ApprovalRejected):            # commit 漂移
+            g.validate("apr-1", self._req(commit_sha="def5678"), now=now)
+        with self.assertRaises(ApprovalRejected):            # 范围扩张
+            g.validate("apr-1", self._req(scope=["executor/", "infra/"]), now=now)
+        with self.assertRaises(ApprovalRejected):            # 风险升级未重批
+            g.validate("apr-1", self._req(risk="R3"), now=now)
+        with self.assertRaises(ApprovalRejected):            # 策略版本漂移
+            g.validate("apr-1", self._req(policy_hash="policy-v1.0"), now=now)
+        with self.assertRaises(ApprovalRejected):            # task 漂移
+            g.validate("apr-1", self._req(task_id="t-401"), now=now)
+        g.revoke("apr-1", reason="drill")
+        with self.assertRaises(ApprovalRejected):            # 吊销
+            g.validate("apr-1", self._req(), now=now)
+        # 签发给非人类主体（GOV-17）
+        g2 = ApprovalGate({"slow-is-fast"}, self.tmp / "audit.jsonl")
+        with self.assertRaises(ApprovalRejected):
+            g2.grant("apr-2", "agent-alpha", "t-400", "R1", ["executor/"],
+                     "policy-v1.1.1")
+        # SEC-009：R3 仅 AI Reviewer PASS 不放行（须人类通道）
+        g3 = ApprovalGate({"slow-is-fast"}, self.tmp / "audit.jsonl")
+        g3.grant("apr-3", "slow-is-fast", "t-500", "R3", ["prod/"],
+                 "policy-v1.1.1", channel="prompt")
+        with self.assertRaises(ApprovalRejected):
+            g3.validate("apr-3", {"task_id": "t-500", "risk": "R3",
+                                  "scope": ["prod/"], "policy_hash": "policy-v1.1.1"},
+                        now=now, ai_verdict="PASS")
+        # 正向对照：绑定一致 + 人类带外通道（R3 亦放行）
+        g4 = ApprovalGate({"slow-is-fast"}, self.tmp / "audit.jsonl")
+        g4.grant("apr-4", "slow-is-fast", "t-400", "R3", ["executor/"],
+                 "policy-v1.1.1", channel="pr_review")
+        self.assertEqual(g4.validate("apr-4", {"task_id": "t-400", "risk": "R3",
+                                               "scope": ["executor/"],
+                                               "policy_hash": "policy-v1.1.1"},
+                                     now=now, ai_verdict="PASS"), "APPROVED")
 
 
 if __name__ == "__main__":

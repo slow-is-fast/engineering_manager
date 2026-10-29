@@ -184,3 +184,10 @@ Owner 明确场景约束：**只有一名人类开发者，但有多个 Agent**�
 - **防漂移**：`validate_controls.py` 新增传播断言（负向对照：APR-01 标回 P1 被拒；正向恢复 P0 通过）。
 - **诚实代价（已确认由 Owner 接受）**：APR-01、RVW-01 升 P0 后仍 `not_enforced` → 形成"P0 控制未强制"，按 GOV-18 **阻塞对应风险等级准入**；CNC-01（tested）TTL 由 90 天变 30 天，2026-11-28 前须复验。这是把此前"标低等级换来的宽松"还原为真实约束，不是回归。
 - 注：§12 最终结论中的"P0 15"应读作 **19**。
+
+### §10.8 APR-01 人工审批闸门（19:20 补录）
+
+- **实现**：控制面 `executor/approval.py`（提交 `0e1aea5…`，pin 已 bump）。审批绑定 task_id/risk/scope/policy_hash/commit_sha/expires_at，任一漂移即失效；过期、吊销失效；R3 须人类审批，AI Reviewer PASS 不单独放行。
+- **T-APR-01**：10 项注入全部 REJECT（未知 ID / 过期 / commit 漂移 / 范围扩张 / 风险升级 / 策略漂移 / 任务漂移 / 吊销 / 非人类签发 / R3+AI PASS）+ 正向对照 APPROVED。
+- **诚实边界**：只验证"审批记录与当前请求一致"，不证明审批人本人意愿（身份服务职责）。
+- **准入影响**：§10.7 中因 APR-01 升 P0 而产生的"P0 未强制"阻塞**已解除**。P0 仍未强制剩余 11 条：AUTH-01/02、ISO-01、CKP-01、BASE-01、RVW-01、EVD-01/02、INC-01、GATE-01、CRED-01（其中 RVW-01 受 EXC-01 约束）。控制 tested 23 → **24**。
