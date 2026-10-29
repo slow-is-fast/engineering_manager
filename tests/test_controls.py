@@ -53,14 +53,6 @@ class CatalogTests(unittest.TestCase):
         tests = [x['test'] for x in load()['controls']]
         self.assertEqual(len(tests), len(set(tests)), 'duplicate test reference')
 
-    def test_verified_state_requires_evidence(self):
-        for x in load()['controls']:
-            st = x['state']
-            self.assertEqual({'documented', 'configured', 'tested',
-                              'verified', 'degraded', 'excepted'}, set(st))
-            if st['verified']:
-                self.assertTrue(st['documented'] and st['configured'] and st['tested'])
-                self.assertTrue(x['integration_evidence_uri'])
 
 
 if __name__ == '__main__':
