@@ -384,15 +384,15 @@
       "evidence": "catalog check output",
       "failure": "do not mark enforced",
       "test": "T-AUD-01",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879",
       "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
@@ -456,16 +456,16 @@
       "evidence": "规则注册表导出（rule_id、来源位置、规范原文、范围、风险、owner、执行机制、证据、失败行为、验证测试、例外引用、状态）与覆盖率/双向差异报告",
       "failure": "存在未注册的 MUST/MUST NOT、强制审批或禁止条款时，注册表检查失败，对应风险等级不得准入",
       "test": "T-REG-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879"
     },
     {
       "id": "REG-02",
@@ -480,16 +480,16 @@
       "evidence": "六态状态记录（documented/configured/tested/verified/degraded/excepted）、状态转换事件、valid_until 与 verified_against_version",
       "failure": "缺少执行器、测试或有效证据时不得进入 verified；配置漂移、执行器失效或证据过期自动降级为 degraded",
       "test": "T-REG-02",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879"
     },
     {
       "id": "AUTH-01",
