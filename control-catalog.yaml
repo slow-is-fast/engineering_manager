@@ -376,15 +376,15 @@
       "evidence": "criterion-to-evidence mapping",
       "failure": "block close",
       "test": "T-QA-05",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/4",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
       "risk_level": null,
       "addresses": [],
       "state": {
         "documented": true,
         "configured": false,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
