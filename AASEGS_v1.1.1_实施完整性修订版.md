@@ -431,10 +431,10 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 |---|---:|---|
 | 审计问题总数 | 22 | P0 10 项、P1 11 项、P2 1 项 |
 | 已有控制定义覆盖 | 22 | 无未应答问题 |
-| 强制规则总数 | 52 | `rule-registry.json`，含 v1.0 继承的 GOV-01～08 |
-| 有控制支撑的规则 | 47 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
+| 强制规则总数 | 53 | `rule-registry.json`，含 v1.0 继承的 GOV-01～08；SUP-006 为 §9 事件响应散文式 MUST 的补注册（2026-10-30，INC-01 落地时发现其原先未注册） |
+| 有控制支撑的规则 | 48 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
 | 控制总数 | 49 | 原 20 条 + v1.1.1 新增 23 条 + CRED-01 + VD-01（信任域分离）+ WF-05/WF-06（WFL-001/002）+ ATT-01/CLM-01（SUP-005/AGT-005） |
-| 已具备运行时证据 | 30 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
+| 已具备运行时证据 | 31 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |
 
 本文件已于 2026-10-29 经 Owner（slow-is-fast）批准转正为正式生效版本（见文首转正记录）。P0 问题的关闭证据至少包括：对应控制条目 `state.tested=true`、`state.verified=true`、`integration_evidence_uri` 非空，以及 §12 准入门槛的机器判定记录。文档中的条款表述不能替代上述证据。

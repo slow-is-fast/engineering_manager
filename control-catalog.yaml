@@ -875,16 +875,17 @@
       "evidence": "安全事件分级、响应手册、主责与替代负责人、通知时限记录、隔离与凭证轮换记录、影响面排查、证据保全、恢复审批、复验与复盘报告",
       "failure": "涉事 Agent 不得批准自己的恢复或关闭事件，尝试时拒绝并告警",
       "test": "T-INC-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/inc01_20261030T130000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "CHG-01",

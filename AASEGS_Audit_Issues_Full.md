@@ -46,7 +46,7 @@
 | AUD-012 | P0 | OPEN | WP-05；可信质量基线未建 |
 | AUD-013 | P1 | OPEN | WP-05；Reviewer 独立性需第二凭证实测（T-QA-03 未覆盖） |
 | AUD-014 | P0 | OPEN | WP-05；审计流 append-only 已实现，保留策略与不可用行为未定义 |
-| AUD-015 | P0 | OPEN | WP-05；事件响应手册缺失 |
+| AUD-015 | P0 | OPEN | WP-05；执行器事件响应工作流已 tested（T-INC-01 九项用例）；关闭仍待响应手册经 Security Owner 批准 + 四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露） |
 | AUD-016 | P0 | OPEN | WP-03；跨项目隔离未测 |
 | AUD-017 | P1 | OPEN | WP-06；策略变更状态机未建 |
 | AUD-018 | P1 | OPEN | WP-02；审批到期系统级失效保证未实现 |

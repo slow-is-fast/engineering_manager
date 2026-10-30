@@ -26,7 +26,7 @@ class CatalogTests(unittest.TestCase):
         rules = reg['rules']
         rids = [r['rule_id'] for r in rules]
         self.assertEqual(len(rids), len(set(rids)))
-        self.assertEqual(52, len(rids))
+        self.assertEqual(53, len(rids))
         for r in rules:
             for cid in r['enforcement']['controls']:
                 self.assertIn(cid, cat, f"{r['rule_id']} -> unknown control {cid}")

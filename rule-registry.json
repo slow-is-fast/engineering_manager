@@ -2299,6 +2299,50 @@
         "excepted": false
       },
       "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-SUP-006",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §9 审计证据与安全事件响应",
+      "statement": "涉事 Agent 不得批准自己的恢复或关闭事件；必须建立安全事件分级和响应手册，定义主责/替代负责人、通知时限、隔离、凭证轮换、受影响 Run/commit/数据排查、证据保全、恢复审批、复验与复盘。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "security_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "INC-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-INC-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": false,
+        "tested": false,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
     }
   ],
   "coverage_note": null

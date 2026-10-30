@@ -21,6 +21,7 @@ from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeReje
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
+from executor.incident import IncidentWorkflow, Rejected as IncidentRejected
 from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
 from datetime import date
 
@@ -711,6 +712,142 @@ class ExecutorNegativeTests(unittest.TestCase):
         g = AdmissionGate(base, now=self._NOW).load()
         with self.assertRaises(AdmissionDenied):
             g.admit("R9")
+
+
+    # ---- T-INC-01：安全事件响应工作流（INC-01 / AUD-015） ----
+    # 核心失败行为：涉事 Agent 不得批准自己的恢复或关闭事件。
+
+    def _incident(self):
+        w = IncidentWorkflow({"slow-is-fast", "sec-owner", "sec-backup"},
+                             self.tmp / "incident-audit.jsonl")
+        w.declare("INC-42", "SEV2", "Agent 越权写入控制面",
+                  implicated=["agent-alpha"],
+                  primary_owner="sec-owner", backup_owner="sec-backup",
+                  credential_exposure=True, declared_at="2026-10-30T08:00:00Z")
+        return w
+
+    def test_t_inc_01_implicated_agent_cannot_approve(self):
+        w = self._incident()
+        # 涉事 Agent 依次尝试隔离/恢复/关闭 → 全部拒绝并写告警
+        for method, kwargs in (("contain", {"quarantined": ["agent-alpha"],
+                                            "evidence_preserved": True}),
+                               ("recover", {"impact_assessed": True,
+                                            "credential_rotated": True}),
+                               ("close", {"reverified": True,
+                                          "postmortem_ref": "pm-1"})):
+            with self.assertRaises(IncidentRejected):
+                getattr(w, method)("INC-42", "agent-alpha", **kwargs)
+        # 告警事件已落审计：self_approval_attempt ×3
+        raw = (self.tmp / "incident-audit.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(raw.count("self_approval_attempt"), 3)
+        # 事件仍处 OPEN，未被越权推进
+        self.assertEqual(w.incidents["INC-42"]["state"], "OPEN")
+
+    def test_t_inc_01_implicated_human_and_non_responder_rejected(self):
+        w = IncidentWorkflow({"slow-is-fast", "sec-owner", "sec-backup"},
+                             self.tmp / "incident-audit.jsonl")
+        # 涉事主体是人类（本人凭证泄露）→ 同样不得批准
+        w.declare("INC-43", "SEV1", "Owner 凭证泄露",
+                  implicated=["slow-is-fast"],
+                  primary_owner="sec-owner", backup_owner="sec-backup",
+                  credential_exposure=True)
+        with self.assertRaises(IncidentRejected):
+            w.contain("INC-43", "slow-is-fast", ["cred-1"], True)
+        # 未涉事但不在负责人名单 → 拒绝
+        with self.assertRaises(IncidentRejected):
+            w.recover("INC-43", "someone-else", True, True)
+
+    def test_t_inc_01_declare_validates_owners_and_severity(self):
+        w = IncidentWorkflow({"slow-is-fast", "sec-owner"},
+                             self.tmp / "incident-audit.jsonl")
+        with self.assertRaises(IncidentRejected):   # Agent 当负责人
+            w.declare("INC-1", "SEV2", "t", ["agent-a"],
+                      primary_owner="agent-beta", backup_owner="sec-owner")
+        with self.assertRaises(IncidentRejected):   # 负责人本人涉事
+            w.declare("INC-1", "SEV2", "t", ["sec-owner"],
+                      primary_owner="sec-owner", backup_owner="slow-is-fast")
+        with self.assertRaises(IncidentRejected):   # 主责与替代相同
+            w.declare("INC-1", "SEV2", "t", ["agent-a"],
+                      primary_owner="sec-owner", backup_owner="sec-owner")
+        with self.assertRaises(IncidentRejected):   # 未知分级
+            w.declare("INC-1", "SEV9", "t", ["agent-a"],
+                      primary_owner="sec-owner", backup_owner="slow-is-fast")
+
+    def test_t_inc_01_containment_requires_quarantine_and_evidence(self):
+        w = self._incident()
+        with self.assertRaises(IncidentRejected):   # 空隔离清单
+            w.contain("INC-42", "sec-owner", [], True)
+        with self.assertRaises(IncidentRejected):   # 未保全证据
+            w.contain("INC-42", "sec-owner", ["agent-alpha"], False)
+        w.contain("INC-42", "sec-owner", ["agent-alpha", "run-9"], True)
+        # CONTAINED 状态下重复隔离 → 非法跃迁
+        with self.assertRaises(IncidentRejected):
+            w.contain("INC-42", "sec-backup", ["x"], True)
+
+    def test_t_inc_01_recovery_requires_impact_and_rotation(self):
+        w = self._incident()
+        w.contain("INC-42", "sec-owner", ["agent-alpha"], True)
+        with self.assertRaises(IncidentRejected):   # 未做影响面排查
+            w.recover("INC-42", "sec-backup", False, True)
+        with self.assertRaises(IncidentRejected):   # 涉凭证但未轮换
+            w.recover("INC-42", "sec-backup", True, False)
+        with self.assertRaises(IncidentRejected):   # 涉凭证但轮换记录缺省
+            w.recover("INC-42", "sec-backup", True, None)
+        w.recover("INC-42", "sec-backup", True, True)
+
+    def test_t_inc_01_close_requires_notify_reverify_postmortem(self):
+        w = self._incident()
+        w.contain("INC-42", "sec-owner", ["agent-alpha"], True)
+        w.recover("INC-42", "sec-backup", True, True)
+        with self.assertRaises(IncidentRejected):   # 未记录通知
+            w.close("INC-42", "sec-owner", True, "pm-1")
+        w.notify("INC-42", "2026-10-30T09:00:00Z")
+        with self.assertRaises(IncidentRejected):   # 未复验
+            w.close("INC-42", "sec-owner", False, "pm-1")
+        with self.assertRaises(IncidentRejected):   # 缺复盘报告
+            w.close("INC-42", "sec-owner", True, None)
+        self.assertEqual(w.close("INC-42", "sec-owner", True, "pm-1")["state"],
+                         "CLOSED")
+
+    def test_t_inc_01_skip_recovery_cannot_close(self):
+        w = self._incident()
+        w.contain("INC-42", "sec-owner", ["agent-alpha"], True)
+        w.notify("INC-42", "2026-10-30T08:30:00Z")
+        # OPEN→CONTAINED 后直接关闭（跳过恢复审批）→ 非法跃迁
+        with self.assertRaises(IncidentRejected):
+            w.close("INC-42", "sec-owner", True, "pm-1")
+
+    def test_t_inc_01_late_notification_recorded_honestly(self):
+        w = self._incident()   # SEV2 时限 24h；08:00 宣告
+        w.contain("INC-42", "sec-owner", ["agent-alpha"], True)
+        w.recover("INC-42", "sec-backup", True, True)
+        # 33 小时后才通知 → 照实记录 late=True，不伪装准时，也不静默放行
+        late = w.notify("INC-42", "2026-10-31T17:00:00Z")
+        self.assertTrue(late)
+        rec = w.close("INC-42", "sec-owner", True, "pm-late")
+        self.assertEqual(rec["state"], "CLOSED")
+        self.assertTrue(rec["notification_late"])
+        raw = (self.tmp / "incident-audit.jsonl").read_text(encoding="utf-8")
+        self.assertIn('"late": true', raw)
+
+    def test_t_inc_01_unknown_incident_and_full_happy_path(self):
+        w = self._incident()
+        with self.assertRaises(IncidentRejected):   # 未知事件 → 失败关闭
+            w.recover("INC-404", "sec-owner", True, True)
+        # 正向对照：SEV1 涉凭证全流程闭环（隔离→通知→恢复→复验→关闭）
+        w2 = IncidentWorkflow({"slow-is-fast", "sec-owner", "sec-backup"},
+                              self.tmp / "incident-audit2.jsonl")
+        w2.declare("INC-7", "SEV1", "凭证进入提示文本",
+                   implicated=["agent-g"],
+                   primary_owner="sec-owner", backup_owner="sec-backup",
+                   credential_exposure=True, declared_at="2026-10-30T08:00:00Z")
+        w2.contain("INC-7", "sec-owner",
+                   ["agent-g", "cred-77"], True)
+        w2.notify("INC-7", "2026-10-30T08:40:00Z")   # 40min ≤ 1h，准时
+        w2.recover("INC-7", "sec-backup", True, True)
+        rec = w2.close("INC-7", "sec-owner", True, "postmortem/inc-7.md")
+        self.assertEqual(rec["state"], "CLOSED")
+        self.assertFalse(rec["notification_late"])
 
 
 if __name__ == "__main__":

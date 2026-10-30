@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "6edac41e1531fe5c2be82b82efd2f05eabe78bb2",
-  "tree_sha": "bd41af9af96471cf63961805a5d83970ab02fdd7",
-  "content_hash_sha256": "47d95471b070c4714d73d3fce7b0e003f7dea234ed4bd0a86ed6dc3ac5335584",
+  "commit_sha": "339eab557784b6c35ea4e83cad6f6910991eb80c",
+  "tree_sha": "19ac64d6c89eafcc0d616e9068a4f8c19cbcb71e",
+  "content_hash_sha256": "eadcd49d49f251e05cbf7140a68d1c4560034ef05225ec0570964d1903289a1f",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-30T11:30:00+08:00",
+  "pinned_at": "2026-10-30T13:00:00+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "e58d8568cb6e6eeadee3e94ffb2e6bb52c75aa9d",
-    "content_hash_sha256": "e090762abfb417d3d570f43cae966d84034a08acdfb9a66d67eb2d99200de720"
+    "commit_sha": "6edac41e1531fe5c2be82b82efd2f05eabe78bb2",
+    "content_hash_sha256": "47d95471b070c4714d73d3fce7b0e003f7dea234ed4bd0a86ed6dc3ac5335584"
   },
-  "bump_reason": "控制面新增 gate.py（GATE-01 准入判定器）并扩充负向用例 19→31"
+  "bump_reason": "控制面新增 incident.py（INC-01 安全事件响应工作流）并扩充负向用例 31→40"
 }
