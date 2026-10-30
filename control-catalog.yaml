@@ -1048,16 +1048,17 @@
       "evidence": "凭证访问拒绝记录、短期凭证外部签发记录、敏感任务隔离与审计脱敏记录、凭证入库触发的轮换与事件响应记录",
       "failure": "拒绝访问并告警；发现凭证进入提示文本或日志立即轮换并转事件响应；Agent 请求停用审计/质量检查一律拒绝",
       "test": "T-CRED-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/cred01_20261030T133000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "VD-01",

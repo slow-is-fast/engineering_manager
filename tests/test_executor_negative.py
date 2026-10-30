@@ -21,6 +21,7 @@ from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeReje
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
+from executor.credential import CredentialGuard, Denied as CredDenied
 from executor.incident import IncidentWorkflow, Rejected as IncidentRejected
 from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
 from datetime import date
@@ -848,6 +849,97 @@ class ExecutorNegativeTests(unittest.TestCase):
         rec = w2.close("INC-7", "sec-owner", True, "postmortem/inc-7.md")
         self.assertEqual(rec["state"], "CLOSED")
         self.assertFalse(rec["notification_late"])
+
+
+    # ---- T-CRED-01：凭证边界策略（CRED-01 / SEC-006/007/008） ----
+
+    def _cred(self):
+        g = CredentialGuard({"slow-is-fast"}, self.tmp / "cred-audit.jsonl")
+        return g
+
+    def test_t_cred_01_agent_cannot_read_protected_credentials(self):
+        g = self._cred()
+        for target in ({"path": "/etc/prod/db.env", "classification": "production_credential"},
+                       {"path": "~/.ssh/id_ed25519", "classification": "ssh_private"},
+                       {"path": "arn:aws:iam::admin", "classification": "cloud_admin_token"}):
+            with self.assertRaises(CredDenied):
+                g.access("agent-alpha", "agent", target)
+        raw = (self.tmp / "cred-audit.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(raw.count("credential.access_denied"), 3)
+
+    def test_t_cred_01_unclassified_target_defaults_to_protected(self):
+        g = self._cred()
+        # 未分类目标 + Agent 主体 → 按受保护处理（不因为"没标"就放宽）
+        with self.assertRaises(CredDenied):
+            g.access("agent-alpha", "agent", {"path": "data/unknown.bin"})
+
+    def test_t_cred_01_human_access_and_unknown_human(self):
+        g = self._cred()
+        # 白名单内的人类可访问受保护目标（正向对照）
+        self.assertEqual(
+            g.access("slow-is-fast", "human",
+                     {"path": "/etc/prod/db.env",
+                      "classification": "production_credential"}),
+            "ALLOWED")
+        # 自称 human 但不在白名单 → 拒绝（主体声明不构成授权）
+        with self.assertRaises(CredDenied):
+            g.access("stranger", "human",
+                     {"path": "/etc/prod/db.env",
+                      "classification": "production_credential"})
+
+    def test_t_cred_01_credential_patterns_in_text_detected(self):
+        g = self._cred()
+        # 各类凭证形态进入提示文本/日志 → 全部检出
+        cases = [
+            ("prompt", "please use github_pat_11AEW2Z3Q0JM1oWtIag3DF_JRAdOQxl5L4NcYW8CXsp"),
+            ("log", "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA"),
+            ("prompt", "export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE"),
+            ("chat", "my token is ghp_16C7e42F292c6912E271264cCw557awledReRU"),
+            ("log", "bot creds: xoxb-1538374892abcdef"),
+            ("prompt", "api key sk-proj4abcdefghijklmn9qrstuvwxyz012345"),
+        ]
+        for context, text in cases:
+            hits = g.scan_text(text, context)
+            self.assertTrue(hits, f"漏检：{context} -> {text[:40]}")
+        raw = (self.tmp / "cred-audit.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(raw.count("credential.exposure_detected"), 6)
+        # 干净文本不误报（正向对照）
+        self.assertEqual(g.scan_text("正常任务说明：读取 README 并总结要点。", "prompt"), [])
+
+    def test_t_cred_01_exposure_remediation_fails_closed(self):
+        g = self._cred()
+        g.scan_text("token ghp_" + "A" * 36, "prompt")
+        exposure_id = next(iter(g.exposures))
+        # 未确认轮换 → 失败关闭
+        with self.assertRaises(CredDenied):
+            g.confirm_remediation(exposure_id, rotated=False,
+                                  incident_declared=True)
+        # 未登记事件 → 失败关闭
+        with self.assertRaises(CredDenied):
+            g.confirm_remediation(exposure_id, rotated=True,
+                                  incident_declared=False)
+        # 未知暴露 ID → 失败关闭
+        with self.assertRaises(CredDenied):
+            g.confirm_remediation("EXP-404", rotated=True, incident_declared=True)
+        # 轮换 + 事件登记齐备 → 闭环（正向对照）
+        self.assertEqual(g.confirm_remediation(exposure_id, rotated=True,
+                                               incident_declared=True),
+                         "REMEDIATED")
+
+    def test_t_cred_01_suspend_requests_always_rejected(self):
+        g = self._cred()
+        # Agent 请求停用审计 / 跳过质量检查 / 压制告警 → 一律拒绝
+        for action in ("disable_audit", "skip_quality_checks", "suppress_alerts"):
+            with self.assertRaises(CredDenied):
+                g.request("agent-alpha", "agent", action)
+        # 人类经由本守卫请求同样拒绝——正确通道是变更管理（CHG-01）
+        with self.assertRaises(CredDenied):
+            g.request("slow-is-fast", "human", "disable_audit")
+        raw = (self.tmp / "cred-audit.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(raw.count("credential.request_rejected"), 4)
+        # 合法请求（如主动轮换）正常处理（正向对照）
+        self.assertEqual(g.request("slow-is-fast", "human",
+                                   "rotate_credential"), "PROCESSED")
 
 
 if __name__ == "__main__":
