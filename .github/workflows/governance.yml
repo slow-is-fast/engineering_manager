@@ -41,7 +41,10 @@ jobs:
       - name: Static negative tests (T-REG-01 / T-REG-02 / T-AUD-01)
         run: python tests/negative_static.py
 
-      - name: "T-VD-01 executor pin verification (control plane: aasegs-gov-plane)"
+      # 不只验控制面那个 commit：数据面用例跑的是本地 vendor 的 executor/，
+      # 所以同一步还要校验 vendor 副本的内容哈希等于同一个 pin。否则本地
+      # 改宽一条规则，pin 照样显示"我们用的是 X"，数据面照样全绿。
+      - name: "T-VD-01 executor pin + vendored copy verification"
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/verify_executor_pin.py

@@ -230,7 +230,8 @@ class QualityBaselineTests(unittest.TestCase):
         b = {
             'required_checks': ['scripts/verify_test_floor.py'],
             'trusted_ci_sources': ['github-actions'],
-            'executor_pin_version': {'pinned_commit': 'c' * 40},
+            'executor_pin_version': {'pinned_commit': 'c' * 40,
+                                     'pinned_tree': 'f' * 40},
             'test_thresholds': {'min_test_count': 10},
             'applies_to_sha': 'x', 'exceptions': [],
             'change_approval': {'rule': 'r'},
@@ -239,10 +240,15 @@ class QualityBaselineTests(unittest.TestCase):
         b.update(over)
         return b
 
-    def commit_baseline(self, **over):
+    def commit_baseline(self, pin=None, **over):
         write(self.tmp / 'governance' / 'quality_baseline.json',
               json.dumps(self.baseline(**over)))
         write(self.tmp / 'scripts' / 'verify_test_floor.py', '# stub\n')
+        # executor_pin.json 本身也是治理文件：单独提交会先触发漂移判定，
+        # 测不到交叉一致性。必须和基线同批提交。
+        if pin is not None:
+            write(self.tmp / 'governance' / 'executor_pin.json',
+                  json.dumps(pin))
         self.git('add', '.')
         self.git('commit', '-qm', 'baseline + governance')
 
@@ -346,6 +352,49 @@ class QualityBaselineTests(unittest.TestCase):
         rc, out = self.check()
         self.assertNotEqual(rc, 0, '无审批移除必需检查竟然通过')
         self.assertIn('removed', out)
+
+    # ---- 交叉一致性：基线里的 pin 版本必须等于 executor_pin.json ----
+    def test_t_qa_04_pin_version_mismatch_rejected(self):
+        """两处都声明"我们用的执行器版本"，各说各话也不许过。
+
+        2026-10-31 补：此前 executor_pin_version 只是必填字段，没人比对它与
+        governance/executor_pin.json——bump 了 pin 忘了改基线，两边就永久分叉。
+        """
+        self.commit_baseline(pin={'commit_sha': 'd' * 40,
+                                  'tree_sha': 'f' * 40})
+        rc, out = self.check()
+        self.assertNotEqual(rc, 0, 'pin 版本与基线不一致竟然通过')
+        self.assertIn('executor_pin_version', out)
+
+    def test_t_qa_04_pin_tree_mismatch_rejected(self):
+        """tree 变了、commit 没变，同样要红。
+
+        补这条是因为变异检验抓到一个逃逸：把 tree_sha 从比对字段里删掉，
+        此前没有任何用例会发现——commit 对得上就能蒙混过关。
+        """
+        self.commit_baseline(pin={'commit_sha': 'c' * 40,
+                                  'tree_sha': 'f' * 40})
+        rc, out = self.check()
+        self.assertEqual(rc, 0, out)            # 先确认起点是绿的
+        # 同一次提交里改两个文件，避免漂移判定抢先
+        write(self.tmp / 'governance' / 'executor_pin.json',
+              json.dumps({'commit_sha': 'c' * 40, 'tree_sha': 'a' * 40}))
+        # 基线必须真的产生内容变化：内容不变的话 git 不会为它记新提交，
+        # `git log -1 -- baseline` 仍指向旧提交，漂移判定会抢在交叉检查前面
+        write(self.tmp / 'governance' / 'quality_baseline.json',
+              json.dumps(self.baseline(reviewed_at='2026-10-31T00:00:00+08:00')))
+        self.git('add', '.')
+        self.git('commit', '-qm', 'bump pin tree, forget baseline tree')
+        rc, out = self.check()
+        self.assertNotEqual(rc, 0, 'tree 不一致竟然通过')
+        self.assertIn('pinned_tree', out)
+
+    def test_t_qa_04_pin_version_match_accepted(self):
+        """正向对照：同步更新就应当通过，别做成永远拒绝的假门禁。"""
+        self.commit_baseline(pin={'commit_sha': 'c' * 40,
+                                  'tree_sha': 'f' * 40})
+        rc, out = self.check()
+        self.assertEqual(rc, 0, out)
 
     def test_t_qa_04_widened_exception_without_approval_rejected(self):
         self.commit_baseline()
