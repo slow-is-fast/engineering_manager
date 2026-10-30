@@ -316,6 +316,17 @@ class QualityBaselineTests(unittest.TestCase):
         self.assertNotEqual(rc, 0, '治理范围有未提交改动竟然通过')
         self.assertIn('uncommitted', out)
 
+    def test_t_qa_04_untracked_governance_file_fails_closed(self):
+        """`git diff` 看不到未跟踪文件，但这不等于它们可以不算"没提交"。
+
+        脏检查从 status 改成 diff 后新增的分支：未跟踪必须单独兜住。
+        """
+        self.commit_baseline()
+        write(self.tmp / 'scripts' / 'brand_new_gate.py', '# new\n')
+        rc, out = self.check()
+        self.assertNotEqual(rc, 0, '未跟踪的治理文件竟然通过')
+        self.assertIn('untracked', out)
+
     # ---- 冷读 F2：放宽必须带审批，否则"改数字"一次性绕过 ----
     def test_t_qa_04_lowered_floor_without_approval_rejected(self):
         self.commit_baseline(test_thresholds={'min_test_count': 110})
