@@ -10,19 +10,20 @@
       "evidence": "signed run identity and task binding",
       "failure": "deny and alert",
       "test": "T-ID-01",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "evidence/g2_closeout_20261030T140000Z.md",
       "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "ID-02",
@@ -35,7 +36,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/5",
       "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
@@ -55,19 +56,20 @@
       "evidence": "revocation receipt",
       "failure": "quarantine and deny",
       "test": "T-ID-03",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "evidence/g2_closeout_20261030T140000Z.md",
       "source_ref": "v1.1.1 §2 受保护操作的授权与撤销",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "CTX-01",
@@ -77,19 +79,20 @@
       "evidence": "context provenance manifest",
       "failure": "classify untrusted",
       "test": "T-CTX-01",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "evidence/g2_closeout_20261030T140000Z.md",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "CTX-02",
@@ -239,7 +242,7 @@
       "status": "not_enforced",
       "integration_evidence_uri": null,
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
@@ -306,7 +309,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/3",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -336,7 +339,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/2",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
@@ -366,7 +369,7 @@
       "status": "not_enforced",
       "integration_evidence_uri": null,
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
@@ -388,7 +391,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/4",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -411,7 +414,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40829078879",
       "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -434,7 +437,7 @@
       "status": "not_enforced",
       "integration_evidence_uri": null,
       "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -579,16 +582,17 @@
       "evidence": "每工具/模型版本的能力清单（读取范围、写入隔离、网络边界、授权检查、终止能力、审计、凭证隔离、Reviewer 独立性、可信 CI 集成）及 enforced/advisory/unsupported 标记、验证来源、适用版本、有效期；R0–R3 准入矩阵",
       "failure": "关键能力缺失、仅 advisory 或证据过期时拒绝准入，或降低允许的风险等级",
       "test": "T-TOOL-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/g2_closeout_20261030T140000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "MEM-01",

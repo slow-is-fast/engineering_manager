@@ -89,8 +89,12 @@ for r in reg['rules']:
 for c in x['controls']:
     levels = served.get(c['id'])
     cur = c.get('risk_level')
-    if not levels or not cur:
+    if not levels:
         continue
+    # 未声明等级的控制会整条逃过传播检查（None 既非"更严"也非"更宽"），
+    # 使 P0 规则可以由一条"无等级"控制背书。这不是从严，是漏检。
+    assert cur, (f"control {c['id']} serves {sorted(levels)} rules but declares "
+                 f"no risk_level (escapes risk propagation check)")
     highest = min(levels, key=lambda k: SEVERITY[k])
     assert SEVERITY[cur] <= SEVERITY[highest], (
         f"risk level propagation violated: control {c['id']}={cur} is looser than "
@@ -106,6 +110,28 @@ for md in sorted(BASE.glob('*.md')):
 known = {c['requirement_ref'] for c in x['controls']} | set(rids)
 unknown = sorted(doc_ids - known)
 assert not unknown, f"unregistered MUST clauses found in docs: {unknown}"
+
+# ---- 审计映射双向差异（§12.3 明确要求，此前只有文字承诺） ----
+# 目录里写 `AASEGS-AUD-001`、清单里写 `AUD-001`：跨文档比对必须先归一化，
+# 否则两边永远"对得上"（因为根本不比较），检查等于没做。
+def _norm_issue(x):
+    s = str(x or '').strip()
+    return s[len('AASEGS-'):] if s.upper().startswith('AASEGS-') else s
+
+_audit_md = BASE / 'AASEGS_Audit_Issues_Full.md'
+assert _audit_md.exists(), 'missing audit issue list'
+_issues = set(re.findall(r'###\s*AASEGS-(AUD-\d{3})',
+                         _audit_md.read_text(encoding='utf8')))
+assert _issues, 'no audit issues parsed from §四'
+
+_mapped = set()
+for c in x['controls']:
+    for a in (c.get('addresses') or []):
+        n = _norm_issue(a)
+        assert n in _issues, f"control {c['id']} addresses unknown audit issue {a}"
+        _mapped.add(n)
+_unanswered = sorted(_issues - _mapped)
+assert not _unanswered, f"audit issues with no addressing control: {_unanswered}"
 
 print(f'PASS: {len(seen)} control definitions structurally complete; '
       f'{sum(1 for c in x["controls"] if c["risk_level"] == "P0")} declared P0; '

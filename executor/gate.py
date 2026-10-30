@@ -56,6 +56,131 @@ def _parse_date(s):
         return None
 
 
+def norm_issue_id(x):
+    """审计问题 ID 归一化：目录里写作 `AASEGS-AUD-001`，清单里写作 `AUD-001`。
+
+    两种写法指的是同一个问题；跨文档比对必须先归一，否则双向差异检查会
+    永远"通过"（因为两边都对不上于是都不比较）。
+    """
+    s = str(x or "").strip()
+    return s[len("AASEGS-"):] if s.upper().startswith("AASEGS-") else s
+
+
+def parse_audit_issues(base):
+    """解析审计问题清单，返回 {issue_id: {"severity":…, "status":…}}。
+
+    §四 逐项登记 = 严重程度的权威源；§二·A = 状态源；§12.1 映射表 = 第三处引用。
+    三处对同一问题给出不同严重程度时一律**失败关闭**：不任选其一，
+    因为那会让判定建立在不确定输入上（这正是纯文档流程长期未发现的缺陷）。
+    """
+    p = Path(base) / "AASEGS_Audit_Issues_Full.md"
+    if not p.exists():
+        raise GateInputError("missing required input: AASEGS_Audit_Issues_Full.md")
+    text = p.read_text(encoding="utf-8")
+
+    # --- §四：严重程度（权威） ---
+    sec4 = text.split("## 四、逐项问题登记")[-1]
+    severity = {}
+    for block in re.split(r"\n###\s+", sec4):
+        m = re.match(r"AASEGS-AUD-(\d{3})", block)
+        if not m:
+            continue
+        sev = re.search(r"严重程度[^\n]*?(P[012])", block)
+        if sev:
+            severity["AUD-" + m.group(1)] = sev.group(1)
+
+    # --- §二·A：状态（兼第二处严重程度） ---
+    status = {}
+    if "二·A" in text:
+        secA = text.split("二·A")[-1].split("## 三")[0]
+        for line in secA.splitlines():
+            m = re.match(r"\s*\|\s*(AUD-\d{3})\s*\|\s*(P[012])\s*\|\s*([A-Z_]+)", line)
+            if m:
+                status[m.group(1)] = (m.group(2), m.group(3))
+
+    # --- §12.1：实施完整性修订版中的映射表（第三处严重程度） ---
+    alt = {}
+    fp = Path(base) / "AASEGS_v1.1.1_实施完整性修订版.md"
+    if fp.exists():
+        ftext = fp.read_text(encoding="utf-8")
+        if "### 12.1" in ftext:
+            sec12 = ftext.split("### 12.1")[-1].split("### 12.2")[0]
+            for line in sec12.splitlines():
+                m = re.match(r"\s*\|\s*(AUD-\d{3})\s*\|\s*(P[012])\s*\|", line)
+                if m:
+                    alt[m.group(1)] = m.group(2)
+
+    if not severity:
+        raise GateInputError("audit issues: no severity parsed from §四")
+    if not status:
+        raise GateInputError("audit issues: no status parsed from §二·A")
+
+    conflicts = []
+    for iid, (sev_a, st) in sorted(status.items()):
+        sev4 = severity.get(iid)
+        if sev4 and sev4 != sev_a:
+            conflicts.append({"issue": iid, "source": "§二·A",
+                              "authoritative": sev4, "found": sev_a})
+        if sev4 and alt.get(iid) and alt[iid] != sev4:
+            conflicts.append({"issue": iid, "source": "§12.1",
+                              "authoritative": sev4, "found": alt[iid]})
+    if conflicts:
+        raise GateInputError(
+            "audit issue severity conflict (authoritative source = §四 逐项问题登记): "
+            + ", ".join(f"{c['issue']}({c['source']}={c['found']} vs §四={c['authoritative']})"
+                        for c in conflicts))
+
+    return {iid: {"severity": severity[iid], "status": st}
+            for iid, (sev, st) in status.items() if iid in severity}
+
+
+def load_exceptions(base):
+    """读取机器可读例外登记；缺失时按"无例外"处理（更严），不算输入故障。"""
+    p = Path(base) / "governance" / "exception_register.json"
+    if not p.exists():
+        return []
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise GateInputError(f"unparseable exception_register.json: {exc}")
+    return data.get("exceptions", [])
+
+
+def exception_valid(e, now):
+    """例外采信条件：ACTIVE + 人类批准人 + 未到期 + 有补偿控制 + 有撤销条件 + 有 waives 目标。"""
+    if str(e.get("status", "ACTIVE")).upper() != "ACTIVE":
+        return False
+    if not e.get("approver") or e.get("approver_type") != "human":
+        return False
+    exp = _parse_date(e.get("expires"))
+    if exp is None or exp <= now:
+        return False
+    if not e.get("compensating_controls"):
+        return False
+    if not e.get("revocation"):
+        return False
+    if not e.get("waives", {}).get("controls"):
+        return False
+    return True
+
+
+def exception_waives(control_id, requirement, exceptions, now, unwaivable=()):
+    """返回采信该豁免的例外 ID，否则 None。豁免只覆盖它声明的那一项要求。"""
+    if control_id in set(unwaivable):
+        return None
+    for e in exceptions:
+        if not exception_valid(e, now):
+            continue
+        w = e.get("waives", {})
+        if control_id not in w.get("controls", []):
+            continue
+        reqs = w.get("requirement") or ["tested"]
+        if requirement not in reqs:
+            continue
+        return e["id"]
+    return None
+
+
 class AdmissionGate:
     def __init__(self, base, now=None, audit_path=None):
         self.base = Path(base)
@@ -78,6 +203,7 @@ class AdmissionGate:
             raise GateInputError("rule-registry.json: no rules found")
         self.issues = self._parse_audit_issues()
         self.exceptions = self._load_exceptions()
+        self._assert_audit_mapping_resolves()
         if not isinstance(self.matrix.get("levels"), dict):
             raise GateInputError("maturity_matrix: missing levels")
         for lv in self.matrix["levels"]:
@@ -97,82 +223,29 @@ class AdmissionGate:
         except Exception as exc:
             raise GateInputError(f"unparseable input {rel}: {exc}")
 
+    def _assert_audit_mapping_resolves(self):
+        """目录 addresses 必须解析到真实审计问题（§12.3 双向差异的一半）。
+
+        跨文档 ID 命名空间不同（AASEGS-AUD-001 vs AUD-001），必须先归一化再比较。
+        """
+        known = {norm_issue_id(i) for i in self.issues}
+        unknown = []
+        for c in self._controls():
+            for a in (c.get("addresses") or []):
+                if norm_issue_id(a) not in known:
+                    unknown.append(f"{c['id']}->{a}")
+        if unknown:
+            raise GateInputError(
+                "control addresses do not resolve to any audit issue: "
+                + ", ".join(unknown))
+
     def _load_exceptions(self):
-        """例外登记是可选的：缺失时按"无例外"处理（更严），但不算输入故障。"""
-        p = self.base / "governance" / "exception_register.json"
-        if not p.exists():
-            return []
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except Exception as exc:
-            raise GateInputError(f"unparseable exception_register.json: {exc}")
-        return data.get("exceptions", [])
+        return load_exceptions(self.base)
 
     def _parse_audit_issues(self):
-        """§四 逐项登记 = 严重程度的权威源；§二·A = 状态源；§12.1 映射表 = 第三处引用。
+        return parse_audit_issues(self.base)
 
-        三处对同一问题给出不同严重程度时一律**失败关闭**：不任选其一，
-        因为那会让门槛建立在不确定输入上（这正是纯文档流程长期未发现的缺陷）。
-        """
-        p = self.base / "AASEGS_Audit_Issues_Full.md"
-        if not p.exists():
-            raise GateInputError("missing required input: AASEGS_Audit_Issues_Full.md")
-        text = p.read_text(encoding="utf-8")
 
-        # --- §四：严重程度（权威） ---
-        sec4 = text.split("## 四、逐项问题登记")[-1]
-        severity = {}
-        for block in re.split(r"\n###\s+", sec4):
-            m = re.match(r"AASEGS-AUD-(\d{3})", block)
-            if not m:
-                continue
-            sev = re.search(r"严重程度[^\n]*?(P[012])", block)
-            if sev:
-                severity["AUD-" + m.group(1)] = sev.group(1)
-
-        # --- §二·A：状态（兼第二处严重程度） ---
-        status = {}
-        if "二·A" in text:
-            secA = text.split("二·A")[-1].split("## 三")[0]
-            for line in secA.splitlines():
-                m = re.match(r"\s*\|\s*(AUD-\d{3})\s*\|\s*(P[012])\s*\|\s*([A-Z_]+)", line)
-                if m:
-                    status[m.group(1)] = (m.group(2), m.group(3))
-
-        # --- §12.1：实施完整性修订版中的映射表（第三处严重程度） ---
-        alt = {}
-        fp = self.base / "AASEGS_v1.1.1_实施完整性修订版.md"
-        if fp.exists():
-            ftext = fp.read_text(encoding="utf-8")
-            if "### 12.1" in ftext:
-                sec12 = ftext.split("### 12.1")[-1].split("### 12.2")[0]
-                for line in sec12.splitlines():
-                    m = re.match(r"\s*\|\s*(AUD-\d{3})\s*\|\s*(P[012])\s*\|", line)
-                    if m:
-                        alt[m.group(1)] = m.group(2)
-
-        if not severity:
-            raise GateInputError("audit issues: no severity parsed from §四")
-        if not status:
-            raise GateInputError("audit issues: no status parsed from §二·A")
-
-        conflicts = []
-        for iid, (sev_a, st) in sorted(status.items()):
-            sev4 = severity.get(iid)
-            if sev4 and sev4 != sev_a:
-                conflicts.append({"issue": iid, "source": "§二·A",
-                                  "authoritative": sev4, "found": sev_a})
-            if sev4 and alt.get(iid) and alt[iid] != sev4:
-                conflicts.append({"issue": iid, "source": "§12.1",
-                                  "authoritative": sev4, "found": alt[iid]})
-        if conflicts:
-            raise GateInputError(
-                "audit issue severity conflict (authoritative source = §四 逐项问题登记): "
-                + ", ".join(f"{c['issue']}({c['source']}={c['found']} vs §四={c['authoritative']})"
-                            for c in conflicts))
-
-        return {iid: {"severity": severity[iid], "status": st}
-                for iid, (sev, st) in status.items() if iid in severity}
 
     # ---------------- 控制状态 ----------------
     def _controls(self):
@@ -189,37 +262,12 @@ class AdmissionGate:
         return ttl.get("_unknown", 30)
 
     def _exception_covers(self, cid, requirement):
-        """返回采信该豁免的例外 ID，否则 None。"""
-        unwaivable = set(self.matrix.get("evaluation_model", {}).get("unwaivable", []))
-        if cid in unwaivable:
-            return None
-        for e in self.exceptions:
-            if not self._exception_valid(e):
-                continue
-            w = e.get("waives", {})
-            if cid not in w.get("controls", []):
-                continue
-            reqs = w.get("requirement") or ["tested"]
-            if requirement not in reqs:
-                continue
-            return e["id"]
-        return None
+        unwaivable = self.matrix.get("evaluation_model", {}).get("unwaivable", [])
+        return exception_waives(cid, requirement, self.exceptions, self.now,
+                                unwaivable)
 
     def _exception_valid(self, e):
-        if str(e.get("status", "ACTIVE")).upper() != "ACTIVE":
-            return False
-        if not e.get("approver") or e.get("approver_type") != "human":
-            return False
-        exp = _parse_date(e.get("expires"))
-        if exp is None or exp <= self.now:
-            return False
-        if not e.get("compensating_controls"):
-            return False
-        if not e.get("revocation"):
-            return False
-        if not e.get("waives", {}).get("controls"):
-            return False
-        return True
+        return exception_valid(e, self.now)
 
     def _check_control(self, cid, requirement, require_fresh):
         """返回 (blocker_or_None, waiver_id_or_None)。

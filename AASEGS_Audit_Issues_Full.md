@@ -28,32 +28,32 @@
 
 ### 二·A · Owner 分配记录（2026-10-29 Owner 批准）
 
-**Owner：slow-is-fast**（全部 22 项统一指派）。当前全部 `OPEN`——v1.1.1 已完成文档性修复，但"文档修改完成 ≠ 运行时控制问题关闭"，关闭须逐项满足验收/关闭条件并经独立复核。
+**Owner：slow-is-fast**（全部 22 项统一指派）。当前 **17 项 `READY_FOR_REVIEW`、5 项 `OPEN`**。`READY_FOR_REVIEW` 由 `scripts/check_audit_closure.py` 机器判定，含义仅为**应答控制全部 tested（或持有效例外）且证据未过期**——即"可以进入验收评审"，**不等于验收通过、更不等于关闭**。关闭仍须逐条满足 §四 验收标准并经独立复核（当前受 EXC-01 约束）。仍 `OPEN` 的 5 项因应答控制未 tested 而受阻：AUD-004（AUTH-01/02）、AUD-006（MEM-01）、AUD-007（SMT-01）、AUD-019（MTR-01）、AUD-021（PKG-01）。
 
 | 问题 ID | 严重程度 | 状态 | 备注 |
 |---|---|---|---|
-| AUD-001 | P0 | OPEN | 注册表已建（53 条规则，SUP-006 补注册后），双向差异检查已脚本化；散文式 MUST 对 lint 不可见的缺口已知（2026-10-30 发现），关闭待独立抽样复核 |
-| AUD-002 | P0 | OPEN | 六态状态机已建（tested 15 / verified 0），关闭待 verified 路径打通 |
-| AUD-003 | P1 | OPEN | control-catalog 已机器可读并通过静态校验 |
+| AUD-001 | P0 | READY_FOR_REVIEW | 注册表已建（53 条规则，SUP-006 补注册后），双向差异检查已脚本化；散文式 MUST 对 lint 不可见的缺口已知（2026-10-30 发现），关闭待独立抽样复核 |
+| AUD-002 | P0 | READY_FOR_REVIEW | 六态状态机已建（tested 15 / verified 0），关闭待 verified 路径打通 |
+| AUD-003 | P1 | READY_FOR_REVIEW | control-catalog 已机器可读并通过静态校验 |
 | AUD-004 | P0 | OPEN | WP-02；执行器 ledger/lock 部分覆盖，资源端校验未接 |
-| AUD-005 | P1 | OPEN | WP-02；工具能力准入矩阵未建 |
+| AUD-005 | P1 | READY_FOR_REVIEW | WP-02；工具能力准入矩阵未建 |
 | AUD-006 | P1 | OPEN | WP-03；记忆状态机已在执行器 memory.py 实现并 tested |
 | AUD-007 | P1 | OPEN | WP-04；任务状态机转换矩阵待补全 |
-| AUD-008 | P1 | OPEN | WP-04；fencing 写锁已 tested，交接租约语义待扩展 |
-| AUD-009 | P0 | OPEN | WP-04；幂等台账 UNKNOWN→reconcile 已 tested |
-| AUD-010 | P0 | OPEN | WP-04；checkpoint 摘要绑定已 tested，一致性对账未做 |
-| AUD-011 | P1 | OPEN | WP-04；熔断器 severe 立即触发已 tested |
-| AUD-012 | P0 | OPEN | WP-05；可信质量基线未建 |
-| AUD-013 | P1 | OPEN | WP-05；Reviewer 独立性需第二凭证实测（T-QA-03 未覆盖） |
-| AUD-014 | P0 | OPEN | WP-05；审计流 append-only 已实现，保留策略与不可用行为未定义 |
-| AUD-015 | P0 | OPEN | WP-05；执行器事件响应工作流已 tested（T-INC-01 九项用例）；关闭仍待响应手册经 Security Owner 批准 + 四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露） |
-| AUD-016 | P0 | OPEN | WP-03；跨项目隔离未测 |
-| AUD-017 | P1 | OPEN | WP-06；策略变更状态机未建 |
-| AUD-018 | P1 | OPEN | WP-02；审批到期系统级失效保证未实现 |
+| AUD-008 | P1 | READY_FOR_REVIEW | WP-04；fencing 写锁已 tested，交接租约语义待扩展 |
+| AUD-009 | P0 | READY_FOR_REVIEW | WP-04；幂等台账 UNKNOWN→reconcile 已 tested |
+| AUD-010 | P0 | READY_FOR_REVIEW | WP-04；checkpoint 摘要绑定已 tested，一致性对账未做 |
+| AUD-011 | P1 | READY_FOR_REVIEW | WP-04；熔断器 severe 立即触发已 tested |
+| AUD-012 | P0 | READY_FOR_REVIEW | WP-05；可信质量基线未建 |
+| AUD-013 | P1 | READY_FOR_REVIEW | WP-05；Reviewer 独立性需第二凭证实测（T-QA-03 未覆盖） |
+| AUD-014 | P0 | READY_FOR_REVIEW | WP-05；审计流 append-only 已实现，保留策略与不可用行为未定义 |
+| AUD-015 | P0 | READY_FOR_REVIEW | WP-05；执行器事件响应工作流已 tested（T-INC-01 九项用例）；关闭仍待响应手册经 Security Owner 批准 + 四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露） |
+| AUD-016 | P0 | READY_FOR_REVIEW | WP-03；跨项目隔离未测 |
+| AUD-017 | P1 | READY_FOR_REVIEW | WP-06；策略变更状态机未建 |
+| AUD-018 | P1 | READY_FOR_REVIEW | WP-02；审批到期系统级失效保证未实现 |
 | AUD-019 | P2 | OPEN | WP-06；指标阈值/责任人/超限动作未定义 |
-| AUD-020 | P0 | OPEN | WP-01；G2 机器可判定门槛待定义 |
+| AUD-020 | P0 | READY_FOR_REVIEW | WP-01；G2 机器可判定门槛待定义 |
 | AUD-021 | P1 | OPEN | WP-06；PKG-01 证据包已首次履行（试点报告），模板待固化 |
-| AUD-022 | P1 | OPEN | WP-06；证据过期降级与持续复验规则未建 |
+| AUD-022 | P1 | READY_FOR_REVIEW | WP-06；证据过期降级与持续复验规则未建 |
 
 优先推进顺序按 §五工作包：P0 阻断项优先（AUD-002/004/008/009/010/012/013/014/015/018/020）。
 

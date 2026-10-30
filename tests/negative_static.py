@@ -37,6 +37,12 @@ def make_tmp(mangle=None):
     for f in FILES:
         (tmp / f).write_text(json.dumps(data[f], ensure_ascii=False, indent=2),
                              encoding='utf8', newline='\n')
+    # 审计清单也必须进入副本：validate_controls 的双向差异检查要读它，
+    # 缺了会让"干净副本"因输入缺失而失败（阴性对照失效）。
+    audit = ROOT / 'AASEGS_Audit_Issues_Full.md'
+    if audit.exists():
+        (tmp / audit.name).write_text(audit.read_text(encoding='utf8'),
+                                      encoding='utf8', newline='\n')
     return tmp
 
 
@@ -61,10 +67,16 @@ def T_REG_01_unregistered_must_clause():
 
 @case
 def T_REG_02_forged_verified_state():
-    """把仅有 documented 的控制伪造为 verified → 六态前置条件必须拒绝。"""
+    """把尚未 tested 的控制伪造为 verified → 六态前置条件必须拒绝。
+
+    注意：不能固定篡改 controls[0]——它可能恰好已被推进到 tested，
+    那样"伪造 verified"不再违反前置条件，用例会变成假绿。
+    """
     def mangle(d):
-        c = d['control-catalog.yaml']['controls'][0]
-        c['state']['verified'] = True
+        target = next((c for c in d['control-catalog.yaml']['controls']
+                       if not c['state']['tested']), None)
+        assert target is not None, '夹具中没有未 tested 的控制可选'
+        target['state']['verified'] = True
     tmp = make_tmp(mangle)
     rc, tail = run_lint(tmp)
     return rc != 0 and 'verified' in tail, rc, tail
