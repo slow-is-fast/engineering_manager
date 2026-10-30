@@ -445,9 +445,10 @@
         },
         {
           "id": "AUD-014-03",
-          "kind": "unimplemented",
+          "kind": "test",
           "target": "AUD-01",
-          "text": "保留策略、伪造来源识别与恢复"
+          "text": "保留策略、伪造来源识别与恢复：未登记类别不得无限保留、时间戳缺失不得当作未超期、删除须批准；来源缺失/未登记/事件类型越界/seq 回退四类可疑；截断或篡改后取回最后可信前缀且被丢段落原样交出",
+          "ref": "test_T_ALC_19_retention_provenance_recovery_in_one_stream"
         },
         {
           "id": "AUD-014-04",

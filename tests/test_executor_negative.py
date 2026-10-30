@@ -4,7 +4,7 @@
 每个用例 = 一次真实注入 + 断言"被拒绝/被阻断"。
 正向对照保证组件不是"永远拒绝"的假门禁。
 """
-import json, tempfile, unittest
+import json, tempfile, time, unittest
 from pathlib import Path
 
 from executor.lock import LockService, LockDenied, StaleFence
@@ -36,6 +36,9 @@ from executor.credential import CredentialGuard, Denied as CredDenied
 from executor.incident import IncidentWorkflow, Rejected as IncidentRejected
 from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
 from executor.remote import RemoteGateway, RemoteRejected, MANUAL
+from executor.auditlifecycle import (ProvenanceRegistry, RetentionPolicy,
+                                     recover, LifecycleRejected)
+from executor.audit import GENESIS
 from datetime import date
 
 from executor.checkpoint import (CheckpointStore, BaselineChanged,
@@ -2158,6 +2161,259 @@ class RemoteGatewayTests(unittest.TestCase):
         self.assertFalse(ev[0]["registered"])
         ok, errors = self.g.audit.verify()
         self.assertTrue(ok, errors)
+
+
+class AuditLifecycleTests(unittest.TestCase):
+    """AUD-014-03：保留策略、伪造来源识别与恢复。
+
+    注意本模块的能力边界：它能识别**内部不一致**（来源缺失/未登记/越界/
+    seq 回退），但**证明不了写入者是谁**——持有写权限的人可以自己写上
+    任意来源字段。T-ALC-17 把这一点固化成用例。
+    """
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-alc-"))
+        self.audit = AuditLog(self.tmp / "audit.jsonl")
+
+    def _reg(self):
+        r = ProvenanceRegistry()
+        r.declare("executor", writer="run-1",
+                  event_types={"remote.replay_decision"})
+        r.declare("gate", writer="run-2", event_types={"gate.admission"})
+        return r
+
+    # ---- 正向对照 ----
+    def test_T_ALC_01_declared_source_passes(self):
+        r = self._reg()
+        self.audit.append_from("executor", "remote.replay_decision",
+                               op_id="op-1", verdict="MANUAL")
+        self.audit.append_from("gate", "gate.admission", level="G1")
+        self.assertTrue(r.check(self.audit.read())["ok"])
+
+    # ---- 伪造来源识别 ----
+    def test_T_ALC_02_missing_source_flagged(self):
+        """没声明来源 → 无法归因，按可疑处理（不是"无来源即放过"）。"""
+        self.audit.append("sneak.event", note="静默写进去的")
+        f = self._reg().check(self.audit.read())["findings"]
+        self.assertEqual([x["kind"] for x in f], ["missing_source"])
+        self.assertEqual(f[0]["verdict"], "FORGED_SUSPECT")
+
+    def test_T_ALC_03_undeclared_source_flagged(self):
+        """未登记的来源按可疑处理：没登记过 ≠ 允许。"""
+        self.audit.append_from("ghost", "gate.admission")
+        f = self._reg().check(self.audit.read())["findings"]
+        self.assertEqual([x["kind"] for x in f], ["undeclared_source"])
+
+    def test_T_ALC_04_event_type_out_of_scope_flagged(self):
+        """来源是真的，但它不该写这类事件——冒充别的组件写日志。"""
+        self.audit.append_from("executor", "gate.admission", level="G4")
+        f = self._reg().check(self.audit.read())["findings"]
+        self.assertEqual([x["kind"] for x in f], ["event_type_out_of_scope"])
+
+    def test_T_ALC_05_source_seq_replay_flagged(self):
+        """同一来源 seq 回退 = 疑似把旧事件重放进来凑数。"""
+        events = [{"seq": 1, "event_type": "remote.replay_decision",
+                   "source": "executor"},
+                  {"seq": 2, "event_type": "remote.replay_decision",
+                   "source": "executor"},
+                  {"seq": 2, "event_type": "remote.replay_decision",
+                   "source": "executor"}]
+        f = self._reg().check(events)["findings"]
+        self.assertEqual([x["kind"] for x in f], ["source_seq_replay"])
+
+    def test_T_ALC_06_bad_source_declaration_rejected(self):
+        r = ProvenanceRegistry()
+        with self.assertRaises(LifecycleRejected):
+            r.declare("", writer="x")
+        with self.assertRaises(LifecycleRejected):
+            r.declare(None)
+
+    # ---- 保留策略 ----
+    def test_T_ALC_07_within_retention_passes(self):
+        rp = RetentionPolicy()
+        rp.declare("gate.admission", 30)
+        e = {"seq": 1, "event_type": "gate.admission", "timestamp": time.time()}
+        self.assertEqual(rp.expired([e]), [])
+
+    def test_T_ALC_08_expired_flagged(self):
+        rp = RetentionPolicy()
+        rp.declare("gate.admission", 30)
+        e = {"seq": 1, "event_type": "gate.admission",
+             "timestamp": time.time() - 40 * 86400}
+        out = rp.expired([e])
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["verdict"], "EXPIRED")
+        self.assertGreater(out[0]["age_days"], 30)
+
+    def test_T_ALC_09_undeclared_category_flagged(self):
+        """没登记保留期 ≠ 可以一直留。保留是授权，不是默认权利。"""
+        rp = RetentionPolicy()
+        rp.declare("gate.admission", 30)
+        e = {"seq": 1, "event_type": "never.declared", "timestamp": time.time()}
+        out = rp.expired([e])
+        self.assertEqual(out[0]["verdict"], "UNDECLARED")
+
+    def test_T_ALC_10_unknown_age_is_not_clean(self):
+        """时间戳缺失 → 判不出年龄，不得当成"没超期"放过。"""
+        rp = RetentionPolicy()
+        rp.declare("gate.admission", 30)
+        out = rp.expired([{"seq": 1, "event_type": "gate.admission"}])
+        self.assertEqual(out[0]["verdict"], "UNKNOWN_AGE")
+
+    def test_T_ALC_11_bad_retention_days_rejected(self):
+        rp = RetentionPolicy()
+        for bad in (0, -1, True, "30"):
+            with self.assertRaises(LifecycleRejected):
+                rp.declare("x", bad)
+
+    def test_T_ALC_12_purge_without_approver_rejected(self):
+        rp = RetentionPolicy()
+        rp.declare("x", 1)
+        with self.assertRaises(LifecycleRejected) as ctx:
+            rp.plan_purge([{"event": {"seq": 1}, "category": "x",
+                            "verdict": "EXPIRED"}])
+        self.assertIn("requires an approver", str(ctx.exception))
+
+    def test_T_ALC_13_purge_with_approver_accepted(self):
+        """正向对照：有批准就给计划，别做成永远拒绝。"""
+        rp = RetentionPolicy()
+        rp.declare("x", 1)
+        plan = rp.plan_purge([{"event": {"seq": 1}, "category": "x",
+                               "verdict": "EXPIRED"}], approver="owner")
+        self.assertEqual(plan["approver"], "owner")
+        self.assertEqual(plan["count"], 1)
+
+    # ---- 恢复 ----
+    def test_T_ALC_14_intact_stream_recovers_whole(self):
+        self.audit.append("a.one")
+        self.audit.append("a.two")
+        res = recover(self.audit)
+        self.assertTrue(res["complete"])
+        self.assertEqual(res["dropped"], [])
+        self.assertEqual(res["last_trusted_seq"], 2)
+
+    def test_T_ALC_15_truncation_recovers_prefix(self):
+        self.audit.append("a.one")
+        self.audit.append("a.two")
+        self.audit.append("a.three")
+        lines = (self.tmp / "audit.jsonl").read_text(encoding="utf8")
+        (self.tmp / "audit.jsonl").write_text(
+            "".join(lines.splitlines(True)[:2]) + '{"corrupt\n', encoding="utf8")
+        res = recover(self.audit)
+        self.assertFalse(res["complete"])
+        self.assertEqual(res["last_trusted_seq"], 2)
+        self.assertIn("不可解析", res["reason"])
+
+    def test_T_ALC_16_tampering_drops_from_bad_point_and_keeps_evidence(self):
+        """篡改中间一条 → 从那条起全部不可信；被丢的行必须原样交出来。
+
+        静默丢弃被篡改的段落，等于替篡改者擦掉痕迹。
+        """
+        for i in range(4):
+            self.audit.append(f"a.{i}")
+        p = self.tmp / "audit.jsonl"
+        lines = p.read_text(encoding="utf8").splitlines(True)
+        tampered = json.loads(lines[2])
+        tampered["verdict"] = "ALLOW"          # 改内容，hash 必然不匹配
+        lines[2] = json.dumps(tampered, ensure_ascii=False) + "\n"
+        p.write_text("".join(lines), encoding="utf8")
+        res = recover(self.audit)
+        self.assertFalse(res["complete"])
+        self.assertEqual(res["last_trusted_seq"], 2)
+        self.assertEqual(len(res["dropped"]), 2)   # 坏的那条 + 它后面全部
+        self.assertIn(tampered["verdict"], res["dropped"][0])
+        self.assertIn("hash", res["reason"])
+
+    def test_T_ALC_18_seq_gap_after_rechaining_flagged(self):
+        """删掉一条后**把后面的链重新算一遍**——hash 与 prev_hash 全都自洽，
+        唯一露馅的是编号跳号。
+
+        补这条是因为变异检验抓到一个逃逸：把 seq 校验改成恒假，没有任何
+        用例会发现。说明此前那三条恢复用例其实都只被 hash 校验兜住。
+        """
+        for i in range(3):
+            self.audit.append(f"a.{i}")
+        events = self.audit.read()
+        kept = [events[0], events[2]]          # 悄悄拿掉中间那条
+        prev = GENESIS
+        lines = []
+        for e in kept:
+            e = dict(e)
+            e["prev_hash"] = prev
+            e["hash"] = AuditLog._hash(e)
+            lines.append(json.dumps(e, ensure_ascii=False) + "\n")
+            prev = e["hash"]
+        (self.tmp / "audit.jsonl").write_text("".join(lines), encoding="utf8")
+        # 前置条件：哈希链必须真的自洽，错误**只有** seq 一项。
+        # （不能断言 verify() 全绿——它自己就带 seq 校验。）
+        ok, errors = self.audit.verify()
+        self.assertFalse(ok)
+        self.assertTrue(errors and all("seq" in x for x in errors),
+                        f"前置条件不成立：哈希链应当自洽，实际 {errors}")
+        res = recover(self.audit)
+        self.assertFalse(res["complete"])
+        self.assertIn("seq", res["reason"])
+        self.assertEqual(res["last_trusted_seq"], 1)
+
+    def test_T_ALC_19_retention_provenance_recovery_in_one_stream(self):
+        """AUD-014-03 覆盖保留策略 + 来源识别 + 恢复三件事，而验收矩阵每条
+        断言的 `ref` 只能指一条用例。T-ALC-02..18 各自只测一件，指过去会
+        丢掉另外两件——补一条在同一条审计流上走完三者的场景用例。
+        """
+        reg = self._reg()
+        self.audit.append_from("gate", "gate.admission", level="G1")
+        self.audit.append_from("executor", "remote.replay_decision",
+                               op_id="op-1", verdict="MANUAL")
+
+        # ① 来源识别：这一条是干净流，不该有可疑
+        self.assertTrue(reg.check(self.audit.read())["ok"])
+        # 混进一条没声明来源的 → 立刻可疑
+        self.audit.append("sneak.event")
+        # 断言到 kind 而不是只断言 ok=False：只断言布尔的话，
+        # "换个标记但照样可疑"这种变异测不出来
+        self.assertEqual([x["kind"] for x in
+                          reg.check(self.audit.read())["findings"]],
+                         ["missing_source"])
+
+        # ② 保留策略：塞一条 40 天前的，超过 30 天上限
+        rp = RetentionPolicy()
+        rp.declare("gate.admission", 30)
+        stale = {"seq": 99, "event_type": "gate.admission",
+                 "timestamp": time.time() - 40 * 86400}
+        expired = rp.expired([stale])
+        self.assertEqual([x["verdict"] for x in expired], ["EXPIRED"])
+        # 超期要删，但没批准不给计划
+        with self.assertRaises(LifecycleRejected):
+            rp.plan_purge(expired)
+        self.assertEqual(rp.plan_purge(expired, approver="owner")["count"], 1)
+
+        # ③ 恢复：截断后仍能取回可信前缀，且被丢的行必须交出来
+        p = self.tmp / "audit.jsonl"
+        p.write_text("".join(p.read_text(encoding="utf8").splitlines(True)[:2])
+                     + '{"truncated\n', encoding="utf8")
+        res = recover(self.audit)
+        self.assertFalse(res["complete"])
+        self.assertEqual(res["last_trusted_seq"], 2)
+        self.assertEqual(len(res["dropped"]), 1)
+
+    # ---- 诚实边界 ----
+    def test_T_ALC_17_forged_source_field_is_not_caught(self):
+        """这条断言的是"**拦不住**"，不是"拦得住"。
+
+        任何持有写权限的人都可以直接写 `source=executor`，内部一致性检查
+        发现不了——**单文件审计流证明不了写入者身份**。把它写成用例而不
+        是注释，是为了防止后来者误以为 AUD-014-03 已经覆盖了身份伪造。
+        真正的防线是审计后端的权限分离与独立存储（AUD-014-04，manual）。
+        """
+        self.audit.append_from("gate", "gate.admission", level="G1")
+        # 冒充 gate 写一条它无权写的事件：只声明来源、不改别的
+        forged = {"seq": 2, "event_type": "remote.replay_decision",
+                  "source": "gate"}
+        # 反过来：冒充 executor 写一条，来源合法但人是假的——一致性层面看不出来
+        self.assertTrue(
+            self._reg().check([{"seq": 1, "event_type": "remote.replay_decision",
+                                "source": "executor"}])["ok"])
+        # 只有当它越出该来源的事件类型范围时才露馅
+        self.assertFalse(self._reg().check([forged])["ok"])
 
 
 if __name__ == "__main__":

@@ -76,6 +76,14 @@ class AuditLog:
                 f.write(json.dumps(event, ensure_ascii=False) + "\n")
         return event
 
+    def append_from(self, source, event_type, **fields):
+        """带来源声明的写入（AUD-014-03 的"来源可识别"前提）。
+
+        单独开一个方法而不是给 `append` 加关键字：`append(event_type, **fields)`
+        的 fields 是开放的，加 `source` 参数会和同名业务字段撞车。
+        """
+        return self.append(event_type, source=source, **fields)
+
     # ---- 读取 ----
     def read(self, event_type=None, strict=False):
         if not self.path.exists():

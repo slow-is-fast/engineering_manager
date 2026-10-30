@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "73c77322c8d7b808fc489b92f7d831342fc61f52",
-  "tree_sha": "328591ecd4bf78310a0b1a0f7a675578b1cb8dc8",
-  "content_hash_sha256": "cae97b37bf6ebdab1b2ed172148a94092484553167d696064c75dbd9bab69753",
+  "commit_sha": "c87a46b1c33b6eaca2a7647d5d936083f541d179",
+  "tree_sha": "22a05bd8026ef9b561844317d911ea68ce7b547a",
+  "content_hash_sha256": "8c0d6d381d71df56bf2f6f173045c80aefd135704fa395efb6c64bb0c99a5bee",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-31T00:42:09+08:00",
+  "pinned_at": "2026-10-31T07:22:54+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "271a672a974ffb772c704412da0360fe40b30f76",
+    "commit_sha": "73c77322c8d7b808fc489b92f7d831342fc61f52",
     "content_hash_sha256": "cae97b37bf6ebdab1b2ed172148a94092484553167d696064c75dbd9bab69753"
   },
-  "bump_reason": "补 T-REM-20（漂移→补偿失败→仍人工的整条链）与 T-REM-21(决策表逐格 + 未登记兜底），使 AUD-010-03 / AUD-009-03 的 ref 能指到覆盖完整语义的用例；executor/ 内容未变，content_hash 与上一版相同；控制面用例 107→109"
+  "bump_reason": "ALC-01 新增 executor/auditlifecycle.py：AUD-014-03 保留策略（未登记类别不得无限保留、删除须批准）、伪造来源识别（缺失/未登记/类型越界/seq 回退）、恢复（截断或篡改后取回最后可信前缀且 dropped 原样交出）；控制面用例 109→128（T-ALC-01..19），16 个变异全部捕获、0 逃逸"
 }
