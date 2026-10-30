@@ -722,20 +722,21 @@
         "AASEGS-AUD-010"
       ],
       "owner": "platform_owner",
-      "enforcer": "checkpoint_store",
-      "evidence": "一致性策略、版本、完整性校验值、持久化确认、损坏处理记录；恢复前的授权/策略/工作区基线/外部副作用状态四项校验记录",
+      "enforcer": "checkpoint_store (executor.checkpoint.CheckpointStore.pre_restore_check)",
+      "evidence": "恢复前四项校验（授权有效/策略一致/基线一致/副作用无 UNKNOWN）；任一不符暂停重评，不可补偿操作进 MANUAL_REMEDIATION_REQUIRED",
       "failure": "基线、授权或策略发生变化时暂停并重新评估；不可补偿操作进入人工处置状态",
       "test": "T-CKP-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/aasegs-gov-plane/actions/runs/40877657489",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "BRK-01",
@@ -772,19 +773,20 @@
       ],
       "owner": "repository_admin",
       "enforcer": "protected_baseline_policy",
-      "evidence": "项目级受保护质量基线（必需检查、可信 CI 来源、执行器/配置版本、测试阈值、适用 SHA、例外、变更审批规则）与基线变更触发独立审查的记录",
+      "evidence": "项目级受保护质量基线（必需检查、可信 CI 来源、执行器/配置版本、测试阈值、适用 SHA、例外、变更审批规则）与基线变更触发独立审查的记录 ｜状态同步：用例 T-QA-04（SHA 绑定三 SHA 绿-红-绿）已于 Round 3 实跑，旧检查不可复用",
       "failure": "SHA、配置或策略变化后旧检查与旧审核不得复用；基线被绕过时合并失败",
       "test": "T-QA-04",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
         "configured": true,
-        "tested": false,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/4",
+      "evidence_at": "2026-10-29"
     },
     {
       "id": "RVW-01",

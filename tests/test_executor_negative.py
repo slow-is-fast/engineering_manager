@@ -21,6 +21,9 @@ from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeReje
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
+from executor.checkpoint import (CheckpointStore, BaselineChanged,
+                                 PausedForReevaluation as CkpPaused,
+                                 ManualRemediationRequired as CkpManual)
 
 
 class ExecutorNegativeTests(unittest.TestCase):
@@ -412,6 +415,35 @@ class ExecutorNegativeTests(unittest.TestCase):
         kinds = [e["event_type"] for e in ev]
         self.assertIn("boundary_violation", kinds)              # 违规已记录
         self.assertIn("data.unclassified_defaults_to_max", kinds)  # 未分类按最高
+
+
+    # ---- T-CKP-01：恢复前四项校验，任一不成立即暂停；不可补偿则人工处置 ----
+    def test_t_ckp_01_pre_restore_checks(self):
+        store = CheckpointStore(self.tmp / "cp.json", self.tmp / "audit.jsonl")
+        store.save("cp-1", "t-600", "base-AAA", {"step": 3}, policy_hash="policy-v1.1.1")
+
+        ok_ctx = {"baseline": "base-AAA", "authorization_valid": True,
+                  "policy_hash": "policy-v1.1.1",
+                  "side_effects": [{"status": "CONFIRMED"}], "compensable": True}
+        self.assertEqual(store.pre_restore_check("cp-1", ok_ctx), "RESUME")  # 正向对照
+
+        with self.assertRaises(CkpPaused):        # 基线漂移（T-CKP-01 用例原文）
+            store.pre_restore_check("cp-1", {**ok_ctx, "baseline": "base-BBB"})
+        with self.assertRaises(CkpPaused):        # 授权失效
+            store.pre_restore_check("cp-1", {**ok_ctx, "authorization_valid": False})
+        with self.assertRaises(CkpPaused):        # 策略漂移
+            store.pre_restore_check("cp-1", {**ok_ctx, "policy_hash": "policy-v1.1.2"})
+        with self.assertRaises(CkpPaused):        # 外部副作用未决（UNKNOWN）
+            store.pre_restore_check("cp-1", {**ok_ctx,
+                                             "side_effects": [{"status": "UNKNOWN"}]})
+        with self.assertRaises(CkpManual):        # 不可补偿 + 条件不成立 → 人工处置
+            store.pre_restore_check("cp-1", {**ok_ctx, "baseline": "base-BBB",
+                                             "compensable": False})
+        # 暂停后不得续写：restore 仍会因基线不符拒绝
+        with self.assertRaises(BaselineChanged):
+            store.restore("cp-1", "base-BBB", authorized=True)
+        # 条件恢复后可正常恢复
+        self.assertEqual(store.restore("cp-1", "base-AAA", authorized=True)["step"], 3)
 
 
 if __name__ == "__main__":
