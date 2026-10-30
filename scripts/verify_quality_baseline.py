@@ -179,6 +179,27 @@ if prev is not None:
             fail(f'exceptions widened {added_exc} without change_approvals entry '
                  f'(type=exception_added, exceptions, approver)')
 
+# ---- E. 交叉一致性：基线里的 pin 版本必须等于 executor_pin.json ----
+# 2026-10-31 补。此前 `executor_pin_version` 只是个必填字段，没人检查它和
+# governance/executor_pin.json 是否一致——两处都声称"我们用的执行器版本"，
+# 却可以各说各话。这是本规范一直在防的记账裂缝：声明不等于判定。
+_pin_path = BASE / 'governance' / 'executor_pin.json'
+if _pin_path.exists():
+    try:
+        _pin = json.loads(_pin_path.read_text(encoding='utf8'))
+    except json.JSONDecodeError as exc:
+        fail(f'governance/executor_pin.json unreadable: {exc}')
+    else:
+        _bv = b.get('executor_pin_version') or {}
+        for _field, _pin_key in (('pinned_commit', 'commit_sha'),
+                                 ('pinned_tree', 'tree_sha')):
+            _want = _pin.get(_pin_key)
+            _got = _bv.get(_field)
+            if _want and _got != _want:
+                fail(f'baseline executor_pin_version.{_field}={_got} '
+                     f'!= executor_pin.json {_pin_key}={_want} — 两处声明的'
+                     f'执行器版本不一致，基线不可信')
+
 print(f'PASS(T-QA-04): baseline intact @review {b_commit[:12]} '
       f'(floor={floor}, {len(b.get("required_checks") or [])} required checks, '
       f'{len(commits)} baseline revisions)')

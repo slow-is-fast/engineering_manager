@@ -35,6 +35,7 @@ from executor.closure import ClosureEvaluator, ClosureIntegrityError
 from executor.credential import CredentialGuard, Denied as CredDenied
 from executor.incident import IncidentWorkflow, Rejected as IncidentRejected
 from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
+from executor.remote import RemoteGateway, RemoteRejected, MANUAL
 from datetime import date
 
 from executor.checkpoint import (CheckpointStore, BaselineChanged,
@@ -1969,6 +1970,194 @@ class ExecutorNegativeTests(unittest.TestCase):
         self.assertIn("missing_test_ref",
                       [s["reason"] for s in
                        res4["issues"]["AUD-101"]["acceptance"]["unsatisfied"]])
+
+
+class RemoteGatewayTests(unittest.TestCase):
+    """AUD-009-03（目标系统不支持幂等 / 查询不可用）与 AUD-010-03（漂移与补偿失败）。
+
+    远端能力靠调用方 `register` 声明——本模块只做决策，不真的打远端。
+    这个边界在 T-REM-18 里被显式固化下来。
+    """
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-remote-"))
+        self.audit = self.tmp / "audit.jsonl"
+        self.g = RemoteGateway(self.audit)
+
+    # ---- 正向对照：证明它不是"永远拒绝"的假门禁 ----
+    def test_T_REM_01_idempotent_replay_allowed(self):
+        self.g.register("queue", "key", "available")
+        p = self.g.replay("op-1", "queue", idempotency_key="k-1")
+        self.assertEqual(p["decision"], "REPLAY_WITH_KEY")
+
+    def test_T_REM_02_reconcile_match_allows_replay(self):
+        self.g.register("api", "none", "available")
+        r = self.g.reconcile("op-2", "api", expected="DONE", actual="DONE")
+        self.assertEqual(r["result"], "MATCH")
+        p = self.g.replay("op-2", "api", reconcile_result=r)
+        self.assertEqual(p["decision"], "REPLAY_AFTER_RECONCILE")
+
+    def test_T_REM_03_compensation_ok(self):
+        r = self.g.compensate("op-3", plan_ref="plan-7", result="ok")
+        self.assertEqual(r["result"], "COMPENSATED")
+
+    # ---- AUD-009-03：能力不足时不得默认重放 ----
+    def test_T_REM_04_no_idempotency_and_query_unavailable(self):
+        self.g.register("db", "none", "unavailable")
+        with self.assertRaises(RemoteRejected) as ctx:
+            self.g.replay("op-4", "db")
+        self.assertIn("no_idempotency_and_query_unavailable", str(ctx.exception))
+        self.assertEqual(self.g.plan("op-4", "db")["decision"], MANUAL)
+
+    def test_T_REM_05_unregistered_system_treated_as_worst_case(self):
+        cap = self.g.capability("ghost")
+        self.assertFalse(cap["registered"])
+        self.assertEqual(cap["idempotency"], "none")
+        self.assertEqual(cap["query"], "unavailable")
+        with self.assertRaises(RemoteRejected):
+            self.g.replay("op-5", "ghost", idempotency_key="k-1")
+
+    def test_T_REM_06_idempotent_without_key_rejected(self):
+        self.g.register("queue", "key", "available")
+        with self.assertRaises(RemoteRejected) as ctx:
+            self.g.replay("op-6", "queue")
+        self.assertIn("idempotent_replay_requires_key", str(ctx.exception))
+
+    def test_T_REM_07_replay_without_reconcile_rejected(self):
+        """RECONCILE_FIRST 是"先去查"的命令，不是"可以重放"的许可证。"""
+        self.g.register("api", "none", "available")
+        with self.assertRaises(RemoteRejected) as ctx:
+            self.g.replay("op-7", "api")
+        self.assertIn("replay_requires_verified_reconcile", str(ctx.exception))
+
+    def test_T_REM_08_replay_after_drifted_reconcile_rejected(self):
+        self.g.register("api", "none", "available")
+        r = self.g.reconcile("op-8", "api", expected="DONE", actual="PENDING")
+        self.assertEqual(r["result"], "DRIFT_DETECTED")
+        with self.assertRaises(RemoteRejected):
+            self.g.replay("op-8", "api", reconcile_result=r)
+
+    def test_T_REM_09_forged_reconcile_result_still_rejected(self):
+        self.g.register("db", "none", "unavailable")
+        r = self.g.reconcile("op-9", "db", expected="DONE")
+        self.assertEqual(r["result"], "UNVERIFIABLE")
+        # 调用方自己拼一个 {"result": "MATCH"} 骗不过去：先看能力，不看结论
+        with self.assertRaises(RemoteRejected):
+            self.g.replay("op-9", "db", reconcile_result={"result": "MATCH"})
+
+    def test_T_REM_10_unknown_capability_mode_rejected(self):
+        with self.assertRaises(RemoteRejected):
+            self.g.register("x", "maybe", "available")
+        with self.assertRaises(RemoteRejected):
+            self.g.register("y", "none", "sometimes")
+
+    # ---- AUD-010-03：漂移检测与补偿失败 ----
+    def test_T_REM_11_drift_detected_is_manual(self):
+        self.g.register("api", "none", "available")
+        r = self.g.reconcile("op-11", "api", expected="DONE", actual="ROLLED_BACK")
+        self.assertEqual(r["result"], "DRIFT_DETECTED")
+        self.assertEqual(r["next"], MANUAL)
+        self.assertEqual(len(self.g.audit.read("remote.drift_detected")), 1)
+
+    def test_T_REM_12_query_unavailable_is_not_match(self):
+        """查不了还硬塞一个 actual 进来：来源不可信，不得采信为 MATCH。"""
+        self.g.register("db", "none", "unavailable")
+        r = self.g.reconcile("op-12", "db", expected="DONE", actual="DONE")
+        self.assertEqual(r["result"], "UNVERIFIABLE")
+        self.assertEqual(r["next"], MANUAL)
+
+    def test_T_REM_13_missing_actual_is_not_match(self):
+        self.g.register("api", "none", "available")
+        r = self.g.reconcile("op-13", "api", expected="DONE", actual=None)
+        self.assertEqual(r["result"], "UNVERIFIABLE")
+        self.assertEqual(r["reason"], "no_actual")
+
+    def test_T_REM_14_partial_compensation_is_failure(self):
+        r = self.g.compensate("op-14", plan_ref="plan-1", result="partial")
+        self.assertEqual(r["result"], "COMPENSATION_FAILED")
+        self.assertEqual(r["next"], MANUAL)
+
+    def test_T_REM_15_failed_compensation_is_failure(self):
+        r = self.g.compensate("op-15", plan_ref="plan-1", result="failed")
+        self.assertEqual(r["result"], "COMPENSATION_FAILED")
+        self.assertEqual(r["next"], MANUAL)
+
+    def test_T_REM_16_compensation_requires_plan_ref(self):
+        with self.assertRaises(RemoteRejected) as ctx:
+            self.g.compensate("op-16", plan_ref=None, result="ok")
+        self.assertIn("compensation_requires_plan_ref", str(ctx.exception))
+
+    def test_T_REM_17_unknown_compensation_result_rejected(self):
+        with self.assertRaises(RemoteRejected):
+            self.g.compensate("op-17", plan_ref="plan-1", result="kinda_worked")
+
+    # ---- 诚实边界：能力声明错误拦不住 ----
+    def test_T_REM_18_misdeclared_capability_is_not_caught(self):
+        """这条断言的是"**拦不住**"，不是"拦得住"。
+
+        调用方把 none 谎报成 key，本模块照单放行——远端能力是声明来的，
+        声明错了策略拦不住。之所以把它写成用例（而不是写在注释里），
+        是为了防止后来者误以为 AUD-009-03 已覆盖此场景。
+        真正的防线是能力登记须带独立来源证据，不在本模块职责内。
+        """
+        self.g.register("db", "key", "unavailable")   # 实际 none，谎报 key
+        p = self.g.replay("op-18", "db", idempotency_key="k-1")
+        self.assertEqual(p["decision"], "REPLAY_WITH_KEY")
+
+    def test_T_REM_20_drift_then_failed_compensation_stays_manual(self):
+        """AUD-010-03 要的是整条链：漂移 → 尝试补偿 → 补偿失败 → 仍是人工。
+
+        单独测漂移（T-REM-11）和单独测补偿失败（T-REM-14）都不足以支撑它——
+        AUD-010-03 的实质是"这两件事都不许被悄悄吞掉、最终不得声称已恢复"。
+        """
+        self.g.register("api", "none", "available")
+        r = self.g.reconcile("op-20", "api", expected="DONE", actual="ROLLED_BACK")
+        self.assertEqual(r["result"], "DRIFT_DETECTED")
+        self.assertEqual(r["next"], MANUAL)
+        c = self.g.compensate("op-20", plan_ref="plan-20", result="partial")
+        self.assertEqual(c["result"], "COMPENSATION_FAILED")
+        self.assertEqual(c["next"], MANUAL)
+        # 补偿失败没把状态修回"可重放"：链条走完仍不得重放
+        with self.assertRaises(RemoteRejected):
+            self.g.replay("op-20", "api", reconcile_result=r)
+        # 漂移与补偿失败都要留痕；reconciled 不该出现（我们从没对上过）
+        self.assertEqual(len(self.g.audit.read("remote.drift_detected")), 1)
+        self.assertEqual(len(self.g.audit.read("remote.compensation_failed")), 1)
+        self.assertEqual(len(self.g.audit.read("remote.reconciled")), 0)
+
+    def test_T_REM_21_decision_table_exhaustive(self):
+        """AUD-009-03 的决策表逐格走一遍，含未登记兜底。
+
+        只测最坏那一格是不够的：那样"把 none+available 改成直接放行重放"
+        这种变异就逃得掉，而它恰好是实际中最容易出事的格子。
+        """
+        table = [
+            ("queue", "key", "available", "k-1", "REPLAY_WITH_KEY"),
+            ("api", "none", "available", None, "RECONCILE_FIRST"),
+            ("db", "none", "unavailable", None, MANUAL),
+            ("ghost", None, None, None, MANUAL),      # 未登记：按最保守
+        ]
+        for system, idem, query, key, expected in table:
+            if idem is not None:
+                self.g.register(system, idem, query)
+            with self.subTest(system=system):
+                p = self.g.plan("op-21", system, idempotency_key=key)
+                self.assertEqual(p["decision"], expected)
+                # MANUAL 的格子必须真的拦住 replay，不只是返回个标签
+                if expected == MANUAL:
+                    with self.assertRaises(RemoteRejected):
+                        self.g.replay("op-21", system, idempotency_key=key)
+
+    def test_T_REM_19_decision_is_audited(self):
+        # 用一个从未登记的系统：审计里必须留下 registered=False，
+        # 否则事后无法区分"能力真的不足"与"我们没登记过"
+        self.g.plan("op-19", "ghost")
+        ev = self.g.audit.read("remote.replay_decision")
+        self.assertEqual(len(ev), 1)
+        self.assertEqual(ev[0]["verdict"], MANUAL)
+        self.assertEqual(ev[0]["reason"], "no_idempotency_and_query_unavailable")
+        self.assertFalse(ev[0]["registered"])
+        ok, errors = self.g.audit.verify()
+        self.assertTrue(ok, errors)
 
 
 if __name__ == "__main__":
