@@ -435,6 +435,7 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | 有控制支撑的规则 | 48 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
 | 控制总数 | 49 | 原 20 条 + v1.1.1 新增 23 条 + CRED-01 + VD-01（信任域分离）+ WF-05/WF-06（WFL-001/002）+ ATT-01/CLM-01（SUP-005/AGT-005） |
 | 规则引用不到的控制 | 8 | 双向闭合检查的反方向读数：控制必须被某条规则引用，否则须在 `governance/control_coverage.json` 登记处置（`audit_driven` 指明审计问题，`defense_in_depth` 指明派生规则），否则 `validate_controls.py` 失败。8 条全部已登记 |
+| tested 控制的证据类型 | 41 automated / 3 drill | `evidence_kind` 必填：`automated` = `test` 可解析到真实用例或 CI 步骤、每次改动都会再跑；`drill` = 只有一次性演练记录（`QA-01`/`QA-02`/`BASE-01`），URI 必须指向 PR。**二者不可混为一谈**：一次性演练被当成常态化保障，是"看起来有覆盖"的另一种形式（2026-10-30 记账复核新增） |
 | 已具备运行时证据 | 44 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
 | §四 验收断言 | 90 条（满足 63） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`）。未满足 27 条中，人工待办 21 条（受 EXC-01），显式未实现 6 条 |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |
@@ -448,6 +449,7 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 1. `scripts/validate_controls.py`：字段完整性、六态一致性、风险等级（含"不服务任何规则的控制也必须有等级"）、来源章节、审计映射与测试用例唯一性；**控制 → 规则**反方向必须闭合——控制要么被某条规则引用，要么在 `governance/control_coverage.json` 有处置登记，且登记不得过期（规则重新引用后登记必须删除）。
 2. 审计映射双向差异：目录 `addresses` 中的每个问题 ID 必须存在于审计清单；审计清单中的每个问题必须至少被一条控制应答。
 3. 语义核对（**工具查不出，必须人做**）：引用存在不等于引用正确。每条控制挂到某规则前，须比对「控制证据/失败动作」与「规则条款」是否同一件事；`test` 字段指向的用例须真的在验证该控制的语义。
+4. 记账复核（**定期，人做**）：逐条核对 tested 控制的 `test` 字段与 `integration_evidence_uri`——指向的用例是否真的存在、指向的 PR/run 是否真的执行了与本控制相关的检查。2026-10-30 首次全量复核在 44 条里揪出 3 处记账不实（`ID-02`、`QA-04`、`CLM-01`），见 `evidence/traceability_audit_20261030T200000Z.md`。**其中"引用是否可解析"已固化为校验器断言，但"URI 是否真相关"仍只能靠人核。**
 
 未取得证据的问题一律按未关闭处理；未关闭的 P0 问题阻止对应风险等级准入。
 
