@@ -127,3 +127,68 @@ class ChangeEvaluator:
                           affected=len(affected))
         return {"result": "PUBLISHED", "affected": sorted(affected_ids),
                 "decisions": {r: decisions[r] for r in affected_ids}}
+
+
+RELEASE_KINDS = ("upgrade", "rollback")
+
+
+class ModelReleaseEvaluator:
+    """模型版本升级与回滚：证据必须绑定具体版本（AUD-017 验收项）。
+
+    规则要点：升级改变了执行者本身，上一版本的证据**不能**为新版本背书。
+    因此证据以 (model, version) 为键存放，跨版本复用会直接取不到。
+    回滚同样是变更，必须带回滚计划与回滚后的复验证据。
+    """
+
+    def __init__(self, audit_path):
+        self.audit = AuditLog(audit_path)
+        self.evidence = {}      # (model, version) -> {...}
+        self.current = {}       # model -> version
+
+    def _verifiable(self, ref):
+        if not ref or not isinstance(ref, str):
+            return False
+        return ref.startswith(("http://", "https://", "urn:")) or len(ref) >= 16
+
+    def register_evidence(self, model, version, evidence_ref,
+                          approved_by, evidence_at):
+        if not self._verifiable(evidence_ref):
+            raise Rejected(f"unverifiable_evidence: {model}@{version}")
+        if not approved_by or any(h in approved_by.lower() for h in AGENT_HINTS):
+            raise Rejected(f"evidence_must_be_approved_by_human: {model}@{version}")
+        self.evidence[(model, version)] = {
+            "evidence_ref": evidence_ref, "approved_by": approved_by,
+            "evidence_at": evidence_at,
+        }
+        self.audit.append("model.evidence_registered", model=model,
+                          version=version, evidence=evidence_ref)
+        return self.evidence[(model, version)]
+
+    def evaluate(self, model, to_version, kind="upgrade", plan_ref=None,
+                 actor="unknown"):
+        if kind not in RELEASE_KINDS:
+            raise Rejected(f"unknown_release_kind: {kind}")
+        ev = self.evidence.get((model, to_version))
+        if ev is None:
+            # 不能用上一个版本的证据给新版本背书
+            self.audit.append("model.release_rejected", model=model,
+                              to_version=to_version, kind=kind,
+                              reason="evidence_not_bound_to_version")
+            raise Rejected(f"evidence_not_bound_to_version: {model}@{to_version}")
+        if kind == "rollback":
+            if not self._verifiable(plan_ref):
+                self.audit.append("model.release_rejected", model=model,
+                                  to_version=to_version, kind=kind,
+                                  reason="rollback_without_plan")
+                raise Rejected(f"rollback_without_plan: {model}@{to_version}")
+        from_version = self.current.get(model)
+        self.current[model] = to_version
+        self.audit.append("model.released", model=model, kind=kind,
+                          from_version=from_version, to_version=to_version,
+                          evidence=ev["evidence_ref"], plan_ref=plan_ref,
+                          actor=actor,
+                          decision="APPROVED" if kind == "upgrade" else "ROLLED_BACK")
+        return {"model": model, "kind": kind, "from": from_version,
+                "to": to_version,
+                "decision": "APPROVED" if kind == "upgrade" else "ROLLED_BACK",
+                "evidence_ref": ev["evidence_ref"]}

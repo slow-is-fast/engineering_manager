@@ -43,6 +43,12 @@ def make_tmp(mangle=None):
     if audit.exists():
         (tmp / audit.name).write_text(audit.read_text(encoding='utf8'),
                                       encoding='utf8', newline='\n')
+    # 控制↔规则双向闭合登记同样是被校验的输入（2026-10-30 新增）
+    cov = ROOT / 'governance' / 'control_coverage.json'
+    if cov.exists():
+        (tmp / 'governance').mkdir(exist_ok=True)
+        (tmp / 'governance' / cov.name).write_text(
+            cov.read_text(encoding='utf8'), encoding='utf8', newline='\n')
     return tmp
 
 
@@ -90,6 +96,49 @@ def T_AUD_01_missing_test_field():
     tmp = make_tmp(mangle)
     rc, tail = run_lint(tmp)
     return rc != 0 and 'missing fields' in tail, rc, tail
+
+
+@case
+def T_REG_03_orphan_control_without_disposition():
+    """双向闭合：让控制失去全部规则引用且未登记处置 → 必须失败。
+
+    这正是 2026-10-30 发现的反向漏洞：控制可以凭空存在，
+    覆盖检查只做「规则→控制」一个方向，看不见它。
+    """
+    tmp = make_tmp()
+    reg_path = tmp / 'rule-registry.json'
+    reg = json.loads(reg_path.read_text(encoding='utf8'))
+    cov = json.loads((tmp / 'governance' / 'control_coverage.json')
+                     .read_text(encoding='utf8'))
+    declared = set(cov.get('dispositions') or {})
+
+    # 找一条"只被一个规则引用、且没有处置登记"的控制，摘掉它唯一的引用
+    counts = {}
+    for r in reg['rules']:
+        for cid in r['enforcement']['controls']:
+            counts[cid] = counts.get(cid, 0) + 1
+    victim = next((cid for cid, n in sorted(counts.items())
+                   if n == 1 and cid not in declared), None)
+    assert victim is not None, '夹具中找不到可摘除唯一引用的控制'
+    for r in reg['rules']:
+        if victim in r['enforcement']['controls']:
+            r['enforcement']['controls'].remove(victim)
+            if not r['enforcement']['controls']:
+                r['enforcement']['gap'] = 'injected gap for negative test'
+    reg_path.write_text(json.dumps(reg, ensure_ascii=False, indent=2),
+                        encoding='utf8', newline='\n')
+    rc, tail = run_lint(tmp)
+    return rc != 0 and 'control_coverage' in tail, rc, tail
+
+
+@case
+def T_REG_04_control_without_risk_level():
+    """任一控制缺 risk_level → 必须失败（不再只要求"服务规则的控制"）。"""
+    def mangle(d):
+        d['control-catalog.yaml']['controls'][0]['risk_level'] = None
+    tmp = make_tmp(mangle)
+    rc, tail = run_lint(tmp)
+    return rc != 0 and 'risk_level' in tail, rc, tail
 
 
 def main():

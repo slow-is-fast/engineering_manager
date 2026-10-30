@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "e2f8f24c7c1b7e0d3be30c886a15cc34c37d96eb",
-  "tree_sha": "bc63e31f02d29a780592f01d266bff02ad35f028",
-  "content_hash_sha256": "b1405349a501c2c087b69c6806413e097ffd36445b92e8767c8e6e805a7643ba",
+  "commit_sha": "61fed8806d9fedb779da8264cf4a1ed601d3532f",
+  "tree_sha": "e3f64d5469f147789f3526b696e3e8688d999629",
+  "content_hash_sha256": "7f3f0b4b2b5d4e6f59c1666c36f7dddb4304c03d783b2578ffb69a8dab014e5f",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-30T17:00:00+08:00",
+  "pinned_at": "2026-10-30T18:30:00+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "23579c99fad1454fe4403c068cbccbfc1c409a7f",
-    "content_hash_sha256": "20278d9128a795bff71883cb634485ea1e696fddeb30cb920177bf256df7f0b7"
+    "commit_sha": "e2f8f24c7c1b7e0d3be30c886a15cc34c37d96eb",
+    "content_hash_sha256": "b1405349a501c2c087b69c6806413e097ffd36445b92e8767c8e6e805a7643ba"
   },
-  "bump_reason": "MEM-01 来源校验/摘要 stale 传播/来源失效级联；SMT-01 机器可读状态转换矩阵；MTR-01 指标字典与超限动作；PKG-01 试点证据包与封存；用例 64→83"
+  "bump_reason": "AUD-008-04 超时未接收须核对不重放（ledger.sweep_timeouts）；AUD-011-03 乱序事件忽略（breaker.apply_event）；AUD-017-03 模型升级证据绑版本（change.ModelReleaseEvaluator）；AUD-022-03 工具升级使旧证据失效（toolgate.upgrade）；新增 REC-02 retrypolicy 破坏性操作默认不重试；用例 83→88"
 }

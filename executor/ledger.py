@@ -91,3 +91,43 @@ class EffectLedger:
             self._save(d)
             self.audit.append("effect.reconciled", key=key, state=rec["state"])
             return rec
+
+    # ---- 未接收超时（AUD-008 验收项）----
+    def declare_dispatched(self, key, deadline):
+        """登记"已发出但未收到回执"的请求及其超时时刻。
+
+        这里的关键不是计时，而是**超时之后算什么状态**：未收到回执
+        既不能当成功，也不能当失败——它只能进 UNKNOWN，必须核对。
+        """
+        with self._lock:
+            d = self._load()
+            rec = d.get(key)
+            if rec is None:
+                raise UnknownResult(f"unknown_effect: {key}")
+            if rec["state"] != "SUBMITTED":
+                raise DuplicateRejected(f"{key}: {rec['state']} 不可再次派发")
+            rec["deadline"] = deadline
+            rec["history"].append("DISPATCHED")
+            self._save(d)
+            self.audit.append("effect.dispatched", key=key, deadline=deadline)
+            return rec
+
+    def sweep_timeouts(self, now):
+        """超时未回执 → UNKNOWN，并返回超时清单（调用方必须逐条核对）。"""
+        timed_out = []
+        with self._lock:
+            d = self._load()
+            for key, rec in d.items():
+                if rec["state"] != "SUBMITTED":
+                    continue
+                dl = rec.get("deadline")
+                if dl is None or now <= dl:
+                    continue
+                rec["state"] = "UNKNOWN"
+                rec["history"].append("UNKNOWN")
+                timed_out.append(key)
+            if timed_out:
+                self._save(d)
+                self.audit.append("effect.receipt_timeout", keys=timed_out,
+                                  now=now, next_step="reconcile")
+        return timed_out

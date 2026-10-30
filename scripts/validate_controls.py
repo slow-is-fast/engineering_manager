@@ -100,6 +100,40 @@ for c in x['controls']:
         f"risk level propagation violated: control {c['id']}={cur} is looser than "
         f"highest served rule {highest}")
 
+# ---- 控制 ↔ 规则双向闭合（此前只做规则→控制一个方向） ----
+# 反方向的漏洞：控制不被任何规则引用也能存在，治理看起来完整，
+# 实际没有规范条款要求它。允许存在，但必须显式登记处置理由。
+assert all(c.get('risk_level') in ('P0', 'P1', 'P2') for c in x['controls']), (
+    f"controls without risk_level: "
+    f"{[c['id'] for c in x['controls'] if c.get('risk_level') not in ('P0', 'P1', 'P2')]}")
+
+_cov_path = BASE / 'governance' / 'control_coverage.json'
+assert _cov_path.exists(), 'missing control coverage registry'
+_cov = json.loads(_cov_path.read_text(encoding='utf8'))
+_disp = _cov.get('dispositions') or {}
+_rule_backed = set()
+for r in reg['rules']:
+    _rule_backed.update(r['enforcement']['controls'])
+_orphans = [c['id'] for c in x['controls'] if c['id'] not in _rule_backed]
+_undeclared = sorted(set(_orphans) - set(_disp))
+assert not _undeclared, (
+    f"controls referenced by no rule and not registered in control_coverage.json: "
+    f"{_undeclared}")
+for cid, d in _disp.items():
+    assert cid in seen, f"control_coverage.json references unknown control {cid}"
+    assert d.get('type') in ('audit_driven', 'defense_in_depth'), \
+        f"{cid}: bad disposition type {d.get('type')}"
+    assert d.get('reason') and d.get('owner'), f"{cid}: disposition needs reason + owner"
+    if d['type'] == 'audit_driven':
+        assert d.get('issue'), f"{cid}: audit_driven needs issue"
+    else:
+        assert d.get('derived_from'), f"{cid}: defense_in_depth needs derived_from"
+        for rid in d['derived_from']:
+            assert rid in rids, f"{cid}: derived_from unknown rule {rid}"
+_stale = sorted(set(_disp) & _rule_backed)
+assert not _stale, (f"control_coverage.json lists controls that are now rule-backed: "
+                    f"{_stale} — remove the stale disposition")
+
 # ---- 文档侧双向差异：规范文档中带编号的 MUST/MUST NOT 条款必须已注册 ----
 import re
 doc_ids = set()

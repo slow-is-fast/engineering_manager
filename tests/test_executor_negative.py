@@ -21,7 +21,9 @@ from executor.contract import (TaskContractValidator, DeliveryReportValidator,
                                Rejected as ContractRejected)
 from executor.attestation import (ApprovalAttestationValidator,
                                   Rejected as AttestationRejected)
-from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeRejected
+from executor.change import (RunRegistry, ChangeEvaluator, ModelReleaseEvaluator,
+                            Rejected as ChangeRejected)
+from executor.retrypolicy import RetryPolicy, RetryRejected
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
@@ -550,6 +552,143 @@ class ExecutorNegativeTests(unittest.TestCase):
         with self.assertRaises(PackRejected) as cm:
             pack3.claim_pass("PASS")
         self.assertIn("open_failures", str(cm.exception))
+
+    # ---- T-EFF-02：未接收超时 → UNKNOWN，必须核对（AUD-008 验收项）----
+    def test_t_eff_02_receipt_timeout_requires_reconcile(self):
+        led = EffectLedger(self.tmp / "eff.json", self.tmp / "audit.jsonl")
+        led.submit("k1", {"sql": "update t set x=1"})
+        led.declare_dispatched("k1", deadline=1000)
+        # 未到超时时刻：不得提前判定
+        self.assertEqual(led.sweep_timeouts(now=999), [])
+        # 超时未收到回执 → UNKNOWN（既不是成功也不是失败）
+        self.assertEqual(led.sweep_timeouts(now=1001), ["k1"])
+        with self.assertRaises(UnknownResult):        # 超时后不得盲目重放
+            led.submit("k1", {"sql": "update t set x=1"})
+        led.reconcile("k1", confirmed=False)          # 核对：未能确认已生效
+        with self.assertRaises(UnknownResult):        # 仍需人工补救，仍不得重试
+            led.submit("k1", {"sql": "update t set x=1"})
+        # 已确认的请求不得重新派发
+        led2 = EffectLedger(self.tmp / "eff2.json", self.tmp / "audit.jsonl")
+        led2.submit("k2", {"sql": "select 1"})
+        led2.confirm("k2")
+        with self.assertRaises(DuplicateRejected):
+            led2.declare_dispatched("k2", deadline=2000)
+        with self.assertRaises(Exception):
+            led2.declare_dispatched("nonexistent", deadline=1)
+
+    # ---- T-BRK-02：事件乱序被忽略，不重复计数（AUD-011 验收项）----
+    def test_t_brk_02_out_of_order_events_ignored(self):
+        brk = CircuitBreaker(self.tmp / "brk.json", self.tmp / "audit.jsonl",
+                             thresholds={"db_write": 3})
+        r1 = brk.apply_event(1, "db_write")
+        self.assertEqual(r1["action"], "APPLIED")
+        r2 = brk.apply_event(1, "db_write")           # 重复序号 → 忽略
+        self.assertEqual(r2["action"], "IGNORED")
+        r3 = brk.apply_event(0, "db_write")           # 更旧的事件 → 忽略
+        self.assertEqual(r3["action"], "IGNORED")
+        # 两次有效事件没把阈值打满（若乱序重复计数会提前熔断）
+        self.assertFalse(brk._load().get("open"))
+        brk.apply_event(2, "db_write")
+        opened = brk.apply_event(3, "db_write")       # 第 3 次有效事件 → 熔断
+        self.assertTrue(opened["opened"])
+        with self.assertRaises(BreakerOpen):
+            brk.allow("write")
+        ignored = brk.apply_event(2, "db_write")      # 熔断后旧事件照样不生效
+        self.assertEqual(ignored["action"], "IGNORED")
+
+    # ---- T-CHG-02：模型升级/回滚的证据必须绑定版本（AUD-017 验收项）----
+    def test_t_chg_02_model_upgrade_and_rollback_bound_to_version(self):
+        ev = ModelReleaseEvaluator(str(self.tmp / "audit.jsonl"))
+        ev.register_evidence("claude", "v1", "urn:ev:v1", "human-owner", "2026-10-20")
+        # 用 v1 的证据给 v3 背书 → 拒绝（证据未绑定目标版本）
+        with self.assertRaises(ChangeRejected) as cm:
+            ev.evaluate("claude", "v3")
+        self.assertIn("evidence_not_bound_to_version", str(cm.exception))
+        # 正常升级：有绑定证据
+        res = ev.evaluate("claude", "v1")
+        self.assertEqual(res["decision"], "APPROVED")
+        # 回滚必须有回滚计划
+        ev.register_evidence("claude", "v0", "urn:ev:v0", "human-owner", "2026-10-20")
+        with self.assertRaises(ChangeRejected) as cm:
+            ev.evaluate("claude", "v0", kind="rollback")
+        self.assertIn("rollback_without_plan", str(cm.exception))
+        back = ev.evaluate("claude", "v0", kind="rollback",
+                           plan_ref="urn:plan:rollback-1")
+        self.assertEqual(back["decision"], "ROLLED_BACK")
+        self.assertEqual(back["from"], "v1")
+        # Agent 不能给模型证据背书
+        with self.assertRaises(ChangeRejected):
+            ev.register_evidence("claude", "v9", "urn:ev:v9", "agent-7", "2026-10-20")
+
+    # ---- T-TOOL-02：工具升级使旧证据失效并触发降级（AUD-022 验收项）----
+    def test_t_tool_02_upgrade_supersedes_evidence(self):
+        full = {c: "enforced" for c in (
+            "read_scope", "write_isolation", "audit", "termination",
+            "authz_check", "credential_isolation", "network_boundary",
+            "reviewer_independence", "trusted_ci")}
+        g = ToolGate(str(self.tmp / "audit.jsonl"), now=date(2026, 10, 30))
+        g.register("cli", "1.0", full, evidence_at="2026-10-20")
+        self.assertEqual(g.max_admissible_risk("cli", "1.0")[0], "R3")
+        # 升级到 1.1 但未取证 → 版本不可准入，且旧版本被取代
+        up = g.upgrade("cli", "1.1", full, evidence_at=None)
+        self.assertIsNone(up["admissible"])
+        self.assertIn("1.0", up["superseded"])
+        self.assertEqual(g.max_admissible_risk("cli", "1.1")[0], None)
+        with self.assertRaises(ToolDenied):           # 旧版本不得继续放行
+            g.admit("cli", "1.0", "R1")
+        # 补齐证据后恢复准入（正向对照）
+        g.upgrade("cli", "1.1", full, evidence_at="2026-10-25")
+        self.assertEqual(g.max_admissible_risk("cli", "1.1")[0], "R3")
+
+    # ---- T-REC-02：破坏性操作默认不重试（WFL-006）----
+    def test_t_rec_02_destructive_not_auto_retryable(self):
+        pol = RetryPolicy(str(self.tmp / "audit.jsonl"))
+        # 默认不重试：没有人类重授权
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("drop_table", attempt=2)
+        self.assertIn("destructive_not_auto_retryable", str(cm.exception))
+        # Agent 不能签发重授权
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("drop_table", 2,
+                        approval={"approver": "agent-7",
+                                  "scope_ref": "urn:scope:db1",
+                                  "operation": "drop_table"},
+                        state_check={"result": "confirmed_no_effect",
+                                     "evidence_ref": "urn:chk:1"})
+        self.assertIn("reauthz_by_agent", str(cm.exception))
+        # 有授权但没有状态核对 → 仍是盲目重放
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("drop_table", 2,
+                        approval={"approver": "human-owner",
+                                  "scope_ref": "urn:scope:db1",
+                                  "operation": "drop_table"})
+        self.assertIn("state_check_required", str(cm.exception))
+        # 核对了但结果不是"确认无副作用"
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("drop_table", 2,
+                        approval={"approver": "human-owner",
+                                  "scope_ref": "urn:scope:db1",
+                                  "operation": "drop_table"},
+                        state_check={"result": "unknown",
+                                     "evidence_ref": "urn:chk:1"})
+        self.assertIn("state_check_not_confirmed", str(cm.exception))
+        # 授权 + 核对齐备 → 放行（正向对照）
+        ok = pol.request("drop_table", 2,
+                         approval={"approver": "human-owner",
+                                   "scope_ref": "urn:scope:db1",
+                                   "operation": "drop_table"},
+                         state_check={"result": "confirmed_no_effect",
+                                      "evidence_ref": "urn:chk:1"})
+        self.assertEqual(ok["decision"], "RETRY_ALLOWED")
+        # 非破坏性操作允许有限重试，超预算拒绝
+        self.assertEqual(pol.request("read_config", 1)["decision"], "RETRY_ALLOWED")
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("read_config", 4)
+        self.assertIn("retry_budget_exhausted", str(cm.exception))
+        # 未知操作按破坏性处理：没听说过 ≠ 安全
+        with self.assertRaises(RetryRejected) as cm:
+            pol.request("frobnicate_db", 2)
+        self.assertIn("destructive_not_auto_retryable", str(cm.exception))
 
 
     def test_t_rec_01_baseline_mismatch_pauses_restore(self):

@@ -1120,7 +1120,8 @@
       "enforcement": {
         "type": "technical",
         "controls": [
-          "MEM-01"
+          "MEM-01",
+          "CTX-02"
         ],
         "gap": null
       },
@@ -1164,7 +1165,8 @@
       "enforcement": {
         "type": "technical",
         "controls": [
-          "MEM-01"
+          "MEM-01",
+          "CTX-03"
         ],
         "gap": null
       },
@@ -1514,7 +1516,9 @@
       "enforcement": {
         "type": "technical",
         "controls": [
-          "CNC-01"
+          "CNC-01",
+          "WF-01",
+          "WF-02"
         ],
         "gap": null
       },
@@ -1603,7 +1607,8 @@
         "type": "technical",
         "controls": [
           "EFF-01",
-          "REC-02"
+          "REC-02",
+          "WF-03"
         ],
         "gap": null
       },
@@ -1648,7 +1653,8 @@
       "enforcement": {
         "type": "technical",
         "controls": [
-          "EFF-01"
+          "EFF-01",
+          "REC-04"
         ],
         "gap": null
       },

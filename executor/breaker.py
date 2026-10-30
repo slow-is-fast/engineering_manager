@@ -63,3 +63,25 @@ class CircuitBreaker:
             self.audit.append("side_effect.rejected_breaker_open", operation=operation)
             raise BreakerOpen(f"circuit open: {self._load()['open']['cause']}")
         return True
+
+    # ---- 事件乱序（AUD-011 验收项）----
+    def apply_event(self, seq, cause, severity="normal"):
+        """带序号的事件摄入：旧事件（seq ≤ 已处理最大序号）一律忽略。
+
+        乱序重放会让同一个失败被计两次，把阈值提前打满；也会让一条迟到的
+        "普通事件"把刚打开的熔断器状态搅乱。因此序号必须单调，旧事件只记录
+        不生效——**忽略也是一种明确决策，要留痕**。
+        """
+        d = self._load()
+        last = d.get("last_seq", 0)
+        if seq <= last:
+            self.audit.append("breaker.event_reordered", seq=seq,
+                              last_seq=last, cause=cause, action="ignored")
+            return {"action": "IGNORED", "seq": seq, "last_seq": last}
+        d["last_seq"] = seq
+        self._save(d)
+        opened = self.record(cause, severity=severity)
+        self.audit.append("breaker.event_applied", seq=seq, cause=cause,
+                          severity=severity, opened=bool(opened))
+        return {"action": "APPLIED", "seq": seq, "last_seq": seq,
+                "opened": bool(opened)}

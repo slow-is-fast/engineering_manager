@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "purpose": "控制 ↔ 规则的双向闭合登记。此前覆盖检查只做「规则 → 是否被控制应答」一个方向，导致控制可以凭空存在：看起来治理完整，实际没有任何规范条款要求它。本文件补另一个方向——每条控制要么被至少一条规则引用，要么在此登记为什么它仍然应该存在。",
+  "disposition_types": {
+    "audit_driven": "由审计问题的修补要求派生：规范条款层没有对应的编号 MUST，但审计问题要求建立该机制。必须指明 issue。",
+    "defense_in_depth": "纵深防御型机制：不独立对应某条规则，作为其他控制的底座或实现手段。必须指明 derived_from 规则与理由。"
+  },
+  "honest_note": "本文件是人工判断的产物。把一条控制标成 defense_in_depth 等于承认「规范没有强制要求它」——这是事实披露，不是免责声明。",
+  "dispositions": {
+    "REG-02": {
+      "type": "audit_driven",
+      "issue": "AASEGS-AUD-002",
+      "reason": "六态状态服务：AUD-002 要求可区分 documented/configured/tested/verified/degraded/excepted，规范正文只有散文描述，无独立编号 MUST。",
+      "owner": "governance_owner"
+    },
+    "ISO-01": {
+      "type": "audit_driven",
+      "issue": "AASEGS-AUD-016",
+      "reason": "跨项目隔离边界：AUD-016 的修补要求，规范正文散落在 §4 数据处理条款中，未单独编号。",
+      "owner": "security_owner"
+    },
+    "SMT-01": {
+      "type": "audit_driven",
+      "issue": "AASEGS-AUD-007",
+      "reason": "任务状态转换矩阵：AUD-007 要求机器可读转换表；§5 只描述状态含义，未规定转换矩阵必须机器可读。",
+      "owner": "workflow_owner"
+    },
+    "BRK-01": {
+      "type": "audit_driven",
+      "issue": "AASEGS-AUD-011",
+      "reason": "熔断器：AUD-011 要求严重越权即时熔断；规范 §7 提到熔断但未给出可判定阈值语义。",
+      "owner": "platform_owner"
+    },
+    "RVF-01": {
+      "type": "audit_driven",
+      "issue": "AASEGS-AUD-022",
+      "reason": "证据新鲜度闸门：AUD-022 要求证据过期即降级；规范只写「持续复验」，未规定 TTL 与失败关闭。",
+      "owner": "governance_owner"
+    },
+    "REC-03": {
+      "type": "defense_in_depth",
+      "derived_from": [
+        "AASEGS-WFL-006"
+      ],
+      "reason": "熔断机制作为 WFL-006「破坏性变更不得默认重试」的实现手段；规范没有单独的熔断 MUST。",
+      "owner": "platform_owner"
+    },
+    "AUD-03": {
+      "type": "defense_in_depth",
+      "derived_from": [
+        "AASEGS-SEC-008"
+      ],
+      "reason": "append-only 审计存储是 EVD-01/02（P0，已 tested）的底座实现；P0 义务由 EVD 控制承担，本控制不再重复定级为 P0。",
+      "owner": "governance_owner"
+    },
+    "REC-01": {
+      "type": "defense_in_depth",
+      "derived_from": [
+        "AASEGS-WFL-005"
+      ],
+      "reason": "REC-01 保证检查点自身完整（签名 + base SHA），是 CKP-01 恢复前四项校验的底座；它不回答 WFL-005 的「敏感数据不得写入普通快照」——那条由 CKP-01 应答。此前把它挂在 WFL-005 下，属于用相邻的控制凑覆盖。",
+      "owner": "platform_owner"
+    }
+  }
+}

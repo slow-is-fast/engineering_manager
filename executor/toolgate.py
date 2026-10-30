@@ -84,11 +84,33 @@ class ToolGate:
             return False, f"evidence_stale({age}d>{EVIDENCE_TTL_DAYS}d)"
         return True, None
 
+    # ---- 版本升级触发降级（AUD-022 验收项）----
+    def upgrade(self, tool, new_version, capabilities, evidence_at=None):
+        """工具升级：旧版本证据**不得**平移到新版本。
+
+        升级后旧版本被标记 superseded，不能再被准入（防止"用旧版本的
+        验证结果继续放行新版本的工具"）；新版本没有取证时一律不可准入。
+        """
+        self.register(tool, new_version, capabilities, evidence_at=evidence_at)
+        superseded = []
+        for (t, v), entry in self.manifest.items():
+            if t == tool and v != new_version:
+                entry["superseded_by"] = new_version
+                superseded.append(v)
+        self.audit.append("tool.upgraded", tool=tool, new_version=new_version,
+                          superseded=superseded, evidence_at=evidence_at,
+                          degraded=evidence_at is None)
+        return {"tool": tool, "version": new_version,
+                "superseded": superseded,
+                "admissible": self.max_admissible_risk(tool, new_version)[0]}
+
     def max_admissible_risk(self, tool, version):
         """在能力清单与证据时效约束下，允许的最高风险等级（None = 不可准入）。"""
         entry = self.manifest.get((tool, version))
         if entry is None:
             return None, ["unregistered_tool_version"]
+        if entry.get("superseded_by"):
+            return None, [f"superseded_by({entry['superseded_by']})"]
         fresh, why = self._evidence_fresh(entry)
         caps = entry["capabilities"]
         reasons, allowed = [], None

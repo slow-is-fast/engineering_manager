@@ -105,7 +105,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -128,7 +128,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §4 记忆生命周期与项目数据隔离",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -151,7 +151,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -174,7 +174,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -194,19 +194,20 @@
       "evidence": "unique operation receipt",
       "failure": "suppress duplicate",
       "test": "T-WF-03",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "evidence/bidirectional_and_assertions_20261030T183000Z.md",
       "source_ref": "v1.1.1 §5 工作流状态转换、交接与并发",
-      "risk_level": null,
+      "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "REC-01",
@@ -219,7 +220,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -236,22 +237,23 @@
       "requirement_ref": "REC-02",
       "owner": "Execution service",
       "enforcer": "retry_controller",
-      "evidence": "attempt log and external lookup",
+      "evidence": "重试判定决策记录：破坏性操作须人类重授权（Agent 角色拒）+ 状态核对 confirmed_no_effect；未知操作按破坏性处理；非破坏性限 3 次",
       "failure": "block retry",
       "test": "T-REC-02",
-      "status": "not_enforced",
-      "integration_evidence_uri": null,
+      "status": "tested",
+      "integration_evidence_uri": "evidence/bidirectional_and_assertions_20261030T183000Z.md",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
       "risk_level": "P0",
       "addresses": [],
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
-      }
+      },
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "REC-03",
@@ -264,7 +266,7 @@
       "status": "tested",
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/40837846884",
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -287,7 +289,7 @@
       "status": "not_enforced",
       "integration_evidence_uri": null,
       "source_ref": "v1.1.1 §7 Checkpoint、恢复与熔断",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,
@@ -459,7 +461,7 @@
       "status": "not_enforced",
       "integration_evidence_uri": null,
       "source_ref": "v1.1.1 §9 审计证据与安全事件响应",
-      "risk_level": null,
+      "risk_level": "P1",
       "addresses": [],
       "state": {
         "documented": true,

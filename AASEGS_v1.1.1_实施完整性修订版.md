@@ -434,8 +434,9 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | 强制规则总数 | 53 | `rule-registry.json`，含 v1.0 继承的 GOV-01～08；SUP-006 为 §9 事件响应散文式 MUST 的补注册（2026-10-30，INC-01 落地时发现其原先未注册） |
 | 有控制支撑的规则 | 48 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
 | 控制总数 | 49 | 原 20 条 + v1.1.1 新增 23 条 + CRED-01 + VD-01（信任域分离）+ WF-05/WF-06（WFL-001/002）+ ATT-01/CLM-01（SUP-005/AGT-005） |
-| 已具备运行时证据 | 42 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
-| §四 验收断言 | 90 条（满足 59） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`） |
+| 规则引用不到的控制 | 8 | 双向闭合检查的反方向读数：控制必须被某条规则引用，否则须在 `governance/control_coverage.json` 登记处置（`audit_driven` 指明审计问题，`defense_in_depth` 指明派生规则），否则 `validate_controls.py` 失败。8 条全部已登记 |
+| 已具备运行时证据 | 44 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
+| §四 验收断言 | 90 条（满足 63） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`）。未满足 27 条中，人工待办 21 条（受 EXC-01），显式未实现 6 条 |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |
 
 本文件已于 2026-10-29 经 Owner（slow-is-fast）批准转正为正式生效版本（见文首转正记录）。P0 问题的关闭证据至少包括：对应控制条目 `state.tested=true`、`state.verified=true`、`integration_evidence_uri` 非空，以及 §12 准入门槛的机器判定记录。文档中的条款表述不能替代上述证据。
@@ -444,8 +445,9 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 
 每次修订本补充条款或 `control-catalog.yaml` 时必须重跑以下检查，任一失败则本次修订不得进入准入评审：
 
-1. `scripts/validate_controls.py`：字段完整性、六态一致性、风险等级、来源章节、审计映射与测试用例唯一性。
+1. `scripts/validate_controls.py`：字段完整性、六态一致性、风险等级（含"不服务任何规则的控制也必须有等级"）、来源章节、审计映射与测试用例唯一性；**控制 → 规则**反方向必须闭合——控制要么被某条规则引用，要么在 `governance/control_coverage.json` 有处置登记，且登记不得过期（规则重新引用后登记必须删除）。
 2. 审计映射双向差异：目录 `addresses` 中的每个问题 ID 必须存在于审计清单；审计清单中的每个问题必须至少被一条控制应答。
+3. 语义核对（**工具查不出，必须人做**）：引用存在不等于引用正确。每条控制挂到某规则前，须比对「控制证据/失败动作」与「规则条款」是否同一件事；`test` 字段指向的用例须真的在验证该控制的语义。
 
 未取得证据的问题一律按未关闭处理；未关闭的 P0 问题阻止对应风险等级准入。
 

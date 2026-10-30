@@ -102,7 +102,7 @@
         {"id": "AUD-008-01", "kind": "test", "ref": "test_t_wf_02_concurrent_holder_denied", "text": "并发写：非持有者被拒"},
         {"id": "AUD-008-02", "kind": "test", "ref": "test_t_cnc_01_stale_fence_and_fail_closed", "text": "过期栅栏旧写者 / 锁服务中断 → 失败关闭"},
         {"id": "AUD-008-03", "kind": "test", "ref": "test_t_wf_03_duplicate_delivery_rejected", "text": "重复确认被拒"},
-        {"id": "AUD-008-04", "kind": "unimplemented", "target": "WF-02", "text": "未接收超时场景"}
+        {"id": "AUD-008-04", "kind": "test", "ref": "test_t_eff_02_receipt_timeout_requires_reconcile", "text": "未接收超时 → UNKNOWN，须核对，不得盲目重放"}
       ]
     },
     "AUD-009": {
@@ -134,7 +134,7 @@
       "assertions": [
         {"id": "AUD-011-01", "kind": "test", "ref": "test_t_brk_01_severe_violation_opens_immediately", "text": "严重越权即时熔断"},
         {"id": "AUD-011-02", "kind": "test", "ref": "test_t_rec_03_threshold_opens_breaker", "text": "阈值边界触发熔断"},
-        {"id": "AUD-011-03", "kind": "unimplemented", "target": "REC-03", "text": "事件乱序与解除授权"},
+        {"id": "AUD-011-03", "kind": "test", "ref": "test_t_brk_02_out_of_order_events_ignored", "text": "事件乱序：旧事件被忽略且不重复计数"},
         {"id": "AUD-011-04", "kind": "manual", "human_gate": "breaker_drill", "text": "隔离环境演练记录"}
       ]
     },
@@ -199,7 +199,7 @@
       "assertions": [
         {"id": "AUD-017-01", "kind": "test", "ref": "test_t_chg_01_change_without_disposition_rejected", "text": "未处置变更不得放行（含紧急撤销路径）"},
         {"id": "AUD-017-02", "kind": "test", "ref": "test_t_gate_01_stale_evidence_not_counted", "text": "旧证据不得复用"},
-        {"id": "AUD-017-03", "kind": "unimplemented", "target": "CHG-01", "text": "模型升级与回滚决策"},
+        {"id": "AUD-017-03", "kind": "test", "ref": "test_t_chg_02_model_upgrade_and_rollback_bound_to_version", "text": "模型升级/回滚：证据须绑定目标版本，回滚须带计划"},
         {"id": "AUD-017-04", "kind": "manual", "human_gate": "change_evidence_review", "text": "记录绑定版本/审批/回滚证据"}
       ]
     },
@@ -255,7 +255,7 @@
       "assertions": [
         {"id": "AUD-022-01", "kind": "script", "command": "python scripts/verify_evidence_freshness.py --enforce", "text": "证据过期即失败关闭（RVF-01）"},
         {"id": "AUD-022-02", "kind": "test", "ref": "test_t_gate_01_stale_evidence_not_counted", "text": "过期证据不得计入等级判定"},
-        {"id": "AUD-022-03", "kind": "unimplemented", "target": "RVF-01", "text": "工具升级触发降级"},
+        {"id": "AUD-022-03", "kind": "test", "ref": "test_t_tool_02_upgrade_supersedes_evidence", "text": "工具升级使旧证据失效并降级，旧版本不得继续放行"},
         {"id": "AUD-022-04", "kind": "manual", "human_gate": "reverify_policy_approval", "text": "周期/事件复验策略审批"}
       ]
     }
