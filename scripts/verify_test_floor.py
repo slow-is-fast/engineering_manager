@@ -71,3 +71,5 @@ if count < floor:
     sys.exit(f'FAIL(T-QA-02): acceptance test count dropped: {count} < floor '
              f'{floor}\n  ' + '\n  '.join(detail))
 print(f'PASS(T-QA-02): {count} acceptance cases >= floor {floor}')
+
+# 受控演练：验证 T-QA-04 漂移检测在 CI 上真的会红（冷读 F1 曾证明它恒绿）
