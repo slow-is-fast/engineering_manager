@@ -609,16 +609,17 @@
       "evidence": "DRAFT→PENDING_REVIEW→APPROVED→(REVOKED|EXPIRED) 状态转换记录、授权主体与版本、CAS 版本号、撤销传播至索引/缓存/摘要/后续 Run 的清单",
       "failure": "无法证明传播完成时，该记忆不得用于规范性决策；并发更新 CAS 冲突时拒绝写入",
       "test": "T-MEM-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/open_controls_20261030T170000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "ISO-01",
@@ -658,16 +659,17 @@
       "evidence": "机器可读转换表（from/to、允许角色、前置条件、必需证据、授权与策略校验、CAS 条件、拒绝结果、重试条件）与逐次转换记录",
       "failure": "未声明的转换一律拒绝；终态不得由 Agent 文字声明重开",
       "test": "T-SMT-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/open_controls_20261030T170000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "CNC-01",
@@ -956,16 +958,17 @@
       "evidence": "每项治理指标的定义：公式、数据源、窗口、owner、阈值、超限动作",
       "failure": "缺少公式或超限动作定义的指标不得作为治理判定依据",
       "test": "T-MTR-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/open_controls_20261030T170000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "PKG-01",
@@ -980,16 +983,17 @@
       "evidence": "每次试点的证据包：环境与版本、风险范围、控制状态快照、测试结果、证据引用、失败与例外、复验记录、批准结论",
       "failure": "缺少证据包不得声明试点通过或风险等级准入",
       "test": "T-PKG-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/open_controls_20261030T170000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "RVF-01",

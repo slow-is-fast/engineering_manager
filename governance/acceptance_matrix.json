@@ -75,7 +75,9 @@
         {"id": "AUD-006-01", "kind": "test", "ref": "test_t_ctx_01_looks_like_system_is_not_authority", "text": "未知来源伪装系统消息 → 分类不变"},
         {"id": "AUD-006-02", "kind": "test", "ref": "test_t_ctx_02_revoked_memory_not_returned", "text": "撤销后缓存命中不得返回已撤销记忆"},
         {"id": "AUD-006-03", "kind": "test", "ref": "test_t_ctx_03_unreviewed_promotion_rejected", "text": "未审核晋升 → 拒绝"},
-        {"id": "AUD-006-04", "kind": "unimplemented", "target": "MEM-01", "text": "并发更新、摘要残留、来源失效"},
+        {"id": "AUD-006-04", "kind": "test", "ref": "test_t_mem_01_summary_stale_after_parent_revoked", "text": "摘要残留：父记忆撤销后摘要立即不可用"},
+        {"id": "AUD-006-06", "kind": "test", "ref": "test_t_mem_01_source_invalidation_cascades", "text": "来源失效：级联到该来源的全部记忆与摘要"},
+        {"id": "AUD-006-07", "kind": "test", "ref": "test_t_mem_01_source_verification_required", "text": "未知来源 / 未校验来源不得晋升"},
         {"id": "AUD-006-05", "kind": "manual", "human_gate": "memory_integration_test", "text": "记忆状态机与检索/缓存集成测试"}
       ]
     },
@@ -85,7 +87,10 @@
       "close_condition": "状态机测试通过且日志完整记录 from/to/actor/decision/evidence。",
       "assertions": [
         {"id": "AUD-007-01", "kind": "test", "ref": "test_t_wf_05_task_contract_rejects_incomplete", "text": "契约不完整 → 拒绝（覆盖任务状态契约的一部分）"},
-        {"id": "AUD-007-02", "kind": "unimplemented", "target": "SMT-01", "text": "非法跳转 / 无证据跳转 / 终态重开 / 未授权解除暂停"},
+        {"id": "AUD-007-02", "kind": "test", "ref": "test_t_smt_01_undeclared_and_terminal_rejected", "text": "非法跳转 / 终态重开 → 拒绝"},
+        {"id": "AUD-007-04", "kind": "test", "ref": "test_t_smt_01_missing_evidence_and_role", "text": "无证据跳转 / 角色越权 → 拒绝"},
+        {"id": "AUD-007-05", "kind": "test", "ref": "test_t_smt_01_unauthorized_pause_release", "text": "未授权解除暂停 → 拒绝（Agent 不得自行恢复）"},
+        {"id": "AUD-007-06", "kind": "test", "ref": "test_t_smt_01_concurrent_overwrite", "text": "并发覆盖：陈旧版本 CAS 拒绝"},
         {"id": "AUD-007-03", "kind": "manual", "human_gate": "transition_log_review", "text": "日志 from/to/actor/decision/evidence 完整性抽查"}
       ]
     },
@@ -213,7 +218,9 @@
       "criteria": "指标可复现，模拟超限触发告警/复核。",
       "close_condition": "指标字典、阈值配置和超限演练完成审核。",
       "assertions": [
-        {"id": "AUD-019-01", "kind": "unimplemented", "target": "MTR-01", "text": "指标可复现与超限触发告警/复核"},
+        {"id": "AUD-019-01", "kind": "test", "ref": "test_t_mtr_01_reproducible_and_insufficient", "text": "指标可复现（同输入同结果 + 输入摘要）；样本不足不折成 0"},
+        {"id": "AUD-019-03", "kind": "test", "ref": "test_t_mtr_01_exceed_triggers_alert_and_review", "text": "模拟超限触发告警 + 复核工单"},
+        {"id": "AUD-019-04", "kind": "test", "ref": "test_t_mtr_01_single_dimension_ranking_rejected", "text": "单维排名拒绝（SUP-003）"},
         {"id": "AUD-019-02", "kind": "manual", "human_gate": "metric_dict_review", "text": "指标字典与阈值配置审核"}
       ]
     },
@@ -234,7 +241,10 @@
       "close_condition": "一个受控真实仓库完成证据包并由独立 Reviewer/Owner 签署。",
       "assertions": [
         {"id": "AUD-021-01", "kind": "script", "command": "python -m unittest discover -s tests -p test_*.py", "text": "每项测试可在干净环境复现（报告可复现）"},
-        {"id": "AUD-021-02", "kind": "evidence", "path": "governance/acceptance_matrix.json", "contains": "unimplemented", "text": "每项验收标准有明确处置（含显式未实现项）"},
+        {"id": "AUD-021-02", "kind": "evidence", "path": "governance/acceptance_matrix.json", "contains": "assertion_kinds", "text": "每项验收标准有明确处置，且矩阵自身声明了诚实边界"},
+        {"id": "AUD-021-04", "kind": "test", "ref": "test_t_pkg_01_results_need_evidence_and_repro", "text": "每条用例必须有证据引用与复现命令"},
+        {"id": "AUD-021-05", "kind": "test", "ref": "test_t_pkg_01_failures_need_issue_and_owner", "text": "失败必须映射到问题 ID 与负责人"},
+        {"id": "AUD-021-06", "kind": "test", "ref": "test_t_pkg_01_seal_detects_tamper_and_pass_requires_pack", "text": "无证据包不得宣称通过；封存后篡改可检出"},
         {"id": "AUD-021-03", "kind": "manual", "human_gate": "signed_evidence_package", "text": "受控真实仓库证据包 + 独立 Reviewer/Owner 签署"}
       ]
     },

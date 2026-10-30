@@ -28,7 +28,7 @@
 
 ### 二·A · Owner 分配记录（2026-10-29 Owner 批准）
 
-**Owner：slow-is-fast**（全部 22 项统一指派）。当前 **18 项 `READY_FOR_REVIEW`、4 项 `OPEN`**。`READY_FOR_REVIEW` 由 `scripts/check_audit_closure.py` 机器判定，含义仅为**应答控制全部 tested（或持有效例外）且证据未过期**——即"可以进入验收评审"，**不等于验收通过、更不等于关闭**。自 2026-10-30 起，闭合评估在控制级证据之外增加了 **§四 验收断言层**（`governance/acceptance_matrix.json`，80 条断言）：即使进入 `READY_FOR_REVIEW`，只要仍有未满足断言或未登记签署的人工项，声明 `CLOSED`/`ACCEPTED_RISK` 即判为记账不实。关闭仍须逐条满足 §四 验收标准并经独立复核（当前受 EXC-01 约束）。仍 `OPEN` 的 4 项因应答控制未 tested 而受阻：AUD-006（MEM-01）、AUD-007（SMT-01）、AUD-019（MTR-01）、AUD-021（PKG-01）。
+**Owner：slow-is-fast**（全部 22 项统一指派）。当前 **22 项 `READY_FOR_REVIEW`、0 项 `OPEN`**。`READY_FOR_REVIEW` 由 `scripts/check_audit_closure.py` 机器判定，含义仅为**应答控制全部 tested（或持有效例外）且证据未过期**——即"可以进入验收评审"，**不等于验收通过、更不等于关闭**。自 2026-10-30 起，闭合评估在控制级证据之外增加了 **§四 验收断言层**（`governance/acceptance_matrix.json`，80 条断言）：即使进入 `READY_FOR_REVIEW`，只要仍有未满足断言或未登记签署的人工项，声明 `CLOSED`/`ACCEPTED_RISK` 即判为记账不实。关闭仍须逐条满足 §四 验收标准并经独立复核（当前受 EXC-01 约束）。**已无因应答控制未 tested 而受阻的问题**：2026-10-30 16:00 起 MEM-01、SMT-01、MTR-01、PKG-01 全部 tested，22 项均进入验收评审。全部 22 项仍未关闭，缺口已从"控制未落地"转为"§四 验收条款未满足"——由 `governance/acceptance_matrix.json` 的 80 余条断言逐条点名。
 
 | 问题 ID | 严重程度 | 状态 | 备注 |
 |---|---|---|---|
@@ -37,8 +37,8 @@
 | AUD-003 | P1 | READY_FOR_REVIEW | control-catalog 已机器可读并通过静态校验 |
 | AUD-004 | P0 | READY_FOR_REVIEW | WP-02；资源端独立验签与撤销竞态已 tested（T-AUTH-01/02）；§四 六类阻断均有对应用例，关闭仍待隔离环境集成测试与资源端拒绝证据 |
 | AUD-005 | P1 | READY_FOR_REVIEW | WP-02；工具能力准入矩阵未建 |
-| AUD-006 | P1 | OPEN | WP-03；记忆状态机已在执行器 memory.py 实现并 tested |
-| AUD-007 | P1 | OPEN | WP-04；任务状态机转换矩阵待补全 |
+| AUD-006 | P1 | READY_FOR_REVIEW | WP-03；MEM-01 已 tested（来源校验、版本 CAS、摘要 stale 传播、来源失效级联）；关闭待检索/缓存集成测试 |
+| AUD-007 | P1 | READY_FOR_REVIEW | WP-04；SMT-01 已 tested（机器可读转换表：角色/证据/CAS/终态不可重开/解除暂停须授权）；关闭待逐次转换日志抽查 |
 | AUD-008 | P1 | READY_FOR_REVIEW | WP-04；fencing 写锁已 tested，交接租约语义待扩展 |
 | AUD-009 | P0 | READY_FOR_REVIEW | WP-04；幂等台账 UNKNOWN→reconcile 已 tested |
 | AUD-010 | P0 | READY_FOR_REVIEW | WP-04；checkpoint 摘要绑定已 tested，一致性对账未做 |
@@ -50,9 +50,9 @@
 | AUD-016 | P0 | READY_FOR_REVIEW | WP-03；跨项目隔离未测 |
 | AUD-017 | P1 | READY_FOR_REVIEW | WP-06；策略变更状态机未建 |
 | AUD-018 | P1 | READY_FOR_REVIEW | WP-02；审批到期系统级失效保证未实现 |
-| AUD-019 | P2 | OPEN | WP-06；指标阈值/责任人/超限动作未定义 |
+| AUD-019 | P2 | READY_FOR_REVIEW | WP-06；MTR-01 已 tested（公式/数据源/窗口/owner/阈值/超限动作/恢复条件；单维排名拒绝）；关闭待指标字典与阈值配置审核 |
 | AUD-020 | P0 | READY_FOR_REVIEW | WP-01；G2 机器可判定门槛待定义 |
-| AUD-021 | P1 | OPEN | WP-06；PKG-01 证据包已首次履行（试点报告），模板待固化 |
+| AUD-021 | P1 | READY_FOR_REVIEW | WP-06；PKG-01 已 tested（九段必填、用例须证据+复现命令、失败须映射 issue/owner、封存防篡改）；关闭待受控真实仓库证据包与独立签署 |
 | AUD-022 | P1 | READY_FOR_REVIEW | WP-06；证据过期降级与持续复验规则未建 |
 
 优先推进顺序按 §五工作包：P0 阻断项优先（AUD-002/004/008/009/010/012/013/014/015/018/020）。

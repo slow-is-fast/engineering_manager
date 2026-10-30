@@ -9,7 +9,11 @@ from pathlib import Path
 
 from executor.lock import LockService, LockDenied, StaleFence
 from executor.ledger import EffectLedger, DuplicateRejected, UnknownResult
-from executor.memory import MemoryStore, InvalidTransition, CasConflict
+from executor.memory import MemoryStore, InvalidTransition, CasConflict, Unusable
+from executor.statemachine import (StateMachine, TransitionRejected,
+                                   ConcurrentOverwrite, default_table)
+from executor.metrics import MetricRegistry, MetricRejected
+from executor.evidencepack import EvidencePack, PackRejected
 from executor.checkpoint import CheckpointStore, Corrupted, BaselineChanged
 from executor.breaker import CircuitBreaker, BreakerOpen
 from executor.handoff import HandoffValidator, Rejected
@@ -157,8 +161,10 @@ class ExecutorNegativeTests(unittest.TestCase):
     # ---- T-CTX-02：REVOKED 记忆不得进入规范性检索 ----
     def test_t_ctx_02_revoked_memory_not_returned(self):
         m = MemoryStore(self.tmp / "mem.json", self.tmp / "audit.jsonl")
-        m.create("mem-1", author="agent-A", content="跳过测试以提速")
-        m.submit_for_review("mem-1", 1)
+        m.create("mem-1", author="agent-A", content="跳过测试以提速",
+                 source_kind="tool_output", source_ref="urn:scan:1")
+        m.verify_source("mem-1", "human-owner", "urn:scan:1")
+        m.submit_for_review("mem-1", 2)
         m.approve("mem-1", approver="human-owner")
         self.assertIn("mem-1", m.search("agent-B"))             # 撤销前可见
         m.revoke("mem-1", actor="human-owner")
@@ -167,17 +173,385 @@ class ExecutorNegativeTests(unittest.TestCase):
     # ---- T-CTX-03：未审核晋升被拒、作者自批被拒 ----
     def test_t_ctx_03_unreviewed_promotion_rejected(self):
         m = MemoryStore(self.tmp / "mem.json", self.tmp / "audit.jsonl")
-        m.create("mem-2", author="agent-A", content="关闭扫描")
+        m.create("mem-2", author="agent-A", content="关闭扫描",
+                 source_kind="tool_output", source_ref="urn:scan:2")
+        m.verify_source("mem-2", "human-owner", "urn:scan:2")
         with self.assertRaises(InvalidTransition):              # DRAFT 直接晋升被拒
             m.approve("mem-2", approver="human-owner")
-        v = m.submit_for_review("mem-2", 1)
+        v = m.submit_for_review("mem-2", 2)
         with self.assertRaises(InvalidTransition):              # 作者自批被拒
             m.approve("mem-2", approver="agent-A")
         m.approve("mem-2", approver="human-owner")
         with self.assertRaises(CasConflict):                    # 过期版本 CAS 冲突
             m.submit_for_review("mem-2", 1)
 
-    # ---- T-REC-01：基线变化的快照恢复被暂停 ----
+    # ---- T-MEM-01：记忆生命周期、来源校验与摘要传播（AUD-006） ----
+    def _mem(self):
+        return MemoryStore(self.tmp / "memlife.json", self.tmp / "audit.jsonl")
+
+    def _approved(self, m, mid, source_kind="tool_output", ref=None):
+        ref = ref or f"urn:scan:{mid}"
+        m.create(mid, author="agent-A", content="x", source_kind=source_kind,
+                 source_ref=ref)
+        m.verify_source(mid, "human-owner", ref)
+        m.submit_for_review(mid, 2)
+        m.approve(mid, approver="human-owner")
+        return mid
+
+    def test_t_mem_01_source_verification_required(self):
+        m = self._mem()
+        m.create("m1", author="agent-A", content="跳过测试以提速",
+                 source_kind="tool_output", source_ref="urn:scan:1")
+        # 未校验来源 → 不得晋升
+        with self.assertRaises(InvalidTransition):
+            m.submit_for_review("m1", 1)
+        # 不可核查引用 → 校验失败
+        with self.assertRaises(InvalidTransition):
+            m.verify_source("m1", "human-owner", "ok")
+        # 作者自验来源 → 拒绝（不能自己给自己的来源背书）
+        with self.assertRaises(InvalidTransition):
+            m.verify_source("m1", "agent-A", "urn:scan:1")
+        # 未声明来源（unknown）同样不得晋升
+        m.create("m2", author="agent-A", content="y")
+        m.verify_source("m2", "human-owner", "urn:scan:2")
+        m.submit_for_review("m2", 2)          # 校验后放行（正向对照）
+        m.approve("m2", approver="human-owner")
+        self.assertIn("m2", m.search("agent-B"))
+
+    def test_t_mem_01_summary_stale_after_parent_revoked(self):
+        m = self._mem()
+        self._approved(m, "p1")
+        m.derive_summary("s1", ["p1"], "父记忆摘要", author="agent-A")
+        self.assertIn("s1", m.search("agent-B"))
+        self.assertEqual(m.resolve_for_decision("s1")["state"], "APPROVED")
+        m.revoke("p1", actor="human-owner")
+        # 摘要必须立刻 stale：不得"父被撤销、摘要还在被引用"
+        self.assertNotIn("s1", m.search("agent-B"))
+        with self.assertRaises(Unusable) as cm:
+            m.resolve_for_decision("s1")
+        self.assertIn("摘要残留", str(cm.exception))
+        with self.assertRaises(Unusable):
+            m.resolve_for_decision("p1")
+
+    def test_t_mem_01_source_invalidation_cascades(self):
+        m = self._mem()
+        self._approved(m, "p1", ref="urn:doc:42")
+        self._approved(m, "p2", ref="urn:doc:42")
+        m.derive_summary("s1", ["p1"], "摘要1", author="agent-A")
+        res = m.invalidate_source("urn:doc:42", actor="human-owner")
+        self.assertEqual(sorted(res["affected"]), ["p1", "p2"])
+        self.assertIn("s1", res["stale_summaries"])
+        for mid in ("p1", "p2"):
+            with self.assertRaises(Unusable) as cm:
+                m.resolve_for_decision(mid)
+            self.assertIn("来源失效", str(cm.exception))
+        self.assertEqual(m.search("agent-B"), [])
+        # 其他来源不受影响
+        self._approved(m, "p3", ref="urn:doc:99")
+        self.assertEqual(m.search("agent-B"), ["p3"])
+
+    def test_t_mem_01_expired_not_usable(self):
+        m = self._mem()
+        self._approved(m, "p1")
+        m.derive_summary("s1", ["p1"], "摘要", author="agent-A")
+        m.expire("p1", at="2026-10-30T00:00:00")
+        with self.assertRaises(Unusable) as cm:
+            m.resolve_for_decision("p1")
+        self.assertIn("已过期", str(cm.exception))
+        with self.assertRaises(Unusable):
+            m.resolve_for_decision("s1")
+        self.assertNotIn("s1", m.search("agent-B"))
+
+    def test_t_mem_01_derive_requires_usable_parent(self):
+        m = self._mem()
+        m.create("d1", author="agent-A", content="草稿")
+        with self.assertRaises(Unusable):      # DRAFT 父记忆不能派生摘要
+            m.derive_summary("s1", ["d1"], "x", author="agent-A")
+        with self.assertRaises(Unusable):      # 父记忆不存在
+            m.derive_summary("s2", ["ghost"], "x", author="agent-A")
+        self._approved(m, "p1")
+        m.derive_summary("s3", ["p1"], "ok", author="agent-A")
+        # 三层链：撤销最上层，所有后代 stale
+        m.derive_summary("s4", ["s3"], "二级摘要", author="agent-A")
+        self.assertIn("s4", m.search("agent-B"))
+        m.revoke("p1", actor="human-owner")
+        self.assertNotIn("s4", m.search("agent-B"))
+        with self.assertRaises(Unusable):
+            m.resolve_for_decision("s4")
+
+    # ---- T-SMT-01：任务状态机转换矩阵（AUD-007） ----
+    _sseq = 0
+
+    def _sm(self):
+        type(self)._sseq += 1
+        n = type(self)._sseq
+        return StateMachine(default_table(), str(self.tmp / f"sm{n}.jsonl"),
+                            self.tmp / f"sm_state{n}.json")
+
+    def test_t_smt_01_undeclared_and_terminal_rejected(self):
+        sm = self._sm()
+        # 未声明转换（含同态）一律拒绝
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t1", "NEW", "CLOSED", "agent-A", "agent")
+        self.assertIn("undeclared_transition", str(cm.exception))
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t1", "NEW", "NEW", "agent-A", "agent")
+        self.assertIn("undeclared_transition", str(cm.exception))
+        # 未知状态
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t1", "NEW", "TELEPORTED", "agent-A", "agent")
+        self.assertIn("unknown_state", str(cm.exception))
+        # 正常走到终态
+        sm.apply("t1", "NEW", "RUNNING", "agent-A", "agent",
+                 {"contract_ref": "urn:contract:1"})
+        sm.apply("t1", "RUNNING", "DELIVERED", "agent-A", "agent",
+                 {"delivery_report": "urn:report:1"})
+        sm.apply("t1", "DELIVERED", "CLOSED", "owner", "human_owner",
+                 {"review_record": "urn:review:1"})
+        # 终态不得重开：人类要求也不行，补偿走新任务
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t1", "CLOSED", "RUNNING", "owner", "human_owner",
+                     {"resume_authorization": "urn:auth:1"})
+        self.assertIn("terminal_state_reopen", str(cm.exception))
+
+    def test_t_smt_01_missing_evidence_and_role(self):
+        sm = self._sm()
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t2", "NEW", "RUNNING", "agent-A", "agent")   # 缺 contract_ref
+        self.assertIn("missing_evidence", str(cm.exception))
+        sm.apply("t2", "NEW", "RUNNING", "agent-A", "agent",
+                 {"contract_ref": "urn:contract:2"})
+        sm.apply("t2", "RUNNING", "DELIVERED", "agent-A", "agent",
+                 {"delivery_report": "urn:report:2"})
+        # 角色不足：Agent 不能关闭任务
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t2", "DELIVERED", "CLOSED", "agent-A", "agent",
+                     {"review_record": "urn:review:2"})
+        self.assertIn("role_not_allowed", str(cm.exception))
+        self.assertEqual(
+            sm.apply("t2", "DELIVERED", "CLOSED", "owner", "human_owner",
+                     {"review_record": "urn:review:2"})["state"], "CLOSED")
+
+    def test_t_smt_01_unauthorized_pause_release(self):
+        sm = self._sm()
+        sm.apply("t3", "NEW", "RUNNING", "agent-A", "agent",
+                 {"contract_ref": "urn:contract:3"})
+        sm.apply("t3", "RUNNING", "PAUSED", "agent-A", "agent",
+                 {"pause_reason": "等待审批"})
+        # Agent 不得自行解除暂停
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t3", "PAUSED", "RUNNING", "agent-A", "agent",
+                     {"resume_authorization": "urn:auth:3"})
+        self.assertIn("unauthorized_pause_release", str(cm.exception))
+        # 人类治理角色 + 授权引用 → 放行（正向对照）
+        self.assertEqual(
+            sm.apply("t3", "PAUSED", "RUNNING", "owner", "governance_owner",
+                     {"resume_authorization": "urn:auth:3"})["state"], "RUNNING")
+
+    def test_t_smt_01_concurrent_overwrite(self):
+        sm = self._sm()
+        r1 = sm.apply("t4", "NEW", "RUNNING", "agent-A", "agent",
+                      {"contract_ref": "urn:contract:4"}, expect_version=0)
+        self.assertEqual(r1["version"], 1)
+        # 陈旧版本写回 → 拒绝（不静默覆盖）
+        with self.assertRaises(ConcurrentOverwrite):
+            sm.apply("t4", "RUNNING", "DELIVERED", "agent-B", "agent",
+                     {"delivery_report": "urn:report:4"}, expect_version=0)
+        # from_state 与实际不一致同样拒绝
+        with self.assertRaises(TransitionRejected) as cm:
+            sm.apply("t4", "NEW", "RUNNING", "agent-B", "agent",
+                     {"contract_ref": "urn:contract:4"}, expect_version=1)
+        self.assertIn("stale_state", str(cm.exception))
+
+    def test_t_smt_01_audit_records_full_transition(self):
+        sm = self._sm()
+        sm.apply("t5", "NEW", "RUNNING", "agent-A", "agent",
+                 {"contract_ref": "urn:contract:5"})
+        events = sm.audit.read(event_type="state.transition")
+        self.assertTrue(events)
+        e = events[-1]
+        for k in ("task_id", "from", "to", "actor", "role", "decision", "evidence"):
+            self.assertIn(k, e)
+        self.assertEqual((e["from"], e["to"]), ("NEW", "RUNNING"))
+        self.assertEqual(e["decision"], "ALLOWED")
+
+    def test_t_smt_01_compensation_is_new_task(self):
+        sm = self._sm()
+        sm.apply("t6", "NEW", "RUNNING", "agent-A", "agent",
+                 {"contract_ref": "urn:contract:6"})
+        sm.apply("t6", "RUNNING", "CANCELLED", "owner", "human_owner",
+                 {"cancel_reason": "需求取消"})
+        with self.assertRaises(TransitionRejected):
+            sm.apply("t6", "CANCELLED", "RUNNING", "owner", "human_owner",
+                     {"resume_authorization": "urn:auth:6"})
+        comp = sm.open_compensation("t6", "撤销侧效应", "owner")
+        self.assertEqual(comp["compensates"], "t6")
+        self.assertEqual(comp["state"], "NEW")
+        with self.assertRaises(TransitionRejected):      # 幂等：不重复开
+            sm.open_compensation("t6", "again", "owner")
+
+    # ---- T-MTR-01：治理指标字典与超限动作（AUD-019） ----
+    def _mr(self):
+        return MetricRegistry(str(self.tmp / "metrics.jsonl"))
+
+    def test_t_mtr_01_incomplete_metric_inadmissible(self):
+        r = self._mr()
+        # 缺恢复条件 → 定义不完整，不得用于判定
+        r.register("approval_latency", lambda s: s[0]["v"], "median(latency_h)",
+                   "audit_log", "7d", "governance_owner", 48,
+                   "alert_and_review", recovery=None, direction="max")
+        self.assertFalse(r.is_admissible("approval_latency"))
+        with self.assertRaises(MetricRejected) as cm:
+            r.evaluate("approval_latency", [{"v": 60}])
+        self.assertIn("定义不完整", str(cm.exception))
+        # 未登记指标
+        with self.assertRaises(MetricRejected):
+            r.evaluate("ghost_metric", [{"v": 1}])
+        # 未登记的处置动作不得冒充"超限动作"
+        with self.assertRaises(MetricRejected):
+            r.register("m2", lambda s: 1, "count(x)", "src", "1d", "o", 1,
+                       "just_log_it", "recover")
+        # 补齐后可用（正向对照）
+        r.register("approval_latency", lambda s: max(x["v"] for x in s),
+                   "max(latency_h)", "audit_log", "7d", "governance_owner", 48,
+                   "alert_and_review", "连续 7 天低于阈值")
+        self.assertTrue(r.is_admissible("approval_latency"))
+
+    def test_t_mtr_01_reproducible_and_insufficient(self):
+        r = self._mr()
+        r.register("review_fail_rate", lambda s: sum(x["f"] for x in s) / len(s),
+                   "failures/total", "ci", "30d", "qa_owner", 0.2,
+                   "alert_and_review", "3 天无失败")
+        a = r.evaluate("review_fail_rate", [{"f": 0.3}, {"f": 0.2}])
+        b = r.evaluate("review_fail_rate", [{"f": 0.3}, {"f": 0.2}])
+        self.assertEqual(a["value"], b["value"])              # 可复现
+        self.assertEqual(a["input_digest"], b["input_digest"])
+        # 样本为空 → INSUFFICIENT，不折成 0
+        self.assertEqual(r.evaluate("review_fail_rate", [])["status"],
+                         "INSUFFICIENT")
+        # 分母为 0 → INSUFFICIENT，不折成 1
+        r.register("zero_den", lambda s: 1 / 0, "1/0", "src", "1d", "o", 1,
+                   "alert_only", "n/a")
+        self.assertEqual(r.evaluate("zero_den", [{"f": 1}])["status"],
+                         "INSUFFICIENT")
+
+    def test_t_mtr_01_exceed_triggers_alert_and_review(self):
+        r = self._mr()
+        r.register("unauthorized_writes", lambda s: sum(x["n"] for x in s),
+                   "sum(denied_writes)", "scope_guard", "1d", "security_owner",
+                   0, "alert_and_review", "24h 无拒绝事件")
+        ok = r.evaluate("unauthorized_writes", [{"n": 0}])
+        self.assertEqual(ok["status"], "OK")
+        self.assertNotIn("alert_id", ok)
+        bad = r.evaluate("unauthorized_writes", [{"n": 3}])
+        self.assertEqual(bad["status"], "EXCEED")
+        self.assertTrue(bad["alert_id"])
+        self.assertTrue(bad["review_id"])                     # 告警 + 复核，不是只打日志
+        self.assertEqual(len(r.alerts), 1)                     # 只有 EXCEED 产生告警
+        self.assertEqual(len(r.reviews), 1)
+
+    def test_t_mtr_01_single_dimension_ranking_rejected(self):
+        r = self._mr()
+        r.register("loc", lambda s: sum(x["v"] for x in s), "sum(loc)", "git",
+                   "1w", "o", 1, "alert_only", "n/a")
+        r.register("tests", lambda s: sum(x["v"] for x in s), "sum(tests)", "ci",
+                   "1w", "o", 1, "alert_only", "n/a")
+        with self.assertRaises(MetricRejected) as cm:          # 单维排名禁止（SUP-003）
+            r.rank_agents([{"agent": "A", "loc": 1000}], ["loc"])
+        self.assertIn("single_dimension", str(cm.exception))
+        ranked = r.rank_agents([{"agent": "A", "loc": 1000, "tests": 20},
+                                {"agent": "B", "loc": 500, "tests": 40}],
+                               ["loc", "tests"])
+        self.assertEqual(len(ranked), 2)
+        self.assertIn("dimensions", ranked[0])
+
+    # ---- T-PKG-01：试点证据包（AUD-021） ----
+    def _pack_payload(self, **over):
+        payload = {
+            "environment": "ci-ubuntu-24.04",
+            "versions": {"executor": "23579c9", "runner": "python-3.12"},
+            "risk_scope": {"levels": ["R0", "R1"], "excluded": ["R3"]},
+            "control_snapshot": {"tested": 38, "verified": 0},
+            "test_results": [
+                {"id": "T-REG-01", "verdict": "PASS",
+                 "evidence_ref": "urn:run:1", "reproduce_cmd": "python tests/negative_static.py"},
+                {"id": "T-VD-01", "verdict": "PASS",
+                 "evidence_ref": "urn:run:2", "reproduce_cmd": "python scripts/verify_executor_pin.py"},
+            ],
+            "failures": [],
+            "exceptions": [{"id": "EXC-02", "scope": "verified"}],
+            "reverification": {"next_due": "2026-11-28"},
+            "approval": {"owner": "slow-is-fast", "date": "2026-10-30"},
+        }
+        payload.update(over)
+        return payload
+
+    def test_t_pkg_01_missing_sections_rejected(self):
+        for section in ("environment", "control_snapshot", "reverification",
+                        "approval"):
+            p = self._pack_payload()
+            p.pop(section)
+            with self.assertRaises(PackRejected) as cm:
+                EvidencePack.build(p, str(self.tmp / "pack.jsonl"))
+            self.assertIn("missing_sections", str(cm.exception))
+
+    def test_t_pkg_01_results_need_evidence_and_repro(self):
+        base = self._pack_payload()
+        no_ev = self._pack_payload(test_results=[
+            {"id": "T1", "verdict": "PASS", "reproduce_cmd": "x"}])
+        with self.assertRaises(PackRejected) as cm:
+            EvidencePack.build(no_ev, str(self.tmp / "pack.jsonl"))
+        self.assertIn("evidence_ref required", str(cm.exception))
+        no_cmd = self._pack_payload(test_results=[
+            {"id": "T1", "verdict": "PASS", "evidence_ref": "urn:1"}])
+        with self.assertRaises(PackRejected) as cm:
+            EvidencePack.build(no_cmd, str(self.tmp / "pack.jsonl"))
+        self.assertIn("reproduce_cmd required", str(cm.exception))
+        bad_verdict = self._pack_payload(test_results=[
+            {"id": "T1", "verdict": "PROBABLY", "evidence_ref": "urn:1",
+             "reproduce_cmd": "x"}])
+        with self.assertRaises(PackRejected):
+            EvidencePack.build(bad_verdict, str(self.tmp / "pack.jsonl"))
+        good = EvidencePack.build(base, str(self.tmp / "pack.jsonl"))
+        self.assertEqual(len(good.payload["test_results"]), 2)
+
+    def test_t_pkg_01_failures_need_issue_and_owner(self):
+        no_issue = self._pack_payload(failures=[{"owner": "o"}])
+        with self.assertRaises(PackRejected) as cm:
+            EvidencePack.build(no_issue, str(self.tmp / "pack.jsonl"))
+        self.assertIn("issue_id", str(cm.exception))
+        no_owner = self._pack_payload(failures=[{"issue_id": "AUD-004"}])
+        with self.assertRaises(PackRejected) as cm:
+            EvidencePack.build(no_owner, str(self.tmp / "pack.jsonl"))
+        self.assertIn("owner", str(cm.exception))
+
+    def test_t_pkg_01_seal_detects_tamper_and_pass_requires_pack(self):
+        pack = EvidencePack.build(self._pack_payload(), str(self.tmp / "pack.jsonl"))
+        with self.assertRaises(PackRejected) as cm:      # 未封存不得宣称通过
+            pack.claim_pass("PASS")
+        self.assertIn("without_sealed_pack", str(cm.exception))
+        digest = pack.seal()
+        self.assertEqual(len(digest), 64)
+        self.assertTrue(pack.verify_seal())
+        # 封存后偷改结论 → 校验必须失败
+        pack.payload["control_snapshot"]["tested"] = 49
+        with self.assertRaises(PackRejected) as cm:
+            pack.verify_seal()
+        self.assertIn("seal_mismatch", str(cm.exception))
+        # 干净包可宣称通过（正向对照）
+        pack2 = EvidencePack.build(self._pack_payload(), str(self.tmp / "pack.jsonl"))
+        pack2.seal()
+        self.assertEqual(pack2.claim_pass("PASS")["conclusion"], "PASS")
+        # 有失败项时不得宣称通过
+        pack3 = EvidencePack.build(
+            self._pack_payload(failures=[{"issue_id": "AUD-006", "owner": "o"}]),
+            str(self.tmp / "pack.jsonl"))
+        pack3.seal()
+        with self.assertRaises(PackRejected) as cm:
+            pack3.claim_pass("PASS")
+        self.assertIn("open_failures", str(cm.exception))
+
+
     def test_t_rec_01_baseline_mismatch_pauses_restore(self):
         cp = CheckpointStore(self.tmp / "cp.json", self.tmp / "audit.jsonl")
         cp.save("cp-1", task="t-1", baseline="sha-aaa", payload={"step": 3})
