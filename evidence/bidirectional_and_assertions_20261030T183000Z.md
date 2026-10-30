@@ -1,6 +1,6 @@
 # 控制↔规则双向闭合、四条未实现断言落地与 REC-02 定级（2026-10-30T18:30+08:00）
 
-**CI 追溯**：本地全量复跑读数见 §五。CI run 编号由随后一次提交补记——本仓惯例是不把未核实的 run 号写进证据。
+**CI 追溯**：数据面 run `40998812136`（103 tests OK；T-VD-01 PASS：pin=`61fed8806d9f` tree=`e3f64d5469f1` content=`7f3f0b4b2b5d`；T-GATE-01 **G1 / 阻断 10**；T-CLOSE 22 可评审 / 0 违规 / 断言 90 条**满足 63**、全通过问题 **1/22**）；控制面 run `40998206411`（88 用例 OK）。
 
 **代码**：控制面 `61fed88…`（`ledger` / `breaker` / `change` / `toolgate` 扩展 + 新增 `retrypolicy.py`），数据面同步并 bump `executor_pin.json`（`61fed8806d9f` / tree `e3f64d5469f1` / content `7f3f0b4b2b5d`，T-VD-01 已对照 GitHub 校验通过）。
 
@@ -136,6 +136,8 @@
 数据面  python scripts/check_admission_gate.py                  → G1，G2 阻断 10（open_issue × 10）
 数据面  python scripts/check_audit_closure.py                   → 22 可评审 / 0 违规 / 断言 90 条满足 63
 ```
+
+CI 复现同一组读数（run `40998812136`）：`Ran 103 tests` / `RESULT: ALL PASSED` / `PASS(T-VD-01)` 三元组一致 / `成熟度等级: G1 阻断项: 10` / `§四 验收断言：90 条 | 满足 63 | 未满足 27（其中人工待办 21）| 断言全通过的问题 1/22`。
 
 ### 5.2 变异检验：五条新语义逐个拆掉，看用例是否真的抓得住
 
