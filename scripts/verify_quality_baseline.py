@@ -37,11 +37,20 @@ REQUIRED = ('required_checks', 'trusted_ci_sources', 'executor_pin_version',
 # 不得为空的两项：**没有例外是好事，没有必需检查等于没有基线**。
 # "缺键才算缺"只适用于 exceptions 这类"空着更好"的字段。
 NON_EMPTY = ('required_checks', 'trusted_ci_sources')
-# GOV_PATHS 不含 tests/：删测试由 T-QA-02（数量下限）管，这里再记一次账属于
-# 重复计费，结果是"任何改 tests/ 的 PR 都要顺手改基线"→ 审批盖章化。
-GOV_PATHS = ('governance/', 'rule-registry.json', 'control-catalog.yaml',
-             'scripts/', '.github/')
+# 治理范围 = **治理输入**（配置与判定逻辑），不含产物：
+#   - tests/ 不算：删测试由 T-QA-02（数量下限）管，这里再记账等于逼人盖章
+#   - governance/*.md 不算：试点报告、证据文档是产物，改报告不该要求重批基线
+# 判据很简单：改了会让"旧审核失效"的，才算治理变更。
+GOV_PATHS = ('rule-registry.json', 'control-catalog.yaml', 'scripts/', '.github/')
+GOV_GLOBS = ('governance/*.json',)          # 治理配置，不含 .md 报告
 BASELINE_REL = 'governance/quality_baseline.json'
+
+
+def gov_paths():
+    paths = list(GOV_PATHS)
+    for pat in GOV_GLOBS:
+        paths += [str(p.relative_to(BASE)) for p in sorted(BASE.glob(pat))]
+    return [p for p in dict.fromkeys(paths)]
 
 
 def fail(msg):
@@ -98,7 +107,7 @@ if shallow != 'false':
          'Use actions/checkout with fetch-depth: 0, or `git fetch --unshallow`. '
          'Passing here would be a fabricated guarantee.')
 
-rc, dirty = git('status', '--porcelain', '--', *GOV_PATHS)
+rc, dirty = git('status', '--porcelain', '--', *gov_paths())
 if rc != 0:
     fail('cannot read git status')
 if dirty.strip():
@@ -108,7 +117,7 @@ if dirty.strip():
 rc, b_commit = git('log', '-1', '--format=%H', '--', BASELINE_REL)
 if rc != 0 or not b_commit:
     fail('baseline file has no commit history (unreviewed)')
-rc, g_commit = git('log', '-1', '--format=%H', '--', *GOV_PATHS)
+rc, g_commit = git('log', '-1', '--format=%H', '--', *gov_paths())
 if rc != 0 or not g_commit:
     fail('cannot resolve last governance commit')
 

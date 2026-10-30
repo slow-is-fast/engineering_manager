@@ -1,6 +1,10 @@
 # drill → automated：三场演练变成三个常态化校验器（2026-10-30T21:00+08:00）
 
-**CI 追溯**：数据面 run `41007061157`（109 tests OK；`PASS(T-QA-01): 2 CI action refs all pinned`；`PASS(T-QA-02): 116 acceptance cases >= floor 110`；`PASS(T-QA-04): baseline reviewed together with governance @051eb29f2f8f`；`PASS(CLM-01)`；成熟度等级 G1 / 阻断 10；§四 断言 90 条满足 63、全通过问题 1/22）。
+**CI 追溯（已更正 2026-10-30 21:50）**：数据面 run `41007061157`（109 tests OK；`PASS(T-QA-01)`、`PASS(T-QA-02)`、`PASS(CLM-01)`；成熟度等级 G1 / 阻断 10；§四 断言 90 条满足 63）。
+
+> ⚠️ **本文件原先把 `PASS(T-QA-04): baseline reviewed together with governance @051eb29f2f8f` 当作通过证据，那条结论是错的。**
+> 同日冷读复核实测发现：`actions/checkout` 默认 `depth=1`，浅克隆下 `git log -1 -- <path>` 恒返回 HEAD，于是 `B == G`，T-QA-04 **无条件打印 PASS**——它当时在 CI 里从未真正工作过。
+> 修复与实证见 `evidence/cold_review_20261030T215000Z.md`：已加 `fetch-depth: 0`、脚本对浅仓库失败关闭，并用一次受控演练确认它在 CI 上**真的会红**（run `41065699717` 失败于 `baseline drifted`）。
 
 ---
 

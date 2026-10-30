@@ -5,8 +5,8 @@
   "purpose": "项目级受保护质量基线。基线不是「当前状态快照」，而是**经独立审查后批准的下限**：任何一项被下调都必须重新走审批，不能跟着代码一起悄悄改。",
   "baseline_version": "1",
   "reviewed_by": "slow-is-fast (Owner)",
-  "reviewed_at": "2026-10-30T21:50:00+08:00",
-  "applies_to_sha": "ea619bc843c8cc23713c7f4f26b9fcd633f06c1f",
+  "reviewed_at": "2026-10-30T22:00:00+08:00",
+  "applies_to_sha": "6b76e90b77fd2b1eb544e5ed4f34fbca6bc0d5da",
   "required_checks": [
     "scripts/validate_controls.py",
     "tests/test_executor_negative.py",
