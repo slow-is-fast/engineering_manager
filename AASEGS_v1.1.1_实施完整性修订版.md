@@ -435,7 +435,7 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | 有控制支撑的规则 | 48 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
 | 控制总数 | 49 | 原 20 条 + v1.1.1 新增 23 条 + CRED-01 + VD-01（信任域分离）+ WF-05/WF-06（WFL-001/002）+ ATT-01/CLM-01（SUP-005/AGT-005） |
 | 规则引用不到的控制 | 8 | 双向闭合检查的反方向读数：控制必须被某条规则引用，否则须在 `governance/control_coverage.json` 登记处置（`audit_driven` 指明审计问题，`defense_in_depth` 指明派生规则），否则 `validate_controls.py` 失败。8 条全部已登记 |
-| tested 控制的证据类型 | 41 automated / 3 drill | `evidence_kind` 必填：`automated` = `test` 可解析到真实用例或 CI 步骤、每次改动都会再跑；`drill` = 只有一次性演练记录（`QA-01`/`QA-02`/`BASE-01`），URI 必须指向 PR。**二者不可混为一谈**：一次性演练被当成常态化保障，是"看起来有覆盖"的另一种形式（2026-10-30 记账复核新增） |
+| tested 控制的证据类型 | 44 automated / **0 drill** | `evidence_kind` 必填：`automated` = `test` 可解析到真实用例或 CI 步骤、每次改动都会再跑；`drill` = 只有一次性演练记录，URI 必须指向 PR。2026-10-30 记账复核时查出 3 条 drill（`QA-01`/`QA-02`/`BASE-01`），同日已全部转为 automated——**演练证明门禁当时有效，不能证明此后每次改动都被检查过** |
 | 已具备运行时证据 | 44 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
 | §四 验收断言 | 90 条（满足 63） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`）。未满足 27 条中，人工待办 21 条（受 EXC-01），显式未实现 6 条 |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |

@@ -321,7 +321,7 @@
       "failure": "block merge",
       "test": "T-QA-01",
       "status": "tested",
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/3",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/41007061157",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
       "risk_level": "P1",
       "addresses": [],
@@ -352,7 +352,7 @@
       "failure": "block merge",
       "test": "T-QA-02",
       "status": "tested",
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/2",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/41007061157",
       "source_ref": "v1.1.1 §8 可信质量基线与独立验收",
       "risk_level": "P0",
       "addresses": [],
@@ -823,7 +823,7 @@
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/4",
+      "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/actions/runs/41007061157",
       "evidence_at": "2026-10-29",
       "evidence_kind": "automated"
     },
