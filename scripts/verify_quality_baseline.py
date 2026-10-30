@@ -107,12 +107,26 @@ if shallow != 'false':
          'Use actions/checkout with fetch-depth: 0, or `git fetch --unshallow`. '
          'Passing here would be a fabricated guarantee.')
 
-rc, dirty = git('status', '--porcelain', '--', *gov_paths())
-if rc != 0:
-    fail('cannot read git status')
-if dirty.strip():
+# 判据必须与门禁同一把尺子：用 `git diff` 而不是 `git status`。
+# `git status` 在 core.autocrlf=true 下会把**仅换行不同**的文件报成已修改
+# （2026-10-31 实测：工作区 CRLF、blob LF，规范化后逐字节相同，status 报
+# ` M`，而 `git diff --exit-code` 判为无差异）。假警报的下场通常不是被人
+# 修正，而是被人把检查关掉——所以这里必须用与 CI 相同的比较口径。
+rc, _ = git('diff', '--quiet', '--exit-code', '--', *gov_paths())
+if rc not in (0, 1):
+    fail('cannot read git diff')
+if rc == 1:
+    _, tracked = git('diff', '--name-only', '--', *gov_paths())
     fail('governance scope has uncommitted changes — baseline must be reviewed '
-         f'against committed state:\n  {dirty}')
+         f'against committed state:\n  {tracked}')
+# 未跟踪文件 diff 看不到，但同样属于"没进版本库"，不能放过
+rc, untracked = git('ls-files', '--others', '--exclude-standard', '--',
+                    *gov_paths())
+if rc != 0:
+    fail('cannot list untracked files')
+if untracked.strip():
+    fail('governance scope has untracked files — baseline must be reviewed '
+         f'against committed state:\n  {untracked}')
 
 rc, b_commit = git('log', '-1', '--format=%H', '--', BASELINE_REL)
 if rc != 0 or not b_commit:
