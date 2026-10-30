@@ -403,7 +403,7 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | AUD-001 | P0 | 全文强制规则未纳入统一注册表 | §1 | `REG-01`, `CRED-01` | 已覆盖 | 未关闭（缺运行时证据） |
 | AUD-002 | P0 | 控制状态混淆定义、配置、测试与验证 | §1 | `REG-02`, `VD-01` | 已覆盖 | 未关闭（缺运行时证据） |
 | AUD-003 | P1 | 控制目录缺少统一机器契约 | §1 | `REG-01` | 已覆盖 | 未关闭（缺运行时证据） |
-| AUD-004 | P0 | 授权撤销缺少资源端校验与竞态契约 | §2 | `AUTH-01`, `AUTH-02` | 已覆盖 | 未关闭（缺运行时证据） |
+| AUD-004 | P0 | 授权撤销缺少资源端校验与竞态契约 | §2 | `AUTH-01`, `AUTH-02` | 已覆盖 | READY_FOR_REVIEW（T-AUTH-01/02 已 tested；关闭待隔离环境集成测试） |
 | AUD-005 | P1 | 工具能力清单缺少风险等级准入矩阵 | §3 | `TOOL-01` | 已覆盖 | 未关闭（缺运行时证据） |
 | AUD-006 | P1 | 共享记忆生命周期与撤销传播不完整 | §4 | `MEM-01` | 已覆盖 | 未关闭（缺运行时证据） |
 | AUD-007 | P1 | 任务状态机缺少完整转换矩阵 | §5 | `SMT-01` | 已覆盖 | 未关闭（缺运行时证据） |
@@ -434,7 +434,8 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | 强制规则总数 | 53 | `rule-registry.json`，含 v1.0 继承的 GOV-01～08；SUP-006 为 §9 事件响应散文式 MUST 的补注册（2026-10-30，INC-01 落地时发现其原先未注册） |
 | 有控制支撑的规则 | 48 | 5 条无控制引用（GOV-08 为原则性条款，其余 4 条见 `enforcement.gap`，均已有 `gap_uplift` 控制化决策） |
 | 控制总数 | 49 | 原 20 条 + v1.1.1 新增 23 条 + CRED-01 + VD-01（信任域分离）+ WF-05/WF-06（WFL-001/002）+ ATT-01/CLM-01（SUP-005/AGT-005） |
-| 已具备运行时证据 | 36 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
+| 已具备运行时证据 | 38 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
+| §四 验收断言 | 80 条（满足 46） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`） |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |
 
 本文件已于 2026-10-29 经 Owner（slow-is-fast）批准转正为正式生效版本（见文首转正记录）。P0 问题的关闭证据至少包括：对应控制条目 `state.tested=true`、`state.verified=true`、`integration_evidence_uri` 非空，以及 §12 准入门槛的机器判定记录。文档中的条款表述不能替代上述证据。

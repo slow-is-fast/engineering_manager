@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "fb47e83d45fc8afe3e6fffc9dba52fc95ee4f07d",
-  "tree_sha": "a7b2e8ca20b75f4c7cad757ba2b029f13b8c81b7",
-  "content_hash_sha256": "351a58d10482ebb7ea66399290ff1d3fe1ab9e3f86fc331fbddaae78bcb6c860",
+  "commit_sha": "23579c99fad1454fe4403c068cbccbfc1c409a7f",
+  "tree_sha": "27611bf5a872899fa43d7f7c3c14091384441bbe",
+  "content_hash_sha256": "20278d9128a795bff71883cb634485ea1e696fddeb30cb920177bf256df7f0b7",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-30T14:00:00+08:00",
+  "pinned_at": "2026-10-30T15:30:00+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "4b4d9d7b75ba08da8d88a36064b5b800d0db6ac3",
-    "content_hash_sha256": "2b84f922e67af35ceee2cfd9bd7e29f751d7ca812460b2cd2f9e2433e8ff2144"
+    "commit_sha": "fb47e83d45fc8afe3e6fffc9dba52fc95ee4f07d",
+    "content_hash_sha256": "351a58d10482ebb7ea66399290ff1d3fe1ab9e3f86fc331fbddaae78bcb6c860"
   },
-  "bump_reason": "控制面新增 authz/trust/toolgate/closure.py（ID-01、ID-03、CTX-01、TOOL-01 与审计闭合评估），gate 增加 addresses 可解析性校验；用例 46→56"
+  "bump_reason": "控制面新增 authgate.py（AUTH-01/02 资源端独立验签 + 撤销竞态契约），closure.py 接入 §四 验收断言层（acceptance matrix，5 类处置，新增 closure_without_acceptance 违规）；用例 56→64"
 }

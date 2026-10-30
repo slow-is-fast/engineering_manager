@@ -58,8 +58,8 @@ jobs:
 
       # 审计问题闭合评估：报告 + 防虚假关闭。READY_FOR_REVIEW 仅供参考，
       # 不代表验收通过；--enforce 拦的是"声明 CLOSED/ACCEPTED_RISK 但控制级
-      # 证据不成立"——即把文档改完就当问题关闭。
-      - name: "T-CLOSE audit issue closure (no unbacked closure)"
+      # 证据不成立"或"§四 验收断言未满足"——即把文档改完就当问题关闭。
+      - name: "T-CLOSE audit issue closure (no unbacked closure, acceptance asserted)"
         run: |
-          python scripts/check_audit_closure.py
+          python scripts/check_audit_closure.py --acceptance
           python scripts/check_audit_closure.py --enforce

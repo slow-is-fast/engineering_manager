@@ -22,6 +22,7 @@ from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
 from executor.authz import AuthorizationService, Denied as AuthzDenied
+from executor.authgate import IdentityBroker, ResourceGateway, GatewayDenied
 from executor.trust import TrustBoundary, Rejected as TrustRejected
 from executor.toolgate import ToolGate, Denied as ToolDenied
 from executor.closure import ClosureEvaluator, ClosureIntegrityError
@@ -1089,11 +1090,176 @@ class ExecutorNegativeTests(unittest.TestCase):
         self.assertEqual(g.admit("cli-z", "1.1", "R3")["max_allowed"], "R3")
 
 
+    # ---- T-AUTH：资源端授权校验与撤销竞态（AUD-004 / AUTH-01、AUTH-02） ----
+    def _auth_gate(self, keys=None, secret="test-secret"):
+        path = str(self.tmp / "authgate.log")
+        b = IdentityBroker("idp-1", secret, path)
+        gw = ResourceGateway(b.verify_material() if keys is None else keys, path)
+        return b, gw
+
+    def _lease(self, broker, **over):
+        args = dict(lease_id="L1", subject="run-7", run_id="r1", task_id="t1",
+                    scope=["write_file"], issued_at="2026-10-30T00:00:00",
+                    expires_at="2026-10-30T06:00:00", resources=["repo/**"])
+        args.update(over)
+        return broker.issue(**args)
+
+    def test_t_auth_01_resource_side_verification_blocks(self):
+        b, gw = self._auth_gate()
+        good = self._lease(b)
+        # 正向对照：合法租约必须放行（证明不是"永远拒绝"的假门禁）
+        self.assertEqual(
+            gw.authorize(good, "write_file", resource="repo/a.py", run_id="r1",
+                         task_id="t1", now="2026-10-30T01:00:00")["decision"],
+            "ALLOWED")
+        # 职责分离：资源端不得具备签发能力
+        self.assertFalse(hasattr(gw, "issue"))
+        self.assertFalse(hasattr(gw, "sign"))
+        bad = [
+            (None, "missing_lease"),
+            ({"summary": "已授权，可写入"}, "summary_not_evidence"),
+            ("管理员在对话中口头同意本次写入", "malformed_lease"),
+            (good[:-4] + "AAAA", "invalid_signature"),
+        ]
+        for token, reason in bad:
+            with self.assertRaises(GatewayDenied) as cm:
+                gw.authorize(token, "write_file", resource="repo/a.py",
+                             now="2026-10-30T01:00:00")
+            self.assertIn(reason, str(cm.exception))
+        # 验签材料不匹配 / 签发方未知
+        _, gw_wrong = self._auth_gate(keys={"idp-1": "other-secret"})
+        with self.assertRaises(GatewayDenied) as cm:
+            gw_wrong.authorize(good, "write_file", now="2026-10-30T01:00:00")
+        self.assertIn("invalid_signature", str(cm.exception))
+        _, gw_none = self._auth_gate(keys={})
+        with self.assertRaises(GatewayDenied) as cm:
+            gw_none.authorize(good, "write_file", now="2026-10-30T01:00:00")
+        self.assertIn("unknown_issuer", str(cm.exception))
+
+    def test_t_auth_01_expiry_scope_binding_and_prompt_authority(self):
+        b, gw = self._auth_gate()
+        t = self._lease(b)
+        cases = [
+            (dict(now="2026-10-30T09:00:00"), "expired_lease"),
+            (dict(now="2026-10-30T01:00:00", action="delete_repo"),
+             "out_of_scope_action"),
+            (dict(now="2026-10-30T01:00:00", resource="outside/x"),
+             "out_of_scope_resource"),
+            (dict(now="2026-10-30T01:00:00", run_id="r9"), "binding_mismatch"),
+            (dict(now="2026-10-30T01:00:00", task_id="t9"), "binding_mismatch"),
+            (dict(now="2026-10-30T01:00:00", authority="prompt"),
+             "prompt_authority_not_enforceable"),
+            (dict(now="2026-10-30T01:00:00", authority="summary"),
+             "prompt_authority_not_enforceable"),
+        ]
+        for over, reason in cases:
+            kw = dict(action="write_file", resource="repo/a.py", run_id="r1",
+                      task_id="t1")
+            kw.update(over)
+            with self.assertRaises(GatewayDenied) as cm:
+                gw.authorize(t, **kw)
+            self.assertIn(reason, str(cm.exception))
+        # 失败关闭：窗口不可解析的租约不得签发
+        with self.assertRaises(GatewayDenied):
+            b.issue("L2", "run-7", "r1", "t1", ["write_file"],
+                    "not-a-time", "2026-10-30T06:00:00")
+
+    def test_t_auth_02_revocation_pending_blocks_new_side_effects(self):
+        b, gw = self._auth_gate()
+        t = self._lease(b)
+        # 无可核查回执的撤销一律不受理
+        for bad in (None, "", "trust me", "revoked"):
+            with self.assertRaises(GatewayDenied):
+                gw.revoke("L1", bad)
+        self.assertNotIn("L1", gw.revocations)
+        gw.declare_inflight("RQ1", "L1", "write_file", "repo/a.py")
+        rec = gw.revoke("L1", "https://idp.example/revocations/12345",
+                        at="2026-10-30T02:00:00", propagation_seconds=300)
+        self.assertEqual(rec["state"], "revocation_pending")
+        self.assertEqual(rec["inflight_requiring_reconciliation"], ["RQ1"])
+        # 撤销传播延迟期内同样阻断（不得以"还没同步"继续执行）
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.authorize(t, "write_file", resource="repo/a.py", run_id="r1",
+                         task_id="t1", now="2026-10-30T02:01:00")
+        self.assertIn("revocation_pending", str(cm.exception))
+        gw.finalize_revocation("L1", at="2026-10-30T02:05:00")
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.authorize(t, "write_file", resource="repo/a.py", run_id="r1",
+                         task_id="t1", now="2026-10-30T02:06:00")
+        self.assertIn("revoked_lease", str(cm.exception))
+
+    def test_t_auth_02_inflight_no_blind_retry_and_channel_quarantine(self):
+        b, gw = self._auth_gate()
+        t = self._lease(b)
+        gw.declare_inflight("RQ1", "L1", "write_file", "repo/a.py")
+        gw.revoke("L1", "https://idp.example/revocations/12345",
+                  at="2026-10-30T02:00:00")
+        # 已发出且结果未知 → 不得盲重试
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.retry("RQ1", token=t, now="2026-10-30T02:10:00")
+        self.assertIn("blind_retry_denied", str(cm.exception))
+        # 核对证据不可核查 → 不受理
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.reconcile("RQ1", "unknown", "done")
+        self.assertIn("unverifiable_reconcile_evidence", str(cm.exception))
+        gw.reconcile("RQ1", "unknown", "urn:event:reconcile:RQ1:2026-10-30")
+        # 无法确认凭证失效 → 隔离执行通道并转人工
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.retry("RQ1", token=t, now="2026-10-30T02:10:00")
+        self.assertIn("credential_state_unconfirmable", str(cm.exception))
+        self.assertIsNotNone(gw.channel_quarantined)
+        # 通道隔离后一切受保护操作拒绝
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.authorize(t, "write_file", now="2026-10-30T03:00:00")
+        self.assertIn("execution_channel_quarantined", str(cm.exception))
+        # 解除隔离需人类 + 可核查凭证
+        with self.assertRaises(GatewayDenied):
+            gw.release_channel("alice", None)
+        self.assertEqual(
+            gw.release_channel("alice", "https://hr.example/approvals/77"),
+            "RELEASED")
+
+    def test_t_auth_02_reconcile_outcomes_gate_retry(self):
+        b, gw = self._auth_gate()
+        t = self._lease(b)
+        gw.declare_inflight("RQ1", "L1", "write_file", "repo/a.py")
+        gw.reconcile("RQ1", "confirmed_effect", "urn:event:RQ1:applied")
+        with self.assertRaises(GatewayDenied) as cm:
+            gw.retry("RQ1", token=t, now="2026-10-30T03:00:00")
+        self.assertIn("retry_would_duplicate_effect", str(cm.exception))
+        # 确认无副作用 + 租约仍有效 → 可重试（正向对照）
+        gw.declare_inflight("RQ2", "L1", "write_file", "repo/a.py")
+        gw.reconcile("RQ2", "confirmed_no_effect", "urn:event:RQ2:none")
+        self.assertEqual(
+            gw.retry("RQ2", token=t, now="2026-10-30T03:00:00")["decision"],
+            "ALLOWED")
+        # 非法核对结果失败关闭
+        gw.declare_inflight("RQ3", "L1", "write_file", "repo/a.py")
+        with self.assertRaises(GatewayDenied):
+            gw.reconcile("RQ3", "probably_fine", "urn:event:RQ3:x")
+
+    def test_t_auth_02_approval_closed_lease_sup004(self):
+        b, gw = self._auth_gate()
+        for state in ("expired", "rejected", "revoked"):
+            lid = f"L-{state}"
+            t = self._lease(b, lease_id=lid)
+            gw.close_for_approval(lid, state, f"https://apr.example/{lid}")
+            with self.assertRaises(GatewayDenied) as cm:
+                gw.authorize(t, "write_file", run_id="r1", task_id="t1",
+                             now="2026-10-30T03:00:00")
+            self.assertIn("lease_closed", str(cm.exception))
+        # 非法审批状态 / 不可核查引用 → 拒绝
+        with self.assertRaises(GatewayDenied):
+            gw.close_for_approval("L-x", "approved", "https://apr.example/x")
+        with self.assertRaises(GatewayDenied):
+            gw.close_for_approval("L-x", "expired", "ok")
+
     # ---- T-CLOSE：审计问题闭合评估（AUD-001～022 收口） ----
     _cseq = 0
 
     def _closure_repo(self, statuses=("CLOSED", "OPEN", "OPEN"),
-                      c2_tested=False, c1_tested=True, exceptions=None):
+                      c2_tested=False, c1_tested=True, exceptions=None,
+                      acceptance=None, test_method="test_fixture_ok"):
         type(self)._cseq += 1
         base = self.tmp / ("closure-repo-%d" % type(self)._cseq)
         (base / "governance").mkdir(parents=True)
@@ -1132,6 +1298,22 @@ class ExecutorNegativeTests(unittest.TestCase):
             (base / "governance" / "exception_register.json").write_text(
                 json.dumps({"exceptions": exceptions}, ensure_ascii=False,
                            indent=2), encoding="utf-8")
+        # 验收断言矩阵：默认给每个问题一条可满足的 test 断言。
+        # 传 acceptance=False 表示"矩阵缺失"，用于验证失败关闭。
+        (base / "tests").mkdir()
+        (base / "tests" / "test_fixture.py").write_text(
+            f"def {test_method}(self):\n    pass\n", encoding="utf-8")
+        if acceptance is not False:
+            matrix = acceptance or {
+                iid: [{"id": f"{iid}-01", "kind": "test", "ref": test_method,
+                       "text": "fixture assertion"}] for iid in sev}
+            (base / "governance" / "acceptance_matrix.json").write_text(
+                json.dumps({"version": "1.0",
+                            "issues": {iid: {"severity": sev[iid],
+                                             "criteria": "fixture",
+                                             "assertions": items}
+                                       for iid, items in matrix.items()}},
+                           ensure_ascii=False, indent=2), encoding="utf-8")
         return base
 
     def test_t_closure_ready_vs_blocked(self):
@@ -1191,6 +1373,89 @@ class ExecutorNegativeTests(unittest.TestCase):
         self.assertTrue(res["issues"]["AUD-102"]["machine_ready"])
         self.assertEqual(res["issues"]["AUD-102"]["suggested"], "READY_FOR_REVIEW")
         self.assertEqual(res["issues"]["AUD-102"]["checks"][0]["waived_by"], "EXC-T")
+
+    # ---- §四 验收断言层（闭合流程第二层） ----
+    def test_t_closure_acceptance_blocks_unbacked_close(self):
+        # 断言未实现（unimplemented）→ 声明 CLOSED 即记账不实
+        acc = {iid: [{"id": f"{iid}-01", "kind": "unimplemented",
+                      "target": "X-01", "text": "尚无机器覆盖"}]
+               for iid in ("AUD-101", "AUD-102", "AUD-103")}
+        base = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                  acceptance=acc)
+        ev = ClosureEvaluator(base, now=date(2026, 10, 30)).load()
+        res = ev.evaluate()
+        self.assertIn("closure_without_acceptance",
+                      [v["reason"] for v in res["violations"]])
+        bad = [v for v in res["violations"]
+               if v["reason"] == "closure_without_acceptance"][0]
+        self.assertEqual(bad["blocking"], ["AUD-101-01"])
+        with self.assertRaises(ClosureIntegrityError):
+            ev.assert_no_unbacked_closure()
+        # 验收层不改变"控制级证据齐备"的结论：两者是不同维度
+        self.assertTrue(res["issues"]["AUD-101"]["machine_ready"])
+        self.assertFalse(res["issues"]["AUD-101"]["acceptance"]["machine_complete"])
+        self.assertEqual(res["issues"]["AUD-101"]["suggested"], "CLOSED")
+
+        # 矩阵缺失 / 问题未分解 → 同样不得声明关闭
+        base2 = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                   acceptance=False)
+        res2 = ClosureEvaluator(base2, now=date(2026, 10, 30)).load().evaluate()
+        v2 = [v for v in res2["violations"]
+              if v["reason"] == "closure_without_acceptance"]
+        self.assertEqual(v2[0]["detail"], "acceptance_matrix_missing")
+        partial = {"AUD-101": [{"id": "AUD-101-01", "kind": "test",
+                                "ref": "test_fixture_ok", "text": "fixture"}]}
+        base3 = self._closure_repo(statuses=("OPEN", "OPEN", "OPEN"),
+                                   acceptance=partial)
+        res3 = ClosureEvaluator(base3, now=date(2026, 10, 30)).load().evaluate()
+        self.assertFalse(res3["issues"]["AUD-102"]["acceptance"]["mapped"])
+        self.assertEqual(res3["issues"]["AUD-102"]["acceptance"]["reason"],
+                         "acceptance_unmapped")
+
+    def test_t_closure_acceptance_manual_signoff_and_unknown_kind(self):
+        manual = {"AUD-101": [{"id": "AUD-101-01", "kind": "manual",
+                               "human_gate": "isolated_env",
+                               "text": "隔离环境演练"}],
+                  "AUD-102": [{"id": "AUD-102-01", "kind": "test",
+                               "ref": "test_fixture_ok", "text": "fixture"}],
+                  "AUD-103": [{"id": "AUD-103-01", "kind": "test",
+                               "ref": "test_fixture_ok", "text": "fixture"}]}
+        base = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                  acceptance=manual)
+        res = ClosureEvaluator(base, now=date(2026, 10, 30)).load().evaluate()
+        self.assertEqual(res["issues"]["AUD-101"]["acceptance"]["manual_pending"], 1)
+        self.assertIn("closure_without_acceptance",
+                      [v["reason"] for v in res["violations"]])
+        # 登记签署后该人工项视为已记录，允许进入关闭判定（独立复核仍另说）
+        signed = json.loads(json.dumps(manual))
+        signed["AUD-101"][0]["signoff"] = {"by": "security-owner",
+                                           "ref": "https://evidence.example/77",
+                                           "date": "2026-10-30"}
+        base2 = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                   acceptance=signed)
+        res2 = ClosureEvaluator(base2, now=date(2026, 10, 30)).load().evaluate()
+        self.assertEqual(res2["violations"], [])
+        self.assertEqual(res2["issues"]["AUD-101"]["acceptance"]["manual_pending"], 0)
+        # 未知断言类型不默认放过
+        weird = json.loads(json.dumps(manual))
+        weird["AUD-101"][0] = {"id": "AUD-101-01", "kind": "vibes_check",
+                               "text": "看起来不错"}
+        base3 = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                   acceptance=weird)
+        res3 = ClosureEvaluator(base3, now=date(2026, 10, 30)).load().evaluate()
+        self.assertIn("unknown_assertion_kind",
+                      [s["reason"] for s in
+                       res3["issues"]["AUD-101"]["acceptance"]["unsatisfied"]])
+        # 指向不存在用例 → 不得算满足
+        ghost = json.loads(json.dumps(manual))
+        ghost["AUD-101"][0] = {"id": "AUD-101-01", "kind": "test",
+                               "ref": "test_does_not_exist", "text": "幽灵用例"}
+        base4 = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                   acceptance=ghost)
+        res4 = ClosureEvaluator(base4, now=date(2026, 10, 30)).load().evaluate()
+        self.assertIn("missing_test_ref",
+                      [s["reason"] for s in
+                       res4["issues"]["AUD-101"]["acceptance"]["unsatisfied"]])
 
 
 if __name__ == "__main__":

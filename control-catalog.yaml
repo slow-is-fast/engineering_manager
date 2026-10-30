@@ -534,16 +534,17 @@
       "evidence": "资源端或独立网关的授权决策记录，含 agent/run/task、操作、资源范围、风险、策略版本、授权 ID、有效期",
       "failure": "校验失败拒绝操作并发出审计事件；仅 Prompt 或本地脚本内的检查不构成通过证据",
       "test": "T-AUTH-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/auth01_auth02_20261030T153000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "AUTH-02",
@@ -558,16 +559,17 @@
       "evidence": "撤销回执（revocation receipt）、revocation_pending 期间被拒绝的副作用记录、未决请求的真实状态核对记录",
       "failure": "revocation_pending 后拒绝新副作用；已发出而结果未知的请求必须核对真实状态，无法确认凭证失效时隔离执行通道并转人工",
       "test": "T-AUTH-02",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/auth01_auth02_20261030T153000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "TOOL-01",

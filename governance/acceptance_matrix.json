@@ -1,0 +1,253 @@
+{
+  "version": "1.0",
+  "generated_from": "AASEGS_Audit_Issues_Full.md §四「验收标准」与「关闭条件」原文",
+  "purpose": "把散文式验收标准分解为可机器判定的断言，供 executor/closure.py 评估。此前闭合评估只看「应答控制是否 tested」，不读 §四 原文，因此 READY_FOR_REVIEW 只代表控制级证据齐备，不代表验收通过。本矩阵补上这一层。",
+  "assertion_kinds": {
+    "test": "映射到仓库中真实存在的用例方法（tests/*.py 中的 def <ref>）。用例不存在即判不满足；方法存在于已随 CI 执行的测试文件中，故其通过性由测试步骤保证。",
+    "script": "执行仓库内校验脚本，退出码 0 才算满足（复用既有校验器，不另建判据）。",
+    "evidence": "证据文件必须存在且包含指定字符串（防占位文件顶替）。",
+    "manual": "机器无法判定，须人工/独立环境执行并登记签署；未登记签署一律计为 pending。",
+    "unimplemented": "该条款当前没有任何机器用例覆盖——显式记账，不假装满足，也不假装「已通过人工」。"
+  },
+  "honest_limits": [
+    "kind=test 只证明「该用例存在且随 CI 套件执行过」，不证明它覆盖了条款的全部边界情形。",
+    "kind=manual 的签署是自述式记录，独立复核（EXC-01）不可达时无法机器校验其独立性。",
+    "本矩阵是人工分解的产物，分解本身的完备性同样需要独立复核。"
+  ],
+  "issues": {
+    "AUD-001": {
+      "severity": "P0",
+      "criteria": "全文强制条款与注册表双向差异为零；追踪覆盖率 100%；所有 P0/P1 规则均有控制和测试引用。",
+      "close_condition": "提交覆盖率报告、差异报告和人工抽样复核记录。",
+      "assertions": [
+        {"id": "AUD-001-01", "kind": "script", "command": "python scripts/validate_controls.py", "text": "注册表与控制目录双向差异为零，且每条控制声明风险等级"},
+        {"id": "AUD-001-02", "kind": "script", "command": "python tests/negative_static.py", "text": "篡改注册表/目录/测试引用即校验失败（正反例）"},
+        {"id": "AUD-001-03", "kind": "manual", "human_gate": "sampling_review", "text": "人工抽样复核记录（覆盖率的完备性无法自动判定）"}
+      ]
+    },
+    "AUD-002": {
+      "severity": "P0",
+      "criteria": "缺少执行器、测试或有效证据时不能进入 verified；配置漂移或证据过期触发降级。",
+      "close_condition": "状态机测试和负向测试通过；报告可区分六种状态。",
+      "assertions": [
+        {"id": "AUD-002-01", "kind": "test", "ref": "test_t_gate_01_untested_p0_control_blocks_r0", "text": "控制未 tested 时不能达到要求等级"},
+        {"id": "AUD-002-02", "kind": "test", "ref": "test_t_gate_01_stale_evidence_not_counted", "text": "证据过期不计入，触发阻断"},
+        {"id": "AUD-002-03", "kind": "manual", "human_gate": "six_state_report_review", "text": "报告可区分六种状态的独立复核"}
+      ]
+    },
+    "AUD-003": {
+      "severity": "P1",
+      "criteria": "缺字段、重复 ID、未知状态、无测试引用、非法风险等级均使校验失败；合法样例通过。",
+      "close_condition": "schema、校验器及正反例测试合并。",
+      "assertions": [
+        {"id": "AUD-003-01", "kind": "script", "command": "python scripts/validate_controls.py", "text": "缺字段/重复 ID/未知状态/非法风险等级使校验失败"},
+        {"id": "AUD-003-02", "kind": "script", "command": "python tests/negative_static.py", "text": "正反例覆盖：合法样例通过、篡改样例失败"},
+        {"id": "AUD-003-03", "kind": "manual", "human_gate": "schema_review", "text": "schema 与校验器合并评审"}
+      ]
+    },
+    "AUD-004": {
+      "severity": "P0",
+      "criteria": "无租约、过期、撤销、超范围、撤销延迟和执行中撤销测试均阻断新的受保护副作用。",
+      "close_condition": "隔离环境集成测试通过并留存资源端拒绝证据。",
+      "assertions": [
+        {"id": "AUD-004-01", "kind": "test", "ref": "test_t_auth_01_resource_side_verification_blocks", "text": "无租约 / 摘要文本 / 伪造签名 / 未知识签发方 → 阻断"},
+        {"id": "AUD-004-02", "kind": "test", "ref": "test_t_auth_01_expiry_scope_binding_and_prompt_authority", "text": "过期 / 超范围 / 绑定不符 / Prompt 声明 → 阻断"},
+        {"id": "AUD-004-03", "kind": "test", "ref": "test_t_auth_02_revocation_pending_blocks_new_side_effects", "text": "撤销（含传播延迟期内）→ 阻断新副作用"},
+        {"id": "AUD-004-04", "kind": "test", "ref": "test_t_auth_02_inflight_no_blind_retry_and_channel_quarantine", "text": "执行中撤销 → 不盲重试、无法确认则隔离通道"},
+        {"id": "AUD-004-05", "kind": "manual", "human_gate": "isolated_env_integration_test", "text": "隔离环境集成测试通过并留存资源端拒绝证据"}
+      ]
+    },
+    "AUD-005": {
+      "severity": "P1",
+      "criteria": "测试覆盖缺失能力、advisory 冒充 enforced、版本变化和证据过期。",
+      "close_condition": "能力矩阵、校验规则和 Claude Code/Codex 实际配置验证记录通过复核。",
+      "assertions": [
+        {"id": "AUD-005-01", "kind": "test", "ref": "test_t_tool_01_capability_gaps_downshift_risk", "text": "能力缺失 / advisory 冒充 enforced → 该等级不可准入，可降级"},
+        {"id": "AUD-005-02", "kind": "test", "ref": "test_t_tool_01_unknown_and_stale_evidence_denied", "text": "未登记工具 / 证据过期 → 拒绝"},
+        {"id": "AUD-005-03", "kind": "manual", "human_gate": "tool_config_verification", "text": "Claude Code / Codex 实际配置验证记录"}
+      ]
+    },
+    "AUD-006": {
+      "severity": "P1",
+      "criteria": "测试覆盖未知来源、未审核晋升、并发更新、撤销后缓存命中、摘要残留和来源失效。",
+      "close_condition": "记忆状态机与检索/缓存集成测试通过。",
+      "assertions": [
+        {"id": "AUD-006-01", "kind": "test", "ref": "test_t_ctx_01_looks_like_system_is_not_authority", "text": "未知来源伪装系统消息 → 分类不变"},
+        {"id": "AUD-006-02", "kind": "test", "ref": "test_t_ctx_02_revoked_memory_not_returned", "text": "撤销后缓存命中不得返回已撤销记忆"},
+        {"id": "AUD-006-03", "kind": "test", "ref": "test_t_ctx_03_unreviewed_promotion_rejected", "text": "未审核晋升 → 拒绝"},
+        {"id": "AUD-006-04", "kind": "unimplemented", "target": "MEM-01", "text": "并发更新、摘要残留、来源失效"},
+        {"id": "AUD-006-05", "kind": "manual", "human_gate": "memory_integration_test", "text": "记忆状态机与检索/缓存集成测试"}
+      ]
+    },
+    "AUD-007": {
+      "severity": "P1",
+      "criteria": "非法跳转、无证据跳转、并发覆盖、终态重开和未授权解除暂停均失败关闭。",
+      "close_condition": "状态机测试通过且日志完整记录 from/to/actor/decision/evidence。",
+      "assertions": [
+        {"id": "AUD-007-01", "kind": "test", "ref": "test_t_wf_05_task_contract_rejects_incomplete", "text": "契约不完整 → 拒绝（覆盖任务状态契约的一部分）"},
+        {"id": "AUD-007-02", "kind": "unimplemented", "target": "SMT-01", "text": "非法跳转 / 无证据跳转 / 终态重开 / 未授权解除暂停"},
+        {"id": "AUD-007-03", "kind": "manual", "human_gate": "transition_log_review", "text": "日志 from/to/actor/decision/evidence 完整性抽查"}
+      ]
+    },
+    "AUD-008": {
+      "severity": "P1",
+      "criteria": "并发写、租约过期旧写者、重复确认、未接收超时和锁服务中断测试通过。",
+      "close_condition": "故障注入证明不会无序覆盖。",
+      "assertions": [
+        {"id": "AUD-008-01", "kind": "test", "ref": "test_t_wf_02_concurrent_holder_denied", "text": "并发写：非持有者被拒"},
+        {"id": "AUD-008-02", "kind": "test", "ref": "test_t_cnc_01_stale_fence_and_fail_closed", "text": "过期栅栏旧写者 / 锁服务中断 → 失败关闭"},
+        {"id": "AUD-008-03", "kind": "test", "ref": "test_t_wf_03_duplicate_delivery_rejected", "text": "重复确认被拒"},
+        {"id": "AUD-008-04", "kind": "unimplemented", "target": "WF-02", "text": "未接收超时场景"}
+      ]
+    },
+    "AUD-009": {
+      "severity": "P0",
+      "criteria": "覆盖并发重复请求、响应丢失、本地登记失败、查询不可用和目标系统不支持幂等；禁止盲目重放。",
+      "close_condition": "至少一个真实代表性副作用端到端测试通过并保存远端结果证据。",
+      "assertions": [
+        {"id": "AUD-009-01", "kind": "test", "ref": "test_t_eff_01_unknown_blocks_replay", "text": "结果 UNKNOWN 阻断重放，先对账"},
+        {"id": "AUD-009-02", "kind": "test", "ref": "test_t_wf_03_duplicate_delivery_rejected", "text": "并发重复请求被拒"},
+        {"id": "AUD-009-03", "kind": "unimplemented", "target": "EFF-01", "text": "目标系统不支持幂等 / 查询不可用"},
+        {"id": "AUD-009-04", "kind": "manual", "human_gate": "real_side_effect_e2e", "text": "真实代表性副作用端到端 + 远端结果证据"}
+      ]
+    },
+    "AUD-010": {
+      "severity": "P0",
+      "criteria": "覆盖生成中断、损坏、基线变更、授权过期、远端状态漂移及补偿失败。",
+      "close_condition": "恢复演练通过；检查点与恢复决策可追溯关联。",
+      "assertions": [
+        {"id": "AUD-010-01", "kind": "test", "ref": "test_t_ckp_01_pre_restore_checks", "text": "恢复前四项校验 + 不可补偿情形转人工"},
+        {"id": "AUD-010-02", "kind": "test", "ref": "test_t_rec_01_baseline_mismatch_pauses_restore", "text": "基线变更暂停恢复"},
+        {"id": "AUD-010-03", "kind": "unimplemented", "target": "CKP-01", "text": "远端状态漂移与补偿失败"},
+        {"id": "AUD-010-04", "kind": "manual", "human_gate": "recovery_drill", "text": "恢复演练 + 检查点与决策可追溯关联"}
+      ]
+    },
+    "AUD-011": {
+      "severity": "P1",
+      "criteria": "阈值边界、事件乱序、解除授权和严重越权即时熔断测试通过。",
+      "close_condition": "配置、测试结果和隔离环境演练记录齐全。",
+      "assertions": [
+        {"id": "AUD-011-01", "kind": "test", "ref": "test_t_brk_01_severe_violation_opens_immediately", "text": "严重越权即时熔断"},
+        {"id": "AUD-011-02", "kind": "test", "ref": "test_t_rec_03_threshold_opens_breaker", "text": "阈值边界触发熔断"},
+        {"id": "AUD-011-03", "kind": "unimplemented", "target": "REC-03", "text": "事件乱序与解除授权"},
+        {"id": "AUD-011-04", "kind": "manual", "human_gate": "breaker_drill", "text": "隔离环境演练记录"}
+      ]
+    },
+    "AUD-012": {
+      "severity": "P0",
+      "criteria": "修改 CI 输出 success、删除测试、降低阈值、伪造状态、改变 SHA 复用旧结果均阻止合并。",
+      "close_condition": "真实试点仓库配置经独立检查，负向测试证据齐全。",
+      "assertions": [
+        {"id": "AUD-012-01", "kind": "test", "ref": "test_t_apr_01_approval_gate_rejects_drift", "text": "配置漂移（阈值/状态/证据变更）→ 审批闸门阻断"},
+        {"id": "AUD-012-02", "kind": "test", "ref": "test_t_chg_01_change_without_disposition_rejected", "text": "未处置变更不得通过"},
+        {"id": "AUD-012-03", "kind": "manual", "human_gate": "pilot_repo_inspection", "text": "真实试点仓库配置独立检查（含分支保护与 SHA 绑定）"}
+      ]
+    },
+    "AUD-013": {
+      "severity": "P1",
+      "criteria": "开发 Run 冒用 Reviewer、篡改结论、伪造测试结果、SHA 变化复用旧审核均被拒绝。",
+      "close_condition": "权限矩阵和负向测试通过；高风险人工复核可追溯。",
+      "assertions": [
+        {"id": "AUD-013-01", "kind": "test", "ref": "test_t_att_01_fake_human_approval_rejected", "text": "伪造人类审批被拒"},
+        {"id": "AUD-013-02", "kind": "test", "ref": "test_t_apr_01_approval_gate_rejects_drift", "text": "SHA 变化后旧审核失效"},
+        {"id": "AUD-013-03", "kind": "unimplemented", "target": "QA-03", "text": "开发 Run 冒用 Reviewer 的第二凭证实测（受 EXC-01 约束）"},
+        {"id": "AUD-013-04", "kind": "manual", "human_gate": "permission_matrix_review", "text": "权限矩阵评审与高风险复核可追溯"}
+      ]
+    },
+    "AUD-014": {
+      "severity": "P0",
+      "criteria": "篡改/删除/截断、伪造来源、服务不可用和恢复测试均符合预期。",
+      "close_condition": "审计后端配置、完整性报告、恢复演练及故障关闭测试通过。",
+      "assertions": [
+        {"id": "AUD-014-01", "kind": "test", "ref": "test_t_evd_01_chain_tamper_detected", "text": "篡改/删除/截断被哈希链检出"},
+        {"id": "AUD-014-02", "kind": "test", "ref": "test_t_evd_02_audit_unavailable_fails_closed", "text": "审计不可用时失败关闭"},
+        {"id": "AUD-014-03", "kind": "unimplemented", "target": "AUD-01", "text": "保留策略、伪造来源识别与恢复"},
+        {"id": "AUD-014-04", "kind": "manual", "human_gate": "audit_backend_review", "text": "审计后端配置与完整性报告"}
+      ]
+    },
+    "AUD-015": {
+      "severity": "P0",
+      "criteria": "隔离演练覆盖凭证泄露、越权写入、审计中断和数据暴露；每项都有恢复和复盘结果。",
+      "close_condition": "Security Owner 批准响应手册，演练问题已分派并验证关闭。",
+      "assertions": [
+        {"id": "AUD-015-01", "kind": "test", "ref": "test_t_inc_01_containment_requires_quarantine_and_evidence", "text": "隔离环节要求证据保全与清单非空"},
+        {"id": "AUD-015-02", "kind": "test", "ref": "test_t_inc_01_close_requires_notify_reverify_postmortem", "text": "关闭要求通知/复验/复盘齐备"},
+        {"id": "AUD-015-03", "kind": "unimplemented", "target": "INC-01", "text": "四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露）"},
+        {"id": "AUD-015-04", "kind": "manual", "human_gate": "security_owner_approval", "text": "响应手册经 Security Owner 批准"}
+      ]
+    },
+    "AUD-016": {
+      "severity": "P0",
+      "criteria": "跨项目访问、缓存污染、删除后再现、超期保留和未经批准的数据传输测试符合策略。",
+      "close_condition": "数据矩阵获责任人批准，隔离和删除测试通过。",
+      "assertions": [
+        {"id": "AUD-016-01", "kind": "test", "ref": "test_t_iso_01_cross_project_access_denied", "text": "跨项目访问被拒"},
+        {"id": "AUD-016-02", "kind": "test", "ref": "test_t_ctx_02_revoked_memory_not_returned", "text": "撤销后不得由缓存续命"},
+        {"id": "AUD-016-03", "kind": "unimplemented", "target": "ISO-01", "text": "删除后再现、超期保留、未经批准的数据传输"},
+        {"id": "AUD-016-04", "kind": "manual", "human_gate": "data_matrix_approval", "text": "数据矩阵经责任人批准"}
+      ]
+    },
+    "AUD-017": {
+      "severity": "P1",
+      "criteria": "紧急撤销、兼容更新、模型升级、回滚及旧证据复用测试产生确定决策和审计事件。",
+      "close_condition": "变更状态机与测试通过，记录绑定版本、审批和回滚证据。",
+      "assertions": [
+        {"id": "AUD-017-01", "kind": "test", "ref": "test_t_chg_01_change_without_disposition_rejected", "text": "未处置变更不得放行（含紧急撤销路径）"},
+        {"id": "AUD-017-02", "kind": "test", "ref": "test_t_gate_01_stale_evidence_not_counted", "text": "旧证据不得复用"},
+        {"id": "AUD-017-03", "kind": "unimplemented", "target": "CHG-01", "text": "模型升级与回滚决策"},
+        {"id": "AUD-017-04", "kind": "manual", "human_gate": "change_evidence_review", "text": "记录绑定版本/审批/回滚证据"}
+      ]
+    },
+    "AUD-018": {
+      "severity": "P1",
+      "criteria": "伪造审批、审批人不合格、SHA 变化、到期、撤销和服务不可用均阻断受保护操作。",
+      "close_condition": "审批/仓库门禁集成测试通过，例外自动失效且可审计。",
+      "assertions": [
+        {"id": "AUD-018-01", "kind": "test", "ref": "test_t_att_01_fake_human_approval_rejected", "text": "伪造审批 / 审批人不合格 → 阻断"},
+        {"id": "AUD-018-02", "kind": "test", "ref": "test_t_auth_02_approval_closed_lease_sup004", "text": "审批过期/拒绝/撤销 → 闭合租约"},
+        {"id": "AUD-018-03", "kind": "manual", "human_gate": "repo_gate_integration", "text": "审批与仓库门禁集成测试，例外自动失效可审计"}
+      ]
+    },
+    "AUD-019": {
+      "severity": "P2",
+      "criteria": "指标可复现，模拟超限触发告警/复核。",
+      "close_condition": "指标字典、阈值配置和超限演练完成审核。",
+      "assertions": [
+        {"id": "AUD-019-01", "kind": "unimplemented", "target": "MTR-01", "text": "指标可复现与超限触发告警/复核"},
+        {"id": "AUD-019-02", "kind": "manual", "human_gate": "metric_dict_review", "text": "指标字典与阈值配置审核"}
+      ]
+    },
+    "AUD-020": {
+      "severity": "P0",
+      "criteria": "任一 P0 控制未验证时不能达到相应准入等级；评估结果可重复。",
+      "close_condition": "等级矩阵和试点评估报告经独立复核。",
+      "assertions": [
+        {"id": "AUD-020-01", "kind": "test", "ref": "test_t_gate_01_untested_p0_control_blocks_r0", "text": "P0 控制未 tested 无法达到相应等级"},
+        {"id": "AUD-020-02", "kind": "test", "ref": "test_t_gate_01_green_snapshot_reaches_g4", "text": "全绿快照可达 G4（证明判定不是恒拒绝）"},
+        {"id": "AUD-020-03", "kind": "script", "command": "python scripts/check_admission_gate.py --require-level G1", "text": "判定可重复执行且不因 DENY 视为故障"},
+        {"id": "AUD-020-04", "kind": "manual", "human_gate": "maturity_matrix_review", "text": "等级矩阵与试点评估报告独立复核"}
+      ]
+    },
+    "AUD-021": {
+      "severity": "P1",
+      "criteria": "报告可复现每项测试；失败映射到问题 ID/负责人；无证据不得通过。",
+      "close_condition": "一个受控真实仓库完成证据包并由独立 Reviewer/Owner 签署。",
+      "assertions": [
+        {"id": "AUD-021-01", "kind": "script", "command": "python -m unittest discover -s tests -p test_*.py", "text": "每项测试可在干净环境复现（报告可复现）"},
+        {"id": "AUD-021-02", "kind": "evidence", "path": "governance/acceptance_matrix.json", "contains": "unimplemented", "text": "每项验收标准有明确处置（含显式未实现项）"},
+        {"id": "AUD-021-03", "kind": "manual", "human_gate": "signed_evidence_package", "text": "受控真实仓库证据包 + 独立 Reviewer/Owner 签署"}
+      ]
+    },
+    "AUD-022": {
+      "severity": "P1",
+      "criteria": "证据过期、配置漂移和工具升级使状态降级；复验通过前无法恢复 verified。",
+      "close_condition": "周期/事件触发复验策略及 CI 测试通过。",
+      "assertions": [
+        {"id": "AUD-022-01", "kind": "script", "command": "python scripts/verify_evidence_freshness.py --enforce", "text": "证据过期即失败关闭（RVF-01）"},
+        {"id": "AUD-022-02", "kind": "test", "ref": "test_t_gate_01_stale_evidence_not_counted", "text": "过期证据不得计入等级判定"},
+        {"id": "AUD-022-03", "kind": "unimplemented", "target": "RVF-01", "text": "工具升级触发降级"},
+        {"id": "AUD-022-04", "kind": "manual", "human_gate": "reverify_policy_approval", "text": "周期/事件复验策略审批"}
+      ]
+    }
+  }
+}

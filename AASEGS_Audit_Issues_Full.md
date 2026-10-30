@@ -28,14 +28,14 @@
 
 ### 二·A · Owner 分配记录（2026-10-29 Owner 批准）
 
-**Owner：slow-is-fast**（全部 22 项统一指派）。当前 **17 项 `READY_FOR_REVIEW`、5 项 `OPEN`**。`READY_FOR_REVIEW` 由 `scripts/check_audit_closure.py` 机器判定，含义仅为**应答控制全部 tested（或持有效例外）且证据未过期**——即"可以进入验收评审"，**不等于验收通过、更不等于关闭**。关闭仍须逐条满足 §四 验收标准并经独立复核（当前受 EXC-01 约束）。仍 `OPEN` 的 5 项因应答控制未 tested 而受阻：AUD-004（AUTH-01/02）、AUD-006（MEM-01）、AUD-007（SMT-01）、AUD-019（MTR-01）、AUD-021（PKG-01）。
+**Owner：slow-is-fast**（全部 22 项统一指派）。当前 **18 项 `READY_FOR_REVIEW`、4 项 `OPEN`**。`READY_FOR_REVIEW` 由 `scripts/check_audit_closure.py` 机器判定，含义仅为**应答控制全部 tested（或持有效例外）且证据未过期**——即"可以进入验收评审"，**不等于验收通过、更不等于关闭**。自 2026-10-30 起，闭合评估在控制级证据之外增加了 **§四 验收断言层**（`governance/acceptance_matrix.json`，80 条断言）：即使进入 `READY_FOR_REVIEW`，只要仍有未满足断言或未登记签署的人工项，声明 `CLOSED`/`ACCEPTED_RISK` 即判为记账不实。关闭仍须逐条满足 §四 验收标准并经独立复核（当前受 EXC-01 约束）。仍 `OPEN` 的 4 项因应答控制未 tested 而受阻：AUD-006（MEM-01）、AUD-007（SMT-01）、AUD-019（MTR-01）、AUD-021（PKG-01）。
 
 | 问题 ID | 严重程度 | 状态 | 备注 |
 |---|---|---|---|
 | AUD-001 | P0 | READY_FOR_REVIEW | 注册表已建（53 条规则，SUP-006 补注册后），双向差异检查已脚本化；散文式 MUST 对 lint 不可见的缺口已知（2026-10-30 发现），关闭待独立抽样复核 |
 | AUD-002 | P0 | READY_FOR_REVIEW | 六态状态机已建（tested 15 / verified 0），关闭待 verified 路径打通 |
 | AUD-003 | P1 | READY_FOR_REVIEW | control-catalog 已机器可读并通过静态校验 |
-| AUD-004 | P0 | OPEN | WP-02；执行器 ledger/lock 部分覆盖，资源端校验未接 |
+| AUD-004 | P0 | READY_FOR_REVIEW | WP-02；资源端独立验签与撤销竞态已 tested（T-AUTH-01/02）；§四 六类阻断均有对应用例，关闭仍待隔离环境集成测试与资源端拒绝证据 |
 | AUD-005 | P1 | READY_FOR_REVIEW | WP-02；工具能力准入矩阵未建 |
 | AUD-006 | P1 | OPEN | WP-03；记忆状态机已在执行器 memory.py 实现并 tested |
 | AUD-007 | P1 | OPEN | WP-04；任务状态机转换矩阵待补全 |
