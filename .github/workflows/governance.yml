@@ -47,6 +47,9 @@ jobs:
       - name: "T-RVF-01 evidence freshness (stale evidence fails closed)"
         run: python scripts/verify_evidence_freshness.py --enforce
 
+      - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
+        run: python scripts/check_claims.py
+
       # GATE-01：成熟度/风险等级准入判定。CI 采用防退化下限而非"必须达标 G2"：
       # 下限是 Owner 实际达到并批准的最低等级。报告里 DENY 是门槛的正确结论
       # （当前账本不满足更高等级是事实），不算失败；跌破 G1（输入损坏/事实源

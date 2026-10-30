@@ -51,6 +51,43 @@ tests = [c['test'] for c in x['controls']]
 assert len(tests) == len(set(tests)), \
     f"duplicate test ref: {[t for t in tests if tests.count(t) > 1]}"
 
+# ---- 幽灵用例拦截：test 字段必须指向真实存在的用例/CI 步骤 ----
+# 2026-10-30 记账复核发现：QA-04 的 test 字段写着 T-QA-05，而仓库里根本没有
+# 这个用例——"有测试引用"和"测试真的存在"是两件事，前者可以纯手工编出来。
+# 每条 tested 控制还必须声明 evidence_kind：
+#   automated = test 字段可解析到真实用例或 CI 步骤（每次改动都会再跑一遍）
+#   drill     = 一次性演练，只有历史 PR 记录，没有常态化自动检查（必须写明）
+import re as _re
+
+
+def _ref_exists(ref):
+    """T-XXX 是否能在 tests/*.py 的用例或 workflow 步骤里找到。"""
+    slug = ref.lower().replace('-', '_')
+    for fn in (BASE / 'tests').glob('*.py'):
+        src = fn.read_text(encoding='utf8')
+        if _re.search(r'def (test_)?' + slug + r'_', src, _re.I):
+            return True
+    for wf in (BASE / '.github' / 'workflows').glob('*.yml'):
+        if ref in wf.read_text(encoding='utf8'):
+            return True
+    return False
+
+
+_ghost, _badkind = [], []
+for c in x['controls']:
+    if c['status'] != 'tested':
+        continue
+    kind = c.get('evidence_kind')
+    if kind not in ('automated', 'drill'):
+        _badkind.append(c['id'])
+        continue
+    if kind == 'automated' and not _ref_exists(c['test']):
+        _ghost.append((c['id'], c['test']))
+    if kind == 'drill' and '/pull/' not in str(c.get('integration_evidence_uri', '')):
+        _badkind.append(c['id'] + ' (drill 但 URI 不是 PR)')
+assert not _badkind, f"tested control without valid evidence_kind: {_badkind}"
+assert not _ghost, f"test ref resolves to no real case: {_ghost}"
+
 # ---- v1.1.1 §1 规则注册表（rule-registry.json）----
 REG_FIELDS = {'rule_id', 'source_location', 'statement', 'requirement', 'scope',
               'risk_level', 'owner', 'enforcement', 'evidence_required',

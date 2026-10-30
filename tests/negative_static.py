@@ -49,6 +49,17 @@ def make_tmp(mangle=None):
         (tmp / 'governance').mkdir(exist_ok=True)
         (tmp / 'governance' / cov.name).write_text(
             cov.read_text(encoding='utf8'), encoding='utf8', newline='\n')
+    # 幽灵用例拦截（2026-10-30）要解析 tests/ 与 workflow 里的真实用例名才能
+    # 判断 test 字段是否成立。缺了这两处，干净副本会把所有控制判成"引用不存在"，
+    # 使 T_REG_04 等用例失去阴性对照——掩盖真正的问题。
+    for rel, pat in (('tests', '*.py'), ('.github/workflows', '*.yml')):
+        for f in sorted((ROOT / rel).rglob(pat)):
+            if '__pycache__' in f.parts:
+                continue
+            tgt = tmp / f.relative_to(ROOT)
+            tgt.parent.mkdir(parents=True, exist_ok=True)
+            tgt.write_text(f.read_text(encoding='utf8', errors='ignore'),
+                           encoding='utf8', newline='\n')
     return tmp
 
 
@@ -139,6 +150,41 @@ def T_REG_04_control_without_risk_level():
     tmp = make_tmp(mangle)
     rc, tail = run_lint(tmp)
     return rc != 0 and 'risk_level' in tail, rc, tail
+
+
+@case
+def T_REG_05_ghost_test_ref():
+    """幽灵用例：test 字段指向仓库里不存在的用例 → 必须失败。
+
+    "有测试引用"和"测试真的存在"是两件事。2026-10-30 记账复核发现
+    QA-04 的 test 字段写着 T-QA-05，而仓库里根本没有这个用例——
+    旧的唯一性检查只比对字段值是否重复，查不到引用是否可解析。
+    """
+    def mangle(d):
+        for c in d['control-catalog.yaml']['controls']:
+            if c['status'] == 'tested' and c.get('evidence_kind') == 'automated':
+                c['test'] = 'T-GHOST-99'
+                break
+    tmp = make_tmp(mangle)
+    rc, tail = run_lint(tmp)
+    return rc != 0 and 'no real case' in tail, rc, tail
+
+
+@case
+def T_REG_06_tested_without_evidence_kind():
+    """tested 控制未声明 evidence_kind（automated/drill）→ 必须失败。
+
+    不区分"每次 CI 都会再跑一遍"和"只有一次历史演练"，
+    tested 就会把一次性演练记录当成常态化保障。
+    """
+    def mangle(d):
+        for c in d['control-catalog.yaml']['controls']:
+            if c['status'] == 'tested':
+                c.pop('evidence_kind', None)
+                break
+    tmp = make_tmp(mangle)
+    rc, tail = run_lint(tmp)
+    return rc != 0 and 'evidence_kind' in tail, rc, tail
 
 
 def main():
