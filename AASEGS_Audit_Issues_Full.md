@@ -10,7 +10,7 @@
 
 ## 一、审计结论
 
-本清单登记 **22 个问题：P0 9 项、P1 12 项、P2 1 项**。
+本清单登记 **22 个问题：P0 10 项、P1 11 项、P2 1 项**（严重程度以 §四 逐项问题登记为唯一权威源；GATE-01 门槛判定会校验三处引用是否一致）。
 
 -   **P0**：阻断对应风险等级的试点/受保护操作准入，除非正式风险例外被批准。
 -   **P1**：扩大试点或启用相关能力前必须关闭；例外必须限定范围、期限、补偿控制和批准人。
@@ -34,22 +34,22 @@
 |---|---|---|---|
 | AUD-001 | P0 | OPEN | 注册表已建（52 条规则），双向差异检查已脚本化，关闭待独立抽样复核 |
 | AUD-002 | P0 | OPEN | 六态状态机已建（tested 15 / verified 0），关闭待 verified 路径打通 |
-| AUD-003 | P0 | OPEN | control-catalog 已机器可读并通过静态校验 |
+| AUD-003 | P1 | OPEN | control-catalog 已机器可读并通过静态校验 |
 | AUD-004 | P0 | OPEN | WP-02；执行器 ledger/lock 部分覆盖，资源端校验未接 |
-| AUD-005 | P0 | OPEN | WP-02；工具能力准入矩阵未建 |
+| AUD-005 | P1 | OPEN | WP-02；工具能力准入矩阵未建 |
 | AUD-006 | P1 | OPEN | WP-03；记忆状态机已在执行器 memory.py 实现并 tested |
 | AUD-007 | P1 | OPEN | WP-04；任务状态机转换矩阵待补全 |
-| AUD-008 | P0 | OPEN | WP-04；fencing 写锁已 tested，交接租约语义待扩展 |
+| AUD-008 | P1 | OPEN | WP-04；fencing 写锁已 tested，交接租约语义待扩展 |
 | AUD-009 | P0 | OPEN | WP-04；幂等台账 UNKNOWN→reconcile 已 tested |
 | AUD-010 | P0 | OPEN | WP-04；checkpoint 摘要绑定已 tested，一致性对账未做 |
 | AUD-011 | P1 | OPEN | WP-04；熔断器 severe 立即触发已 tested |
 | AUD-012 | P0 | OPEN | WP-05；可信质量基线未建 |
-| AUD-013 | P0 | OPEN | WP-05；Reviewer 独立性需第二凭证实测（T-QA-03 未覆盖） |
+| AUD-013 | P1 | OPEN | WP-05；Reviewer 独立性需第二凭证实测（T-QA-03 未覆盖） |
 | AUD-014 | P0 | OPEN | WP-05；审计流 append-only 已实现，保留策略与不可用行为未定义 |
 | AUD-015 | P0 | OPEN | WP-05；事件响应手册缺失 |
-| AUD-016 | P1 | OPEN | WP-03；跨项目隔离未测 |
+| AUD-016 | P0 | OPEN | WP-03；跨项目隔离未测 |
 | AUD-017 | P1 | OPEN | WP-06；策略变更状态机未建 |
-| AUD-018 | P0 | OPEN | WP-02；审批到期系统级失效保证未实现 |
+| AUD-018 | P1 | OPEN | WP-02；审批到期系统级失效保证未实现 |
 | AUD-019 | P2 | OPEN | WP-06；指标阈值/责任人/超限动作未定义 |
 | AUD-020 | P0 | OPEN | WP-01；G2 机器可判定门槛待定义 |
 | AUD-021 | P1 | OPEN | WP-06；PKG-01 证据包已首次履行（试点报告），模板待固化 |

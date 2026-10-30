@@ -21,6 +21,9 @@ from executor.change import RunRegistry, ChangeEvaluator, Rejected as ChangeReje
 from executor.approval import ApprovalGate, Rejected as ApprovalRejected
 from executor.audit import AuditLog, AuditUnavailable
 from executor.scope import ScopeGuard, Denied as ScopeDenied
+from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
+from datetime import date
+
 from executor.checkpoint import (CheckpointStore, BaselineChanged,
                                  PausedForReevaluation as CkpPaused,
                                  ManualRemediationRequired as CkpManual)
@@ -446,36 +449,269 @@ class ExecutorNegativeTests(unittest.TestCase):
         self.assertEqual(store.restore("cp-1", "base-AAA", authorized=True)["step"], 3)
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    # ---- T-GATE-01：准入门槛机器判定（GATE-01 / AUD-020） ----
+    # 夹具为自包含的合成治理仓库，不依赖任何真实仓库路径（控制面 CI 无数据面检出）。
+    _seq = 0
+    _NOW = date(2026, 10, 30)
 
-    # ---- T-ATT-01：同一 Agent 假扮人工批准 / 带内证明 / 未知主体 → REJECT ----
-    def _att(self):
-        return {
-            "task_id": "t-200", "approver_principal": "slow-is-fast",
-            "principal_type": "human", "decision": "APPROVED",
-            "attestation_ref": "https://github.com/slow-is-fast/engineering_manager/pull/4",
-            "channel": "pr_review", "issued_at": "2026-10-29T16:00:00Z",
-            "policy_hash": "policy-v1.1.1",
+    def _ctl(self, cid, risk, tested=True, verified=True,
+             evidence_at="2026-10-30", **over):
+        c = {
+            "id": cid, "requirement_ref": cid, "source_ref": "fixture",
+            "risk_level": risk, "addresses": [],
+            "owner": "human_owner", "enforcer": "fixture_enforcer",
+            "evidence": "fixture evidence", "failure": "deny (fail closed)",
+            "test": "T-" + cid, "status": "tested",
+            "state": {"documented": True, "configured": True,
+                      "tested": tested, "verified": verified,
+                      "degraded": False, "excepted": False},
+            "integration_evidence_uri": "evidence/fixture.md",
+            "evidence_at": evidence_at,
+        }
+        c.update(over)
+        return c
+
+    def _exc(self, cid, *, requirement=("tested",), approver_type="human",
+             expires="2027-01-01", compensating=("fixture 补偿控制",),
+             status="ACTIVE", revocation="fixture revocation condition"):
+        return {"id": "EXC-T", "status": status, "approver": "slow-is-fast",
+                "approver_type": approver_type, "created": "2026-10-01",
+                "expires": expires, "scope": "fixture",
+                "waives": {"controls": [cid], "audit_issues": [],
+                           "requirement": list(requirement)},
+                "compensating_controls": list(compensating),
+                "revocation": revocation}
+
+    def _gate_repo(self, *, issue_status=("CLOSED", "CLOSED", "CLOSED"),
+                   sec2a_sev=("P0", "P0", "P1"), exceptions=None,
+                   controls=None, drop=(), sec12=None):
+        type(self)._seq += 1
+        base = self.tmp / ("gate-repo-%d" % type(self)._seq)
+        (base / "governance").mkdir(parents=True)
+        (base / ".github" / "workflows").mkdir(parents=True)
+
+        spec = {"REG-01": "P1", "CTA-01": "P0", "GATE-01": "P0",
+                "CTB-01": "P1", "CTX-01": "P0", "MTR-01": "P2"}
+        ctl_list = []
+        for cid, risk in spec.items():
+            kw = dict((controls or {}).get(cid, {}))
+            ctl_list.append(self._ctl(cid, risk, **kw))
+
+        matrix = {
+            "version": "1.0.0",
+            "evaluation_model": {"unwaivable": ["GATE-01"]},
+            "evidence_ttl_days": {"P0": 30, "P1": 90, "P2": 180, "_unknown": 30},
+            "levels": {
+                "G0": {"title": "指令", "criteria": {}},
+                "G1": {"title": "流程+CI", "criteria": {
+                    "catalog_schema_valid": True, "ci_gate_present": True,
+                    "controls_tested": ["REG-01"]}},
+                "G2": {"title": "身份/隔离/审批", "criteria": {
+                    "controls_tested": ["CTA-01", "GATE-01"],
+                    "require_fresh_evidence": True, "max_open_p0_issues": 0}},
+                "G3": {"title": "审计/恢复", "criteria": {
+                    "controls_tested": ["CTB-01"],
+                    "require_fresh_evidence": True,
+                    "all_p0_controls_tested": True, "max_open_p1_issues": 0}},
+                "G4": {"title": "持续改进", "criteria": {
+                    "controls_tested": ["MTR-01"],
+                    "require_fresh_evidence": True,
+                    "all_p0_controls_verified": True,
+                    "all_p1_controls_tested": True,
+                    "max_active_exceptions": 0, "max_open_issues_total": 0}},
+            },
+            "risk_admission": {
+                "R0": {"min_level": "G2", "case_review": False},
+                "R1": {"min_level": "G2", "case_review": False},
+                "R2": {"min_level": "G3", "case_review": True},
+                "R3": {"min_level": "G4", "case_review": True},
+            },
         }
 
-    def test_t_att_01_fake_human_approval_rejected(self):
-        v = ApprovalAttestationValidator({"slow-is-fast", "reviewer-b"},
-                                         "policy-v1.1.1",
-                                         self.tmp / "audit.jsonl")
-        a = self._att()
-        with self.assertRaises(AttestationRejected):      # Agent 冒充人类主体
-            v.validate({**a, "approver_principal": "agent-alpha"})
-        with self.assertRaises(AttestationRejected):      # 主体类型非人类
-            v.validate({**a, "principal_type": "agent"})
-        with self.assertRaises(AttestationRejected):      # 主体不在人类白名单
-            v.validate({**a, "approver_principal": "someone-else"})
-        with self.assertRaises(AttestationRejected):      # 带内（自证）通道
-            v.validate({**a, "channel": "self"})
-        with self.assertRaises(AttestationRejected):      # 旁证不可核查
-            v.validate({**a, "attestation_ref": "trust me"})
-        with self.assertRaises(AttestationRejected):      # 缺字段
-            v.validate({k: x for k, x in a.items() if k != "issued_at"})
-        with self.assertRaises(AttestationRejected):      # 策略不符
-            v.validate({**a, "policy_hash": "policy-v1.0"})
-        self.assertEqual(v.validate(a), "APPROVED_BY_HUMAN")   # 正向对照
+        rows = "\n".join(
+            "| AUD-10%d | %s | %s | fixture |" % (i + 1, sec2a_sev[i], issue_status[i])
+            for i in range(3))
+        sec4_sev = ("P0", "P0", "P1")
+        blocks = "\n\n".join(
+            "### AASEGS-AUD-10%d --- fixture issue\n\n"
+            "-   **问题 ID：** AASEGS-AUD-10%d\n"
+            "-   **严重程度：** **%s**" % (i + 1, i + 1, sec4_sev[i])
+            for i in range(3))
+        audit_md = (
+            "# 审计问题清单（合成夹具）\n\n登记 3 个问题。\n\n"
+            "## 二·A · Owner 分配记录\n\n"
+            "| 问题 ID | 严重程度 | 状态 | 备注 |\n|---|---|---|---|\n"
+            + rows + "\n\n## 三、严重程度准入关系\n\n（略）\n\n"
+            "## 四、逐项问题登记\n\n" + blocks + "\n")
+
+        def write(rel, text):
+            if rel in drop:
+                return
+            p = base / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(text, encoding="utf-8")
+
+        write("governance/maturity_matrix.json",
+              json.dumps(matrix, ensure_ascii=False, indent=2))
+        write("control-catalog.yaml",
+              json.dumps({"version": "1.1.1", "controls": ctl_list},
+                         ensure_ascii=False, indent=2))
+        write("rule-registry.json",
+              json.dumps({"version": "1.1.1",
+                          "rules": [{"rule_id": "GOV-09", "risk_level": "P1"}]},
+                         ensure_ascii=False, indent=2))
+        write("AASEGS_Audit_Issues_Full.md", audit_md)
+        if exceptions is not None:
+            write("governance/exception_register.json",
+                  json.dumps({"exceptions": exceptions}, ensure_ascii=False, indent=2))
+        if sec12 is not None:
+            write("AASEGS_v1.1.1_实施完整性修订版.md",
+                  "### 12.1 条款到控制的映射\n\n"
+                  "| 审计问题 | 严重度 | 标题 | 补充条款 | Control ID | 条款覆盖 | 关闭状态 |\n"
+                  "|---|---|---|---|---|---|---|\n" + sec12 + "\n\n### 12.2 覆盖不等于关闭\n")
+        write(".github/workflows/governance.yml",
+              "name: governance\nsteps:\n- run: python scripts/validate_controls.py\n")
+        return base
+
+    def test_t_gate_01_untested_p0_control_blocks_r0(self):
+        base = self._gate_repo(controls={"CTA-01": {"tested": False}})
+        g = AdmissionGate(base, now=self._NOW).load()
+        d = g.admit("R0")
+        self.assertEqual(d["decision"], "DENY")
+        self.assertTrue(any("level_insufficient" in r for r in d["reasons"]))
+        self.assertIn("CTA-01", [b["id"] for b in d["blockers"]])
+
+    def test_t_gate_01_open_p0_issue_blocks_admission(self):
+        base = self._gate_repo(issue_status=("OPEN", "CLOSED", "CLOSED"))
+        g = AdmissionGate(base, now=self._NOW).load()
+        d = g.admit("R0")
+        self.assertEqual(d["decision"], "DENY")
+        self.assertIn("AUD-101", [b["id"] for b in d["blockers"]])
+
+    def test_t_gate_01_invalid_exceptions_not_honored(self):
+        # 例外缺任一要件（到期/无补偿控制/Agent 批准人/无撤销条件）→ 一律不采信
+        bad = [
+            self._exc("CTA-01", expires="2020-01-01"),
+            self._exc("CTA-01", compensating=()),
+            self._exc("CTA-01", approver_type="agent"),
+            self._exc("CTA-01", revocation=""),
+        ]
+        for exc in bad:
+            base = self._gate_repo(controls={"CTA-01": {"tested": False}},
+                                   exceptions=[exc])
+            g = AdmissionGate(base, now=self._NOW).load()
+            d = g.admit("R0")
+            self.assertEqual(d["decision"], "DENY", f"exception wrongly honored: {exc}")
+            self.assertIn("CTA-01", [b["id"] for b in d["blockers"]])
+            self.assertEqual(d["waivers"], [])
+
+    def test_t_gate_01_valid_exception_restores_admission(self):
+        # 有效例外豁免 tested 要求 → R0 恢复 ALLOW；但 verified 未豁免 → R3 仍 DENY
+        base = self._gate_repo(controls={"CTA-01": {"tested": False,
+                                                    "verified": False}},
+                               exceptions=[self._exc("CTA-01")])
+        g = AdmissionGate(base, now=self._NOW).load()
+        d0 = g.admit("R0")
+        self.assertEqual(d0["decision"], "ALLOW")
+        self.assertEqual(d0["actual_level"], "G3")
+        self.assertEqual(d0["waivers"],
+                         [{"control": "CTA-01", "requirement": "tested",
+                           "by": "EXC-T", "level": "G2"}])
+        d3 = g.admit("R3", case_review={"approval_ref": "CR-1",
+                                        "approver": "slow-is-fast",
+                                        "principal_type": "human"})
+        self.assertEqual(d3["decision"], "DENY")
+        self.assertIn("CTA-01", [b["id"] for b in d3["blockers"]])
+
+    def test_t_gate_01_gate_control_unwaivable(self):
+        # 例外试图豁免 GATE-01（判定器自身）→ 不予采信，仍阻断
+        base = self._gate_repo(controls={"GATE-01": {"tested": False}},
+                               exceptions=[self._exc("GATE-01")])
+        g = AdmissionGate(base, now=self._NOW).load()
+        d = g.admit("R0")
+        self.assertEqual(d["decision"], "DENY")
+        self.assertIn("GATE-01", [b["id"] for b in d["blockers"]])
+        self.assertEqual(d["waivers"], [])
+
+    def test_t_gate_01_verified_waiver_cannot_satisfy_tested(self):
+        # waives.requirement=["verified"] 的例外不得用于豁免 tested 要求
+        base = self._gate_repo(controls={"CTA-01": {"tested": False,
+                                                    "verified": False}},
+                               exceptions=[self._exc("CTA-01",
+                                                     requirement=("verified",))])
+        g = AdmissionGate(base, now=self._NOW).load()
+        d = g.admit("R0")
+        self.assertEqual(d["decision"], "DENY")
+        self.assertIn("CTA-01", [b["id"] for b in d["blockers"]])
+
+    def test_t_gate_01_stale_evidence_not_counted(self):
+        # tested 但证据过期（P0 TTL=30 天，age=40 天）→ 不计入
+        base = self._gate_repo(controls={"CTA-01": {"evidence_at": "2026-09-20"}})
+        g = AdmissionGate(base, now=self._NOW).load()
+        d = g.admit("R0")
+        self.assertEqual(d["decision"], "DENY")
+        stale = [b for b in d["blockers"] if b["id"] == "CTA-01"]
+        self.assertTrue(stale)
+        self.assertEqual(stale[0]["reason"], "stale_evidence")
+
+    def test_t_gate_01_missing_inputs_fail_closed(self):
+        # 任一必填输入缺失 → 失败关闭，不给出准入结论
+        for rel in ("governance/maturity_matrix.json", "control-catalog.yaml",
+                    "rule-registry.json", "AASEGS_Audit_Issues_Full.md"):
+            base = self._gate_repo(drop=(rel,))
+            with self.assertRaises(GateInputError):
+                AdmissionGate(base, now=self._NOW).load()
+
+    def test_t_gate_01_severity_conflict_fails_closed(self):
+        # 同一问题在三处事实源严重程度不一致 → 失败关闭，而非任选其一
+        base = self._gate_repo(sec2a_sev=("P1", "P0", "P1"))
+        with self.assertRaises(GateInputError) as cm:
+            AdmissionGate(base, now=self._NOW).load()
+        self.assertIn("AUD-101", str(cm.exception))
+
+        base2 = self._gate_repo(sec12="| AUD-102 | P1 | t | s | c | y | z |")
+        with self.assertRaises(GateInputError) as cm2:
+            AdmissionGate(base2, now=self._NOW).load()
+        self.assertIn("AUD-102", str(cm2.exception))
+
+    def test_t_gate_01_r2_r3_require_human_case_review(self):
+        base = self._gate_repo()
+        g = AdmissionGate(base, now=self._NOW).load()
+        # 等级达标但缺逐案评审 → 拒绝
+        d1 = g.admit("R2")
+        self.assertEqual(d1["decision"], "DENY")
+        self.assertTrue(any("case_review_required" in r for r in d1["reasons"]))
+        # 逐案评审由 Agent 主体批准 → 拒绝
+        d2 = g.admit("R3", case_review={"approval_ref": "CR-1",
+                                        "approver": "agent-alpha",
+                                        "principal_type": "agent"})
+        self.assertEqual(d2["decision"], "DENY")
+        self.assertTrue(any("case_review" in r for r in d2["reasons"]))
+        # 人类主体逐案评审 → 放行
+        d3 = g.admit("R2", case_review={"approval_ref": "CR-1",
+                                        "approver": "slow-is-fast",
+                                        "principal_type": "human"})
+        self.assertEqual(d3["decision"], "ALLOW")
+
+    def test_t_gate_01_green_snapshot_reaches_g4(self):
+        # 正向对照：全绿快照达到 G4、R3 放行——门槛不是"永远拒绝"的假门禁
+        base = self._gate_repo()
+        g = AdmissionGate(base, now=self._NOW).load()
+        a = g.evaluate()
+        self.assertEqual(a["level"], "G4")
+        self.assertEqual(a["blockers"], [])
+        d = g.admit("R3", case_review={"approval_ref": "CR-2",
+                                       "approver": "slow-is-fast",
+                                       "principal_type": "human"})
+        self.assertEqual(d["decision"], "ALLOW")
+        self.assertEqual(d["actual_level"], "G4")
+
+    def test_t_gate_01_unknown_risk_denied(self):
+        base = self._gate_repo()
+        g = AdmissionGate(base, now=self._NOW).load()
+        with self.assertRaises(AdmissionDenied):
+            g.admit("R9")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

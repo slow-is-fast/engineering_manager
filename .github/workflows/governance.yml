@@ -46,3 +46,12 @@ jobs:
       # 到期后重新验证并更新 control-catalog.yaml 中各控制的 evidence_at 即可复绿。
       - name: "T-RVF-01 evidence freshness (stale evidence fails closed)"
         run: python scripts/verify_evidence_freshness.py --enforce
+
+      # GATE-01：成熟度/风险等级准入判定。CI 采用防退化下限而非"必须达标 G2"：
+      # 下限是 Owner 实际达到并批准的最低等级。报告里 DENY 是门槛的正确结论
+      # （当前账本不满足更高等级是事实），不算失败；跌破 G1（输入损坏/事实源
+      # 冲突/证据过期/目录失守）才变红——这是防退化，不是伪装达标。
+      - name: "T-GATE-01 admission gate evaluation (anti-regression floor: G1)"
+        run: |
+          python scripts/check_admission_gate.py
+          python scripts/check_admission_gate.py --require-level G1

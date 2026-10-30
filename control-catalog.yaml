@@ -1022,16 +1022,17 @@
       "evidence": "七条准入门槛的逐项机器判定结果、未关闭 P0 清单、与审计问题状态的联动记录",
       "failure": "任一未关闭 P0 问题阻止对应风险等级准入；门槛判定不可由文档声明替代",
       "test": "T-GATE-01",
-      "status": "not_enforced",
+      "status": "tested",
       "state": {
         "documented": true,
-        "configured": false,
-        "tested": false,
+        "configured": true,
+        "tested": true,
         "verified": false,
         "degraded": false,
         "excepted": false
       },
-      "integration_evidence_uri": null
+      "integration_evidence_uri": "evidence/gate01_20261030T113000Z.md",
+      "evidence_at": "2026-10-30"
     },
     {
       "id": "CRED-01",

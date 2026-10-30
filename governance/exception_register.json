@@ -1,0 +1,68 @@
+{
+  "version": "1.0.0",
+  "source_ref": "《AASEGS v1.1 审计问题清单》§二 状态管理 / v1.1.1 §100 例外与紧急流程",
+  "authority": "本文件是风险例外（ACCEPTED_RISK）的**唯一机器可读事实源**，供准入门槛（GATE-01）判定豁免时使用。`governance/exceptions_2026-10-29.md` 是人类可读渲染与论证，与本文件不一致时以本文件为准，并视为登记缺陷（REG-01 类）。",
+  "approved_by": "slow-is-fast",
+  "semantics": {
+    "waives_requirement": "本字段限定例外能豁免**哪一类**要求。`[\"tested\"]` 可豁免「控制必须 tested」；`[\"verified\"]` 只能豁免「控制必须 verified」，不得用于豁免 tested 要求。省略时按 `[\"tested\"]` 处理（较宽），因此必须显式声明。",
+    "not_a_fix": "ACCEPTED_RISK 不等于修复完成。例外只改变「是否阻断准入」，不改变控制自身的 tested/verified 状态字段。",
+    "fail_closed": "例外缺批准人、批准人非人类、缺到期、已过期、缺补偿控制、缺撤销条件，或 waives 目标未覆盖当前阻断项时，该例外**一律不予采信**。",
+    "unwaivable": ["GATE-01"]
+  },
+  "exceptions": [
+    {
+      "id": "EXC-01",
+      "title": "缺少第二人类审批主体（QA-03 / RVW-01）",
+      "status": "ACTIVE",
+      "approver": "slow-is-fast",
+      "approver_type": "human",
+      "approver_principal_id": "github:slow-is-fast",
+      "created": "2026-10-29",
+      "expires": "2027-01-31",
+      "scope": "本仓库单人开发场景下的独立人工验收/审批",
+      "empirical_basis": "PR #5 演练：第二 PAT 不构成独立审批主体；GitHub 按主体而非凭证判定独立性，自批被服务器端拒绝（Can not approve your own pull request）。",
+      "waives": {
+        "controls": ["RVW-01", "QA-03"],
+        "audit_issues": [],
+        "requirement": ["tested"]
+      },
+      "compensating_controls": [
+        "评审与写入分凭证：评审 Agent 用只读凭证，写入 Agent 另用限域可写凭证，两者不得共用同一把 token",
+        "机器化校验：scripts/verify_reviewer_credential.py --expect-deny —— 评审凭证具备写权限即失败关闭",
+        "评审证据绑定：评审结论须含评审者身份、会话 ID、被评审 diff 的 SHA（QA-04 / CKP-01）",
+        "平台层兜底：自批由 GitHub 服务器端拒绝（已实证，非本仓库检测层行为）",
+        "人类最终责任不变：merge 动作始终由人类 Owner 执行（GOV-06）"
+      ],
+      "revocation": "引入第二人类主体；或组织级 App/Reviewer 身份启用；或 RVW-02 完成登记并通过连续 CI 校验。",
+      "evidence_uri": "governance/exceptions_2026-10-29.md#exc-01--缺少第二人类审批主体qa-03--rvw-01",
+      "note": "RVW-02（评审凭证只读）为候选控制，尚无 tested 证据，故未登记进 control-catalog.yaml。本例外的补偿控制 1/2 目前属「声明」，待只读 PAT 实测后升级为「证据」。"
+    },
+    {
+      "id": "EXC-02",
+      "title": "verified 授予所需的独立账号/主机不可达",
+      "status": "ACTIVE",
+      "approver": "slow-is-fast",
+      "approver_type": "human",
+      "approver_principal_id": "github:slow-is-fast",
+      "created": "2026-10-29",
+      "expires": "2027-04-30",
+      "scope": "VD-01 / GOV-14 及执行器类控制的 verified 状态授予",
+      "empirical_basis": "控制面与数据面同属 GitHub 账号 slow-is-fast；无第二个账号或独立主机。",
+      "waives": {
+        "controls": ["VD-01", "ID-02", "CTX-02", "CTX-03", "WF-01", "WF-02", "REC-01", "REC-03", "QA-01", "QA-02", "QA-04", "AUD-01", "REG-01", "REG-02", "ISO-01", "CNC-01", "EFF-01", "CKP-01", "BRK-01", "BASE-01", "EVD-01", "EVD-02", "CHG-01", "APR-01", "RVF-01", "WF-05", "WF-06", "ATT-01", "CLM-01"],
+        "audit_issues": [],
+        "requirement": ["verified"]
+      },
+      "compensating_controls": [
+        "控制面独立仓库 slow-is-fast/aasegs-gov-plane + 分支保护 + CODEOWNERS（已生效）",
+        "SHA pin：数据面 governance/executor_pin.json 绑定控制面不可变 commit（SHA + tree + 内容哈希三重），T-VD-01 每次 CI 校验",
+        "运行时凭证分域：数据面 CI 的 github.token 写控制面被 403 拒（T-VD-01b，连续 CI 证明）",
+        "Agent 凭证限域：限域单仓短期 fine-grained PAT（T-ID-02 实测：数据面可写、控制面被拒）",
+        "执行器源码只读引用：数据面不得直接改 executor/，变更须走控制面 PR + pin bump"
+      ],
+      "revocation": "具备独立 org/账号；或执行器部署到独立主机/容器（独立凭证 + 只读挂载）后完成部署验收。",
+      "evidence_uri": "governance/exceptions_2026-10-29.md#exc-02--verified-授予所需的独立账号主机不可达",
+      "note": "信任域分离做到仓库级 + 凭证级，**不是账号级/主机级**。waives.requirement 限定为 verified，因此本例外不得用于豁免任何 tested 要求。"
+    }
+  ]
+}

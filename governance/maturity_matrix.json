@@ -1,0 +1,92 @@
+{
+  "version": "1.0.0",
+  "source_ref": "v1.1.1 §12 准入门槛与审计问题映射 / 00-总纲 F 上线成熟度 / AASEGS-AUD-020",
+  "authority": "本文件是 G0–G4 成熟度等级与 R0–R3 风险等级准入判定的**唯一机器可读事实源**。规范文本、试点报告或 README 中的等级声明不构成判定依据（GATE-01 failure：门槛判定不可由文档声明替代）。",
+  "approved_by": "slow-is-fast",
+  "approved_at": "2026-10-30",
+  "evaluation_model": {
+    "cumulative": true,
+    "note": "等级为累积式：判定达到 Gn 必须同时满足 G0..Gn 全部条件。任一条件不满足即判定为下一较低等级，并把不满足项列入 blockers。",
+    "gate_self_reference": "GATE-01 被列入 G2 必需控制集。它是判定器本身，但**不自我豁免**：GATE-01 在 T-GATE-01 负向用例通过前不得置 tested，因此首次判定时它自身即为阻断项（鸡生蛋问题通过「先测后置状态」解决，而非通过自我豁免解决）。",
+    "unwaivable": ["GATE-01"],
+    "unwaivable_rationale": "准入门槛本身不得被风险例外豁免——否则持有例外者可以关掉判定自己的那把尺子。"
+  },
+  "evidence_ttl_days": {
+    "P0": 30,
+    "P1": 90,
+    "P2": 180,
+    "_unknown": 30,
+    "_unknown_note": "控制未标注 risk_level 时按最严 TTL（30 天）处理（失败关闭），并在结果中标注 assumed_risk_level=unknown。"
+  },
+  "levels": {
+    "G0": {
+      "title": "指令",
+      "summary": "规范文本与指令层存在。无任何执行证据要求，因此恒真。",
+      "criteria": {}
+    },
+    "G1": {
+      "title": "流程 + CI",
+      "summary": "控制目录机器可读且字段完整；CI 中存在治理门禁；规则注册表与控制目录双向差异受控。",
+      "criteria": {
+        "catalog_schema_valid": true,
+        "ci_gate_present": true,
+        "controls_tested": ["REG-01", "REG-02"]
+      }
+    },
+    "G2": {
+      "title": "身份、隔离、最小权限、风险审批",
+      "summary": "G2 主题域必需控制集全部 tested 且证据新鲜；全部 P0 审计问题已关闭或持有效正式例外。",
+      "criteria": {
+        "controls_tested": [
+          "ID-01", "ID-02", "ID-03", "AUTH-01", "AUTH-02",
+          "CRED-01",
+          "CTX-01", "ISO-01", "VD-01",
+          "TOOL-01",
+          "APR-01", "ATT-01", "RVW-01", "GATE-01", "QA-01", "BASE-01"
+        ],
+        "controls_tested_rationale": "身份与授权（ID-01/02/03、AUTH-01/02）、凭证与秘密（CRED-01）、隔离与信任域（CTX-01、ISO-01、VD-01）、最小权限（TOOL-01）、风险审批与门禁（APR-01、ATT-01、RVW-01、GATE-01、QA-01、BASE-01）。",
+        "require_fresh_evidence": true,
+        "max_open_p0_issues": 0
+      }
+    },
+    "G3": {
+      "title": "可信事件审计、可恢复状态机",
+      "summary": "在 G2 之上补齐审计完整性、事件响应、检查点/恢复/熔断、状态机与并发副作用完整性；且**全部 P0 控制**均 tested。",
+      "criteria": {
+        "controls_tested": [
+          "EVD-01", "EVD-02", "INC-01", "AUD-01", "AUD-02", "AUD-03",
+          "CKP-01", "REC-01", "REC-02", "REC-03", "REC-04", "BRK-01",
+          "SMT-01", "WF-01", "WF-02", "WF-03", "CNC-01", "EFF-01",
+          "QA-02", "QA-04", "MEM-01", "CTX-02", "CTX-03"
+        ],
+        "controls_tested_rationale": "审计与事件（EVD-01/02、INC-01、AUD-01/02/03）、恢复与熔断（CKP-01、REC-01..04、BRK-01）、状态机与并发/副作用（SMT-01、WF-01/02/03、CNC-01、EFF-01）、验收与记忆（QA-02、QA-04、MEM-01、CTX-02/03）。",
+        "require_fresh_evidence": true,
+        "all_p0_controls_tested": true,
+        "max_open_p1_issues": 3
+      }
+    },
+    "G4": {
+      "title": "多项目评估与持续改进",
+      "summary": "在 G3 之上要求 P0 控制获得 verified（独立信任域证据）、P1 控制全部 tested、指标字典与证据包就位，且无活动例外与未关闭问题。",
+      "criteria": {
+        "controls_tested": ["MTR-01", "PKG-01"],
+        "require_fresh_evidence": true,
+        "all_p0_controls_verified": true,
+        "all_p1_controls_tested": true,
+        "max_active_exceptions": 0,
+        "max_open_issues_total": 0
+      }
+    }
+  },
+  "risk_admission": {
+    "R0": {"min_level": "G2", "case_review": false, "note": "00-总纲 F：G2 核心控制通过测试后方可运行 R0/R1。"},
+    "R1": {"min_level": "G2", "case_review": false, "note": "同上。"},
+    "R2": {"min_level": "G3", "case_review": true, "note": "R2/R3 需逐案评审；逐案评审不降低等级门槛，只是在等级达标之上追加个案批准。"},
+    "R3": {"min_level": "G4", "case_review": true, "note": "同上；R3 另受 GOV-15/17、APR-01 的 R3 仅 AI PASS 不放行约束。"}
+  },
+  "honest_boundary": [
+    "本矩阵把等级判定从「文档声明」变成「可计算的合取条件」，但**条件的取值仍来自本仓库自报的状态字段**——控制面/数据面同属一个 GitHub 账号（EXC-02），因此判定结果不具独立第三方背书。",
+    "tested 不等于 verified：本矩阵区分两者，G4 才要求 verified。",
+    "本矩阵不评估执行器在真实生产环境中的部署；它评估的是治理账本自身的 completeness 与 freshness。"
+  ]
+}
