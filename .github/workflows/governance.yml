@@ -17,9 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # QA-01：CI 应用必须 pin 到 commit SHA，不能用浮动 tag（@v4/@main）。
+      # 浮动 tag 的内容可被上游静默替换，旧审核随之失效——这正是 PR #3
+      # "篡改 CI" 演练要防的事。版本号保留在注释里仅供人读。
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: '3.12'
 
@@ -46,6 +49,18 @@ jobs:
       # 到期后重新验证并更新 control-catalog.yaml 中各控制的 evidence_at 即可复绿。
       - name: "T-RVF-01 evidence freshness (stale evidence fails closed)"
         run: python scripts/verify_evidence_freshness.py --enforce
+
+      # QA-01 / QA-02 / BASE-01：2026-10-30 记账复核把这三条从 drill（只有一次性
+      # 演练记录）转为 automated。此前它们的证据是 PR #3/#2/#4 的三场演练——
+      # 演练证明了门禁当时有效，不能证明此后每一次改动都被检查过。
+      - name: "T-QA-01 CI app pinned to commit SHA (no floating tags)"
+        run: python scripts/verify_ci_app_binding.py
+
+      - name: "T-QA-02 acceptance test floor (no silent test deletion)"
+        run: python scripts/verify_test_floor.py
+
+      - name: "T-QA-04 quality baseline complete and not drifted"
+        run: python scripts/verify_quality_baseline.py
 
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
         run: python scripts/check_claims.py

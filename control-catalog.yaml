@@ -317,7 +317,7 @@
       "requirement_ref": "QA-01",
       "owner": "Repository admin",
       "enforcer": "trusted_ci_gate",
-      "evidence": "CI app plus commit SHA",
+      "evidence": "CI 应用必须 pin 到 40 位 commit SHA，浮动 tag（@v4/@main）一律拒绝——PR #3「篡改 CI」演练的常态化版本；本地 action（./）不受此限。（2026-10-30 由 drill 转为 automated）",
       "failure": "block merge",
       "test": "T-QA-01",
       "status": "tested",
@@ -341,14 +341,14 @@
         "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
       },
       "evidence_at": "2026-10-29",
-      "evidence_kind": "drill"
+      "evidence_kind": "automated"
     },
     {
       "id": "QA-02",
       "requirement_ref": "QA-02",
       "owner": "Repository admin",
       "enforcer": "baseline_change_gate",
-      "evidence": "review and diff record",
+      "evidence": "验收用例数不得低于 quality_baseline.json 的 min_test_count（当前 110）：tests/*.py 的 def test_* 与 negative_static.py 的 T_XXX_ 之和。PR #2「删除验收测试」演练的常态化版本；只数数量，不判断该不该删。（2026-10-30 由 drill 转为 automated）",
       "failure": "block merge",
       "test": "T-QA-02",
       "status": "tested",
@@ -372,7 +372,7 @@
         "note": "T-QA-01/T-QA-02 注入未被拒：分支保护受平台付费墙阻塞（INFRA-01）"
       },
       "evidence_at": "2026-10-29",
-      "evidence_kind": "drill"
+      "evidence_kind": "automated"
     },
     {
       "id": "QA-03",
@@ -811,7 +811,7 @@
       ],
       "owner": "repository_admin",
       "enforcer": "protected_baseline_policy",
-      "evidence": "项目级受保护质量基线（必需检查、可信 CI 来源、执行器/配置版本、测试阈值、适用 SHA、例外、变更审批规则）与基线变更触发独立审查的记录 ｜状态同步：用例 T-QA-04（SHA 绑定三 SHA 绿-红-绿）已于 Round 3 实跑，旧检查不可复用",
+      "evidence": "质量基线七要素齐备 + 漂移检测：治理范围变更时基线必须同批重审，否则旧审核不得复用。PR #4「SHA 绑定三 SHA 绿-红-绿」演练的常态化版本。（2026-10-30 由 drill 转为 automated）",
       "failure": "SHA、配置或策略变化后旧检查与旧审核不得复用；基线被绕过时合并失败",
       "test": "T-QA-04",
       "status": "tested",
@@ -825,7 +825,7 @@
       },
       "integration_evidence_uri": "https://github.com/slow-is-fast/engineering_manager/pull/4",
       "evidence_at": "2026-10-29",
-      "evidence_kind": "drill"
+      "evidence_kind": "automated"
     },
     {
       "id": "RVW-01",
