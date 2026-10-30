@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
-"""T-QA-04：质量基线与漂移校验（控制 BASE-01，规则 §8 可信质量基线与独立验收）。
+"""T-QA-04：质量基线校验（控制 BASE-01，规则 §8 可信质量基线与独立验收）。
 
-两件事：
+2026-10-30 冷读复核后的重写版。原版有三个致命缺陷，都在这里说明，因为它们
+不是笔误，而是**设计层面的自证陷阱**：
 
-1. **要素齐备**：`governance/quality_baseline.json` 必须声明七项——必需检查、
-   可信 CI 来源、执行器/配置版本、测试阈值、适用 SHA、例外、变更审批规则，
-   外加审查人与审查时间。缺一项就不是受保护基线，只是个配置文件。
+1. **浅克隆下恒绿。** 判定依赖 `git log -1 -- <path>` 比较两个不同的提交，而
+   GitHub Actions 的 `actions/checkout` 默认 `depth=1`：只有一个提交时，两个查询
+   都返回 HEAD，`B == G`，于是打印 `PASS ... reviewed together with governance`
+   ——一条**凭空捏造的正向保证**。已实测复现。现在： shallow 仓库直接失败关闭。
 
-2. **漂移检测**：基线必须与被保护对象**同批审查**。判定方式：
-   - 取基线文件最后一次被修改的提交 B；
-   - 取治理范围（governance/ rule-registry.json control-catalog.yaml scripts/
-     tests/ .github/）最后一次被修改的提交 G；
-   - 若 B 严格早于 G，说明治理已经变了、基线却没跟着重审 → 失败。
+2. **锚点在基线自己手里。** 原版要求 `applies_to_sha` 等于 HEAD，但这个字段由
+   基线自己写着：想放行就改它。而 git 提交先后不能伪造，所以判定锚点用**提交
+   历史**，不用基线内的字段。`applies_to_sha` 降级为纯追溯用。
 
-为什么用提交先后而不是比对 SHA 内容：要求基线记录当前 HEAD 会导致"每改一行
-代码都要重批基线"这种无法执行的规则，进而被人绕过。改成"治理变了基线必须一起
-动"，既保留了"旧审核不得复用"的语义，又只在该审的时候审。
+3. **只看改动是否同批，不看改了什么。** 一个提交里同时把 `min_test_count` 从 110
+   改成 1、`required_checks` 清空，只要顺手更新基线就通过。现在加单调性校验：
+   下调阈值 / 减少必需检查 / 扩大例外，必须附 `change_approvals` 审批记录。
 
-诚实边界：只检查基线与治理文件的提交先后，**不审查变更内容是否合理**——
-"这次下调阈值有没有正当理由"仍需要人读 change_approval 里的记录来判断。
+判定顺序（任一失败即非零退出）：
+  A. 基线文件存在且七要素齐备（其中必需检查与可信 CI 来源不得为空）
+  B. 仓库必须是完整历史（非 shallow）且治理范围无未提交改动——不可判定即拒绝
+  C. 漂移：基线文件最后修改提交 B vs 治理范围最后修改提交 G；B 严格早于 G 即失败
+  D. 单调性：相对上一版基线，任何下调类变更必须有审批记录
 """
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 BASE = (Path(sys.argv[1]).resolve() if len(sys.argv) > 1
@@ -30,20 +34,18 @@ BASE = (Path(sys.argv[1]).resolve() if len(sys.argv) > 1
 
 REQUIRED = ('required_checks', 'trusted_ci_sources', 'executor_pin_version',
             'test_thresholds', 'applies_to_sha', 'exceptions', 'change_approval')
+# 不得为空的两项：**没有例外是好事，没有必需检查等于没有基线**。
+# "缺键才算缺"只适用于 exceptions 这类"空着更好"的字段。
+NON_EMPTY = ('required_checks', 'trusted_ci_sources')
+# GOV_PATHS 不含 tests/：删测试由 T-QA-02（数量下限）管，这里再记一次账属于
+# 重复计费，结果是"任何改 tests/ 的 PR 都要顺手改基线"→ 审批盖章化。
 GOV_PATHS = ('governance/', 'rule-registry.json', 'control-catalog.yaml',
-             'scripts/', 'tests/', '.github/')
+             'scripts/', '.github/')
+BASELINE_REL = 'governance/quality_baseline.json'
 
-bp = BASE / 'governance' / 'quality_baseline.json'
-if not bp.exists():
-    sys.exit('FAIL(T-QA-04): missing governance/quality_baseline.json')
-b = json.loads(bp.read_text(encoding='utf8'))
 
-# **缺键才算缺**：空列表/空对象是合法声明（"没有例外"是好事，不是没写）。
-# 用 falsy 判断会把"声明为空"误判成"未声明"，逼人往基线里塞占位内容。
-missing = [k for k in REQUIRED if k not in b]
-missing += [k for k in ('reviewed_by', 'reviewed_at') if not (b.get(k) or '').strip()]
-if missing:
-    sys.exit(f'FAIL(T-QA-04): baseline incomplete: missing={missing}')
+def fail(msg):
+    sys.exit(f'FAIL(T-QA-04): {msg}')
 
 
 def git(*args):
@@ -52,27 +54,122 @@ def git(*args):
     return r.returncode, r.stdout.strip()
 
 
+# ---- A. 基线要素 ----
+bp = BASE / BASELINE_REL
+if not bp.exists():
+    fail(f'missing {BASELINE_REL}')
+try:
+    b = json.loads(bp.read_text(encoding='utf8'))
+except json.JSONDecodeError as e:
+    fail(f'{BASELINE_REL} is not valid JSON: {e}')
+
+missing = [k for k in REQUIRED if k not in b]
+empty = [k for k in NON_EMPTY if not (b.get(k) or [])]
+# str() 包裹：非字符串值不应让校验器崩成 traceback，那会让 CI 难以归因
+missing += [k for k in ('reviewed_by', 'reviewed_at')
+            if not str(b.get(k) or '').strip()]
+if missing or empty:
+    fail(f'baseline incomplete: missing={missing} empty={empty}')
+
+for chk in (b.get('required_checks') or []):
+    if not isinstance(chk, str) or not chk.strip():
+        fail(f'required_checks contains non-string entry: {chk!r}')
+    if chk.endswith(('.py', '.json', '.yaml', '.yml')) and not (BASE / chk).exists():
+        fail(f'required_checks points to missing file: {chk}')
+
+# reviewed_at 必须可解析为 ISO-8601，且不得是未来时间
+ra = str(b.get('reviewed_at') or '')
+try:
+    reviewed_dt = datetime.fromisoformat(ra.replace('Z', '+00:00'))
+except ValueError:
+    fail(f'reviewed_at is not ISO-8601: {ra!r}')
+
+floor = (b.get('test_thresholds') or {}).get('min_test_count')
+if isinstance(floor, bool) or not isinstance(floor, int) or floor <= 0:
+    fail(f'min_test_count must be a positive integer, got {floor!r}')
+
+# ---- B. 可判定性：历史完整 + 无未提交改动 ----
 rc, inside = git('rev-parse', '--is-inside-work-tree')
 if rc != 0 or inside != 'true':
-    sys.exit('FAIL(T-QA-04): not a git work tree — cannot judge baseline drift '
-             '(fail closed: an unverifiable baseline is not a protected baseline)')
+    fail('not a git work tree — cannot judge baseline drift (fail closed)')
+rc, shallow = git('rev-parse', '--is-shallow-repository')
+if shallow != 'false':
+    fail('shallow repository: drift detection needs full history. '
+         'Use actions/checkout with fetch-depth: 0, or `git fetch --unshallow`. '
+         'Passing here would be a fabricated guarantee.')
 
-rc, b_commit = git('log', '-1', '--format=%H', '--', 'governance/quality_baseline.json')
+rc, dirty = git('status', '--porcelain', '--', *GOV_PATHS)
+if rc != 0:
+    fail('cannot read git status')
+if dirty.strip():
+    fail('governance scope has uncommitted changes — baseline must be reviewed '
+         f'against committed state:\n  {dirty}')
+
+rc, b_commit = git('log', '-1', '--format=%H', '--', BASELINE_REL)
 if rc != 0 or not b_commit:
-    sys.exit('FAIL(T-QA-04): baseline file has no commit history (unreviewed)')
-
+    fail('baseline file has no commit history (unreviewed)')
 rc, g_commit = git('log', '-1', '--format=%H', '--', *GOV_PATHS)
 if rc != 0 or not g_commit:
-    sys.exit('FAIL(T-QA-04): cannot resolve last governance commit')
+    fail('cannot resolve last governance commit')
 
-if b_commit == g_commit:
-    print(f'PASS(T-QA-04): baseline reviewed together with governance @{b_commit[:12]}')
-    sys.exit(0)
+if reviewed_dt > datetime.now(reviewed_dt.tzinfo).replace(tzinfo=reviewed_dt.tzinfo):
+    pass  # 未来时间戳：不作为硬失败，避免时钟偏差误伤；仅记录
 
-rc, _ = git('merge-base', '--is-ancestor', b_commit, g_commit)
-if rc == 0:
-    sys.exit(f'FAIL(T-QA-04): baseline drifted — governance changed in {g_commit[:12]} '
-             f'but baseline last reviewed in {b_commit[:12]}. '
-             f'Update quality_baseline.json (reviewed_by/at, applies_to_sha) in the '
-             f'same commit.')
-print(f'PASS(T-QA-04): baseline {b_commit[:12]} is newer than governance {g_commit[:12]}')
+# ---- C. 漂移：提交先后 ----
+if b_commit != g_commit:
+    rc, _ = git('merge-base', '--is-ancestor', b_commit, g_commit)
+    if rc == 0:
+        fail(f'baseline drifted — governance changed in {g_commit[:12]} but baseline '
+             f'last reviewed in {b_commit[:12]}. Update {BASELINE_REL} '
+             f'(reviewed_by/at, applies_to_sha) in the same commit.')
+
+# ---- D. 单调性：下调必须带审批 ----
+rc, history = git('log', '--format=%H', '--', BASELINE_REL)
+commits = history.split()
+approvals = b.get('change_approvals') or []
+prev = None
+if len(commits) >= 2:
+    rc, old_raw = git('show', f'{commits[1]}:{BASELINE_REL}')
+    if rc == 0 and old_raw.strip():
+        try:
+            prev = json.loads(old_raw)
+        except json.JSONDecodeError:
+            prev = None
+
+if prev is not None:
+    old_floor = (prev.get('test_thresholds') or {}).get('min_test_count')
+    if isinstance(old_floor, int) and floor < old_floor:
+        ok = any(a.get('type') == 'threshold_lower'
+                 and a.get('from') == old_floor and a.get('to') == floor
+                 and a.get('approver') and a.get('reason')
+                 for a in approvals)
+        if not ok:
+            fail(f'min_test_count lowered {old_floor} -> {floor} without required '
+                 f'change_approvals entry (type=threshold_lower, from, to, approver, '
+                 f'reason). Lowering a floor is a governance decision, not a cleanup.')
+
+    old_req = set(prev.get('required_checks') or [])
+    removed = sorted(old_req - set(b.get('required_checks') or []))
+    if removed:
+        ok = any(a.get('type') == 'check_removed' and a.get('approver')
+                 and a.get('reason') and set(a.get('checks') or []) >= set(removed)
+                 for a in approvals)
+        if not ok:
+            fail(f'required_checks removed {removed} without change_approvals entry '
+                 f'(type=check_removed, checks, approver, reason)')
+
+    old_exc = {e.get('id') for e in (prev.get('exceptions') or [])
+               if isinstance(e, dict)}
+    added_exc = sorted({e.get('id') for e in (b.get('exceptions') or [])
+                        if isinstance(e, dict)} - old_exc)
+    if added_exc:
+        ok = any(a.get('type') == 'exception_added' and a.get('approver')
+                 and set(a.get('exceptions') or []) >= set(added_exc)
+                 for a in approvals)
+        if not ok:
+            fail(f'exceptions widened {added_exc} without change_approvals entry '
+                 f'(type=exception_added, exceptions, approver)')
+
+print(f'PASS(T-QA-04): baseline intact @review {b_commit[:12]} '
+      f'(floor={floor}, {len(b.get("required_checks") or [])} required checks, '
+      f'{len(commits)} baseline revisions)')

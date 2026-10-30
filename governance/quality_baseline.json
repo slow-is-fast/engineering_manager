@@ -5,7 +5,7 @@
   "purpose": "项目级受保护质量基线。基线不是「当前状态快照」，而是**经独立审查后批准的下限**：任何一项被下调都必须重新走审批，不能跟着代码一起悄悄改。",
   "baseline_version": "1",
   "reviewed_by": "slow-is-fast (Owner)",
-  "reviewed_at": "2026-10-30T21:00:00+08:00",
+  "reviewed_at": "2026-10-30T21:40:00+08:00",
   "applies_to_sha": "051eb29f2f8f9bd724fa87c283a10f2ce03f57ff",
   "required_checks": [
     "scripts/validate_controls.py",
@@ -31,8 +31,8 @@
     "pinned_tree": "e3f64d5469f147789f3526b696e3e8688d999629"
   },
   "test_thresholds": {
-    "min_test_count": 110,
-    "min_test_count_note": "tests/*.py 的 def test_* 与 tests/negative_static.py 的 T_XXX_ 之和。删除验收测试即触发失败（PR #2 演练的常态化版本）。",
+    "min_test_count": 139,
+    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 139，下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
     "require_all_pass": true
   },
   "exceptions": [
@@ -51,5 +51,5 @@
     "rule": "本文件任何字段下调（阈值降低、必需检查减少、例外范围扩大）必须由 baseline_change_gate 审批并同步更新 reviewed_by/reviewed_at/applies_to_sha；与治理文件同批提交，否则 T-QA-04 判定基线漂移。",
     "approver_must_not_be": "提出变更的 Agent 或 Run；Owner 本人变更阈值同样需要记录理由"
   },
-  "honest_note": "基线里的数字是**下限**不是目标值。把下限设成「刚好等于当前值」意味着任何删除都会被拦住，但也意味着新增测试不需要审批——这是有意的：防退化，不防进步。"
+  "honest_note": "基线里的数字是**下限**不是目标值。下限已与实际用例数对齐，意味着删除余量为 0；新增用例不需要审批。收紧（上调）不需要审批记录，放宽（下调阈值 / 移除必需检查 / 扩大例外）必须附 change_approvals 记录，由 T-QA-04 强制。"
 }
