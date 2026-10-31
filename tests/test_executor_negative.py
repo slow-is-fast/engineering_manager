@@ -1239,6 +1239,56 @@ class ExecutorNegativeTests(unittest.TestCase):
         with self.assertRaises(AdmissionDenied):
             g.admit("R9")
 
+    def test_t_gate_01_reports_highest_satisfied_level(self):
+        # 钉死 evaluate() 的 break：报告等级必须是「最高**已满足**等级」，
+        # 不是「最后一个被评估的等级」。删掉 break 会让未达标的仓库虚报 G4，
+        # 而 CI 的 --require-level 正是读 asmt['level']——虚高会直接放行。
+        base = self._gate_repo(controls={"CTA-01": {"tested": False}})  # G2 未满足
+        g = AdmissionGate(base, now=self._NOW).load()
+        a = g.evaluate()
+        self.assertEqual(a["level"], "G1")   # 不是 G2/G3/G4
+        self.assertTrue(any(b["id"] == "CTA-01" for b in a["blockers"]))
+
+    def test_cli_require_level_below_returns_1(self):
+        # 钉死 CLI（check_admission_gate.py）的等级/风险比较返回码：低于下限
+        # 必须非零退出（失败关闭）。原 CLI 无任何单元测试，是 GATE-01 的
+        # 唯一未被钉死的放行路径。
+        import importlib.util
+        from unittest import mock
+        from pathlib import Path as _P
+
+        class _FakeGate:
+            def __init__(self, base):
+                self.base = base
+
+            def load(self):
+                return self
+
+            def evaluate(self):
+                return {"evaluated_at": "2026-10-30", "level": "G1",
+                        "blockers": [], "waivers": [], "levels": []}
+
+            def admit(self, rk, case_review=None):
+                allow = rk in ("R0", "R1")
+                return {"decision": "ALLOW" if allow else "DENY",
+                        "required_level": "G2", "actual_level": "G1",
+                        "reasons": [], "blockers": [], "waivers": []}
+
+        spec = importlib.util.spec_from_file_location(
+            "check_admission_gate_cli",
+            str(_P(__file__).resolve().parents[1] / "scripts"
+                 / "check_admission_gate.py"))
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+        with mock.patch.object(cli, "AdmissionGate", _FakeGate):
+            with mock.patch("sys.argv", ["x", "--require-level", "G2"]):
+                self.assertEqual(cli.main(), 1)   # G1 < G2 → 失败关闭
+            with mock.patch("sys.argv", ["x", "--require-level", "G1"]):
+                self.assertEqual(cli.main(), 0)   # G1 >= G1 → 通过
+            with mock.patch("sys.argv", ["x", "--require-risk", "R2"]):
+                self.assertEqual(cli.main(), 1)   # R2 → DENY（fake 只放行 R0/R1）
+            with mock.patch("sys.argv", ["x", "--require-risk", "R0"]):
+                self.assertEqual(cli.main(), 0)
 
     # ---- T-INC-01：安全事件响应工作流（INC-01 / AUD-015） ----
     # 核心失败行为：涉事 Agent 不得批准自己的恢复或关闭事件。

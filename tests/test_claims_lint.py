@@ -31,6 +31,25 @@ class ClaimsLintTests(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0, '无依据的绝对化声明未被拦截')
         self.assertIn('CLM-01', r.stdout)
 
+    def test_pure_absolute_claim_rejected(self):
+        # 隔离 fixture：纯绝对化声明，无撤销/失效/100% 语境——专门钉死
+        # ABSOLUTE_RE 匹配本身。组合文档会被 100%撤销规则顺带抓到，掩盖
+        # "删掉绝对词匹配"这一放行路径。
+        (self.tmp / 'doc.md').write_text(
+            '# 能力说明\n\n本系统万无一失，绝对可靠，绝无遗漏。\n',
+            encoding='utf8')
+        r = run(self.tmp)
+        self.assertNotEqual(r.returncode, 0, '纯绝对化声明（无撤销/100%语境）未被拦截')
+
+    def test_pct_in_revocation_context_rejected(self):
+        # 隔离 fixture：撤销语境下的 100%，不含其它绝对词——专门钉死
+        # `return bool(PCT_RE and REVOCATION_CTX)` 这一支。
+        (self.tmp / 'doc.md').write_text(
+            '# 能力说明\n\n撤销操作使权限覆盖率达到 100%，不留残留。\n',
+            encoding='utf8')
+        r = run(self.tmp)
+        self.assertNotEqual(r.returncode, 0, '撤销语境下的 100% 声明未被拦截')
+
     def test_backed_claim_allowed(self):
         (self.tmp / 'doc.md').write_text(
             '# 能力说明\n\n撤销传播实测 P95=820ms，evidence: run 40844814576，'

@@ -353,6 +353,51 @@ class GovEvidenceTests(unittest.TestCase):
         self.assertEqual(code, gov.EXIT_REFUSED, msgs)
         self.assertIn('resurrect', msgs[0])
 
+    def test_GOV_20_stale_evidence_fails_verify(self):
+        """证据超期必须被 gov_run --verify 自身抓出（不能只靠 RVF-01 兜底）。
+        钉死 verify_evidence 里的 sweep_retention 调用——删掉它就不会报警。
+        做法：保留期不动，把某条证据的 created_at 拨到远古使其超期。"""
+        import datetime
+        _complete_run(self.root, 'r1')
+        ledger = json.loads(self.ledger.read_text(encoding='utf8'))
+        ledger['items'][0]['created_at'] = datetime.datetime(2000, 1, 1).timestamp()
+        self.ledger.write_text(json.dumps(ledger, ensure_ascii=False),
+                               encoding='utf8')
+        code, msgs = gov.verify(root=self.root, run_id='r1')
+        self.assertEqual(code, gov.EXIT_EVIDENCE, msgs)
+        self.assertTrue(any('超期' in m for m in msgs), msgs)
+
+    def test_GOV_21_leaky_tombstone_fails(self):
+        """删除后内容仍可读 = 深层泄漏。verify_evidence 必须标红——这条检查
+        独立于 DataGate 当前是否正确（防御它未来退化）。模拟一个会泄漏的
+        闸门，确认检查本身会拦截，从而钉死 verify_evidence 第 261 行的判定。"""
+        from unittest import mock
+        from executor.datagate import DataGate
+
+        _complete_run(self.root, 'r1')
+        target = self._ev(0)
+        rel = target.relative_to(self.root).as_posix()
+        target.unlink()
+        ledger = json.loads(self.ledger.read_text(encoding='utf8'))
+        ledger['deletions'] = [{'id': rel,
+                                'approval': {'approver': 'owner',
+                                             'reason': '超过保留期'}}]
+        self.ledger.write_text(json.dumps(ledger, ensure_ascii=False),
+                               encoding='utf8')
+
+        class _LeakyGate(DataGate):
+            def get(self, item_id):
+                r = super().get(item_id)
+                if r.get('state') == 'TOMBSTONE':
+                    r['content'] = '泄露的内容'
+                return r
+
+        with mock.patch.object(gov, 'DataGate', _LeakyGate):
+            code, msgs = gov.verify(root=self.root, run_id='r1')
+        self.assertEqual(code, gov.EXIT_EVIDENCE, msgs)
+        self.assertTrue(any('删除后仍能从出口读到内容' in m for m in msgs),
+                        msgs)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
