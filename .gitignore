@@ -1,5 +1,8 @@
 .workbuddy/
 evidence/*.tmp
+# 治理运行的审计流是运行产物，不入版本库（见 scripts/gov_run.py 的诚实边界）。
+# 它的价值在于"每次运行都写、写之前先验链"，不在于被提交。
+evidence/audit/
 __pycache__/
 *.pyc
 pm/

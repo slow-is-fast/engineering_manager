@@ -1,0 +1,215 @@
+{
+  "version": "1.0",
+  "control": "DG-01",
+  "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
+  "generated_at": "2026-10-31T10:03:04+0800",
+  "generated_by": "slow-is-fast (Owner)",
+  "reason": "冷读复核后首次接入生产路径：把当前 evidence/ 全部登记为受管数据，此后新增须显式登记、改动与未批准删除都会判红",
+  "items": [
+    {
+      "id": "evidence/acceptance_layer_20261030T153000Z.md",
+      "sha256": "69afcf9a9e770d1e14213838165c54c8a8c552750d267138f1ca68a62aff5498",
+      "category": "evidence",
+      "created_at": 1793374200
+    },
+    {
+      "id": "evidence/apr01_20261029T192000Z.md",
+      "sha256": "fe44a9e4e9e0610dcfbdee2bebf259182cb9d55b707a5bc49b7b04056ae9e7b9",
+      "category": "evidence",
+      "created_at": 1793301600
+    },
+    {
+      "id": "evidence/att01_clm01_20261029T171000Z.md",
+      "sha256": "48d77c1f0cfd678c7171a49fe899a4a176e17b30ca0b48fe1e0891e16bad0996",
+      "category": "evidence",
+      "created_at": 1793293800
+    },
+    {
+      "id": "evidence/audit_lifecycle_20261031T073000Z.md",
+      "sha256": "5fadba0ab969568827437b67eb40ea87b80b1e6535e0f666428b6493940356b8",
+      "category": "evidence",
+      "created_at": 1793431800
+    },
+    {
+      "id": "evidence/auth01_auth02_20261030T153000Z.md",
+      "sha256": "ced23d4e360f941568a6376d701fda5c6f728ee85bd2d47c5e14dcf06ce101b7",
+      "category": "evidence",
+      "created_at": 1793374200
+    },
+    {
+      "id": "evidence/bidirectional_and_assertions_20261030T183000Z.md",
+      "sha256": "5d60a6f9da1e804f6a4274e91a98b92b4fd270f327332557719f6457a36e9b1f",
+      "category": "evidence",
+      "created_at": 1793385000
+    },
+    {
+      "id": "evidence/chg01_20261029T190500Z.md",
+      "sha256": "80fd882feb38bc272672eb7db594e7afe3e50abac2429c12c9c9cd4dcdbb5a58",
+      "category": "evidence",
+      "created_at": 1793300700
+    },
+    {
+      "id": "evidence/ckp01_base01_20261030T091500Z.md",
+      "sha256": "eec201ab5bcd2fd54bd1f3bf47eefaf0f130db89d98c47342cbd855d87457bdd",
+      "category": "evidence",
+      "created_at": 1793351700
+    },
+    {
+      "id": "evidence/cold_review_20261030T215000Z.md",
+      "sha256": "5f3fa2d239e0a89673144f6da23c51895a345307dd30ce30976e746e4c81b667",
+      "category": "evidence",
+      "created_at": 1793397000
+    },
+    {
+      "id": "evidence/cred01_20261030T133000Z.md",
+      "sha256": "25e02ac12683be0c42cd2f6d52386f0a4511b50966800a0b61ff7de3188c8292",
+      "category": "evidence",
+      "created_at": 1793367000
+    },
+    {
+      "id": "evidence/data_gate_20261031T085500Z.md",
+      "sha256": "20f01d7cb7d6652a237462e810d30a1160504cce960ef8487c7b70e02061ff9c",
+      "category": "evidence",
+      "created_at": 1793436900
+    },
+    {
+      "id": "evidence/drill_to_automated_20261030T210000Z.md",
+      "sha256": "c5ce2c84b65189e50142c9b480f98484389f460e566030f5285e67601aa57e8a",
+      "category": "evidence",
+      "created_at": 1793394000
+    },
+    {
+      "id": "evidence/evd01_evd02_20261029T193000Z.md",
+      "sha256": "07ad834db1857a75871ffec55c29a2f61049ac1531411e19e256a310d3f9d32c",
+      "category": "evidence",
+      "created_at": 1793302200
+    },
+    {
+      "id": "evidence/executor_20261029T154500Z.md",
+      "sha256": "ac2dc11c28711d575949efa0531006c003cbcb8f826b3391d1fff2b9590dd3a9",
+      "category": "evidence",
+      "created_at": 1793288700
+    },
+    {
+      "id": "evidence/g2_closeout_20261030T140000Z.md",
+      "sha256": "d4900386602be8a5c96454494fd5d8f52e377e98b7f26a2f9f44b6aa2f4a01c9",
+      "category": "evidence",
+      "created_at": 1793368800
+    },
+    {
+      "id": "evidence/gate01_20261030T113000Z.md",
+      "sha256": "8b0074d40eb232452563cb1f4a6e5f52918741e2c65ab54aaff5b1f70d442cdf",
+      "category": "evidence",
+      "created_at": 1793359800
+    },
+    {
+      "id": "evidence/id02_credential_drill_20261029T172000Z.md",
+      "sha256": "ae84bd258212eb8b42bb381598687c20d57f57e3f149dbe6ea5333831f521478",
+      "category": "evidence",
+      "created_at": 1793294400
+    },
+    {
+      "id": "evidence/inc01_20261030T130000Z.md",
+      "sha256": "921b18ac53ae86e9c038004b6d39a9ae10100b6709503439f62e287f1b566ffe",
+      "category": "evidence",
+      "created_at": 1793365200
+    },
+    {
+      "id": "evidence/iso01_20261029T210500Z.md",
+      "sha256": "b23e9a11a747f700a1197b0f2a945a218c56029c1ddf085175bdd7f376abae9d",
+      "category": "evidence",
+      "created_at": 1793307900
+    },
+    {
+      "id": "evidence/open_controls_20261030T170000Z.md",
+      "sha256": "750f28d8224f9eec115c2c625571b1945671fd68750f5aa8fd710aa41bf120e2",
+      "category": "evidence",
+      "created_at": 1793379600
+    },
+    {
+      "id": "evidence/remote_capability_and_vendor_binding_20261031T010500Z.md",
+      "sha256": "109464971f8badda40d1c9fe54cb3b9d7d34c3852e4dbd2342f2fce3fad4c4d8",
+      "category": "evidence",
+      "created_at": 1793408700
+    },
+    {
+      "id": "evidence/risk_propagation_20261029T191000Z.md",
+      "sha256": "c3c059933a748fd9efb08e0df4c1f27de1c1e12d244782e481bce8051ac0d74a",
+      "category": "evidence",
+      "created_at": 1793301000
+    },
+    {
+      "id": "evidence/runtime_drill2_20261029T150500Z.md",
+      "sha256": "c140b708a35d0d30e0a3f11bae7429f4d5ba3d68d0d74e3e07429f4401440dad",
+      "category": "evidence",
+      "created_at": 1793286300
+    },
+    {
+      "id": "evidence/runtime_drill3_20261029T151500Z.md",
+      "sha256": "4d10eb9a6bbeaf00468154275821576f78794b35f508895e711d29febf27511e",
+      "category": "evidence",
+      "created_at": 1793286900
+    },
+    {
+      "id": "evidence/runtime_drill_20261029T144000Z.md",
+      "sha256": "db59bda90e4a5841ebbb5c9143f2f1d9a75f8daf7ae7305e7bfa47f9d33c2db0",
+      "category": "evidence",
+      "created_at": 1793284800
+    },
+    {
+      "id": "evidence/rvf01_20261029T181500Z.md",
+      "sha256": "f177ca252b58e2c472646efd27d5fd9f2bbe3332200f2ad6ad0febb90b2735ff",
+      "category": "evidence",
+      "created_at": 1793297700
+    },
+    {
+      "id": "evidence/static_negative_20261029T062238Z.json",
+      "sha256": "f48c7558f5fcd3c039956f1aa7b9f8d07abda4edb913200fc739a11e54e36aa1",
+      "category": "test-artifact",
+      "created_at": 1793254958
+    },
+    {
+      "id": "evidence/static_negative_20261029T062646Z.json",
+      "sha256": "351f67bde83fb9c0848188b905127409398738eba4d33446f98f38b38313328d",
+      "category": "test-artifact",
+      "created_at": 1793255206
+    },
+    {
+      "id": "evidence/static_negative_20261029T063930Z.json",
+      "sha256": "552cde8c196a91f7eea3fb8406d9b99cc6759975eb224abd9de5d72dc86b153e",
+      "category": "test-artifact",
+      "created_at": 1793255970
+    },
+    {
+      "id": "evidence/static_negative_20261029T065216Z.json",
+      "sha256": "731e202a7c7e2924ee8166f61960013d4ec99962da3d305cdcd61a1b301245cf",
+      "category": "test-artifact",
+      "created_at": 1793256736
+    },
+    {
+      "id": "evidence/static_negative_20261029T070209Z.json",
+      "sha256": "21e0e803111d2d59b3df2c7be6b3d6a6e05afc0f7c08c4471f34f561fb431549",
+      "category": "test-artifact",
+      "created_at": 1793257329
+    },
+    {
+      "id": "evidence/traceability_audit_20261030T200000Z.md",
+      "sha256": "29e0785eb6f6ab606e69316caffb51ac8ebd5806007df4f4260b1ab759f385d3",
+      "category": "evidence",
+      "created_at": 1793390400
+    },
+    {
+      "id": "evidence/vd01_20261029T163000Z.md",
+      "sha256": "c665d24bd7d77130985dbaa86700884f9f1554ff46b795dcdcdc1070a4cd30dd",
+      "category": "evidence",
+      "created_at": 1793291400
+    },
+    {
+      "id": "evidence/wf05_wf06_20261029T165000Z.md",
+      "sha256": "77a6bb8b51f2eacd8ef5f0d3491f73f33fee736c5e7cd678f545b465cdf7b983",
+      "category": "evidence",
+      "created_at": 1793292600
+    }
+  ],
+  "deletions": []
+}

@@ -3,6 +3,14 @@ name: governance
 # AASEGS v1.1.1 §12.3 要求的自检：任何对规范、注册表、控制目录的改动
 # 都必须通过静态校验、单元测试与静态负向用例，否则不得合并。
 # 这不是运行时控制；它的作用是阻止文档层漂移（QA-02 / BASE-01 的最小实现）。
+#
+# 2026-10-31 起，各项检查不再直接 `python scripts/xxx.py`，而是统一走
+# `scripts/gov_run.py --check`：每次检查都会往带来源声明的审计流里记一条事件，
+# 最后由 `--verify` 统一验收（链完整 / 来源可归因 / 保留期 / 必需检查是否
+# 全部落地 / evidence 台账）。理由：模块全绿但没人调用，是最难发现的一种
+# "控制没生效"。参数（--enforce / --expect-deny / --require-level）一律从
+# governance/audit_policy.json 读——CI 若能自己指定档位，就能悄悄跑弱模式
+# 还记账成 ok。
 
 on:
   push:
@@ -16,6 +24,10 @@ jobs:
   static-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # 一次工作流运行一个 run_id：--verify 靠它判断"本次运行的必需检查
+      # 是不是都真的跑了"。没有它，--verify 会拒绝判定（失败关闭）。
+      GOV_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       # QA-01：CI 应用必须 pin 到 commit SHA，不能用浮动 tag（@v4/@main）。
       # 浮动 tag 的内容可被上游静默替换，旧审核随之失效——这正是 PR #3
@@ -33,13 +45,18 @@ jobs:
           python-version: '3.12'
 
       - name: Control catalog & rule registry lint
-        run: python scripts/validate_controls.py
+        run: python scripts/gov_run.py --check scripts/validate_controls.py
 
-      - name: Unit tests
+      # discover 一次跑多个文件，没法归到某一条必需检查上；而 required_checks
+      # 里的每一条都必须在审计流里有落地事件，所以这一条单独记一次账。
+      - name: "T-EXE executor negative tests (recorded)"
+        run: python scripts/gov_run.py --check tests/test_executor_negative.py
+
+      - name: Unit tests (all modules)
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
       - name: Static negative tests (T-REG-01 / T-REG-02 / T-AUD-01)
-        run: python tests/negative_static.py
+        run: python scripts/gov_run.py --check tests/negative_static.py
 
       # 不只验控制面那个 commit：数据面用例跑的是本地 vendor 的 executor/，
       # 所以同一步还要校验 vendor 副本的内容哈希等于同一个 pin。否则本地
@@ -47,17 +64,17 @@ jobs:
       - name: "T-VD-01 executor pin + vendored copy verification"
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/verify_executor_pin.py
+        run: python scripts/gov_run.py --check scripts/verify_executor_pin.py
 
       - name: "T-VD-01b credential domain check (data-plane token must not write control plane)"
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/verify_credential_domain.py --expect-deny
+        run: python scripts/gov_run.py --check scripts/verify_credential_domain.py
 
       # RVF-01：证据过期即失败关闭（P0 30 天 / P1 90 天 / P2 180 天）。
       # 到期后重新验证并更新 control-catalog.yaml 中各控制的 evidence_at 即可复绿。
       - name: "T-RVF-01 evidence freshness (stale evidence fails closed)"
-        run: python scripts/verify_evidence_freshness.py --enforce
+        run: python scripts/gov_run.py --check scripts/verify_evidence_freshness.py
 
       # T-QA-01 的结构化 YAML 解析依赖 PyYAML。缺失时脚本会降级为行正则
       # （仍能拦住块式写法，但覆盖不全），降级模式会在输出里明确标注。
@@ -68,30 +85,33 @@ jobs:
       # 演练记录）转为 automated。此前它们的证据是 PR #3/#2/#4 的三场演练——
       # 演练证明了门禁当时有效，不能证明此后每一次改动都被检查过。
       - name: "T-QA-01 CI app pinned to commit SHA (no floating tags)"
-        run: python scripts/verify_ci_app_binding.py
+        run: python scripts/gov_run.py --check scripts/verify_ci_app_binding.py
 
       - name: "T-QA-02 acceptance test floor (no silent test deletion)"
-        run: python scripts/verify_test_floor.py
+        run: python scripts/gov_run.py --check scripts/verify_test_floor.py
 
       - name: "T-QA-04 quality baseline complete and not drifted"
-        run: python scripts/verify_quality_baseline.py
+        run: python scripts/gov_run.py --check scripts/verify_quality_baseline.py
 
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
-        run: python scripts/check_claims.py
+        run: python scripts/gov_run.py --check scripts/check_claims.py
 
       # GATE-01：成熟度/风险等级准入判定。CI 采用防退化下限而非"必须达标 G2"：
       # 下限是 Owner 实际达到并批准的最低等级。报告里 DENY 是门槛的正确结论
       # （当前账本不满足更高等级是事实），不算失败；跌破 G1（输入损坏/事实源
       # 冲突/证据过期/目录失守）才变红——这是防退化，不是伪装达标。
+      # 两次调用（出报告 + --require-level G1）由 audit_policy.check_args 定义。
       - name: "T-GATE-01 admission gate evaluation (anti-regression floor: G1)"
-        run: |
-          python scripts/check_admission_gate.py
-          python scripts/check_admission_gate.py --require-level G1
+        run: python scripts/gov_run.py --check scripts/check_admission_gate.py
 
       # 审计问题闭合评估：报告 + 防虚假关闭。READY_FOR_REVIEW 仅供参考，
       # 不代表验收通过；--enforce 拦的是"声明 CLOSED/ACCEPTED_RISK 但控制级
       # 证据不成立"或"§四 验收断言未满足"——即把文档改完就当问题关闭。
       - name: "T-CLOSE audit issue closure (no unbacked closure, acceptance asserted)"
-        run: |
-          python scripts/check_audit_closure.py --acceptance
-          python scripts/check_audit_closure.py --enforce
+        run: python scripts/gov_run.py --check scripts/check_audit_closure.py
+
+      # ALC-01 / DG-01 的验收：链完整性、来源可归因、保留期、本次运行的
+      # 必需检查是否全部落地、evidence 台账（登记/哈希/删除批准/超期）。
+      # 这条一旦红，上面某一项就是"没跑"或"没记上"——两者都不该算过。
+      - name: "T-ALC-01 audit trail + evidence ledger verification"
+        run: python scripts/gov_run.py --verify

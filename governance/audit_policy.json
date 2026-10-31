@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "control": "ALC-01",
+  "rule_ref": "AUD-014-03",
+  "purpose": "治理运行的审计流策略。机器读，不是文档：sources 决定 ProvenanceRegistry 认哪些来源、retention 决定 RetentionPolicy 判多久超期。改这里等于改控制。",
+  "trail_path": "evidence/audit/trail.jsonl",
+  "gate_audit_path": "evidence/audit/evidence_gate.jsonl",
+  "quarantine_dir": "evidence/audit/quarantine",
+  "sources": [
+    {
+      "name": "gov-run",
+      "writer": "scripts/gov_run.py --check",
+      "event_types": ["gov.check.completed"]
+    },
+    {
+      "name": "gov-verify",
+      "writer": "scripts/gov_run.py --verify",
+      "event_types": ["gov.trail.verified", "gov.trail.finding"]
+    },
+    {
+      "name": "gov-evidence",
+      "writer": "scripts/gov_run.py --accept-evidence",
+      "event_types": ["gov.evidence.registered"]
+    }
+  ],
+  "retention": {
+    "gov.check.completed": 180,
+    "gov.trail.verified": 180,
+    "gov.evidence.registered": 365,
+    "gov.trail.finding": 365
+  },
+  "evidence_retention": {
+    "evidence": 365,
+    "test-artifact": 90
+  },
+  "check_args": {
+    "scripts/verify_credential_domain.py": [["--expect-deny"]],
+    "scripts/verify_evidence_freshness.py": [["--enforce"]],
+    "scripts/check_admission_gate.py": [[], ["--require-level", "G1"]],
+    "scripts/check_audit_closure.py": [["--acceptance"], ["--enforce"]]
+  },
+  "honest_limits": [
+    "审计流是本地运行产物（evidence/audit/ 不入版本库），CI 里每次运行都从空开始；保留期在本地持续累积的流上才有实际约束力。",
+    "哈希链只证明'这条流没被改过'，不证明'写入者是谁'——见 AUD-014-04（manual）。",
+    "本策略管不到已随 CI artifact 传出去的副本。"
+  ]
+}
