@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "376308122058aee46a583d9a72e99abd47c59952",
-  "tree_sha": "036d54e08b72538143fa10ca7172e8f04214bf9c",
-  "content_hash_sha256": "c9a812aababb49112ee196f2dd2e44c3a8b2ae4d704540f262a622dd3060449c",
-  "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-31T08:48:08+08:00",
+  "commit_sha": "0f244a05b18a6a8bad50f731b7913809aa6c9765",
+  "tree_sha": "8d83dc9462ca92662a6a799e0accef12f90f1ec6",
+  "content_hash_sha256": "0b8d6f732d9e27c7c059484a02ede234c8f629e91b1f7ad52c62b0faa870c6d1",
+  "content_hash_scheme": "按 posix 相对路径升序遍历 executor/ 下全部文件（跳过 __pycache__，换行统一规范化为 LF），对每个文件向同一个 sha256 对象依次 update(relpath + '\\n' + 文件内容)，取最终 digest。注意是单次 digest 而非各文件 digest 拼接——实现见 scripts/verify_executor_pin.py 的 local_vendored_hash 与 content_hash。",
+  "pinned_at": "2026-10-31T09:53:31+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "c87a46b1c33b6eaca2a7647d5d936083f541d179",
-    "content_hash_sha256": "8c0d6d381d71df56bf2f6f173045c80aefd135704fa395efb6c64bb0c99a5bee"
+    "commit_sha": "376308122058aee46a583d9a72e99abd47c59952",
+    "content_hash_sha256": "c9a812aababb49112ee196f2dd2e44c3a8b2ae4d704540f262a622dd3060449c"
   },
-  "bump_reason": "DG-01 新增 executor/datagate.py：AUD-016-03 删除后再现（真删 + tombstone，读/导出/传输共用同一出口；显式 resurrect 需批准且批准人不得是删除批准人；重复删除被拒以免顶掉批准人）、超期保留（复用 RetentionPolicy）、未经批准的传输（目的地须先登记 + 自批隔离）；控制面用例 128→147（T-DG-01..19），16 个变异全部捕获、0 逃逸"
+  "bump_reason": "冷读复核：REM-01/ALC-01/DG-01 共 8 处缺陷修复。① 记账失真 2 处——plan_purge 的 docstring 声称'不得由提出者自批'而函数不收 requester（现在自批即拒）；put 允许同 id 静默覆盖，可把 category 从 pii(30天) 降级成 public(3650天) 绕过超期保留且零审计（现在覆盖即拒）。② 控制被实际绕过 3 处——replay 只看 result=='MATCH' 不校验归属，拿安全系统的对账结论能放行危险系统的重放（现在结论须与 op_id+system 双绑定）；来源检查对无 seq 事件静默跳过比对（现在标记 missing_seq）；resurrect 把 created_at 重置为 now，删+恢复即年龄清零（现在保留时钟按产生时刻算）。③ 诊断与噪音 3 处——recover 的 reason 被后续行覆盖导致指错坏点（现在只记首个）；recover 对非对象行抛 AttributeError 使恢复工具本身崩溃（现在报出来）；sweep_retention 把已删项当活数据报出无法处置的噪音（现在只扫活数据）。控制面用例 147→155（T-REM-22 / T-ALC-20..23 / T-DG-20..22），修复后探针 11/11 通过（含 3 条正向对照），变异检验 8/8 捕获、每条精确归因 1 条用例、0 逃逸；CI executor-tests 通过"
 }

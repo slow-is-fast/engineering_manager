@@ -2151,6 +2151,37 @@ class RemoteGatewayTests(unittest.TestCase):
                     with self.assertRaises(RemoteRejected):
                         self.g.replay("op-21", system, idempotency_key=key)
 
+    def test_T_REM_22_reconcile_result_must_belong_to_this_operation(self):
+        """对账结论必须与**本次**操作、同一个系统绑定。
+
+        此前 `replay` 只看 `result == "MATCH"`，不看这条结论是哪来的。于是
+        "在安全系统上对上一次"就能换来对危险系统本次重放的放行——两个系统
+        的决策都是 RECONCILE_FIRST，检查照样过。少了这一步，AUD-009-03 的
+        "先去核对"就退化成"随便找一份核对过的结论"。
+        """
+        self.g.register("safe-sys", "none", "available")
+        self.g.register("risky-sys", "none", "available")
+
+        # 在 safe-sys 上认真核对，拿到一份**真的** MATCH
+        ok = self.g.reconcile("op-A", "safe-sys", expected="DONE",
+                              actual="DONE")
+        self.assertEqual(ok["result"], "MATCH")
+
+        # 拿它去放行别的系统上的别的操作：必须被拒
+        with self.assertRaises(RemoteRejected) as ctx:
+            self.g.replay("op-B", "risky-sys", reconcile_result=ok)
+        self.assertIn("not_for_this_operation", str(ctx.exception))
+
+        # 换一个操作号、但系统相同，同样得拒（光比 system 不够）
+        with self.assertRaises(RemoteRejected):
+            self.g.replay("op-C", "safe-sys", reconcile_result=ok)
+
+        # 正向对照：结论确实是本次、本系统做的，就应当放行
+        ok2 = self.g.reconcile("op-D", "risky-sys", expected="DONE",
+                               actual="DONE")
+        p = self.g.replay("op-D", "risky-sys", reconcile_result=ok2)
+        self.assertEqual(p["decision"], "REPLAY_AFTER_RECONCILE")
+
     def test_T_REM_19_decision_is_audited(self):
         # 用一个从未登记的系统：审计里必须留下 registered=False，
         # 否则事后无法区分"能力真的不足"与"我们没登记过"
@@ -2396,6 +2427,81 @@ class AuditLifecycleTests(unittest.TestCase):
         self.assertEqual(res["last_trusted_seq"], 2)
         self.assertEqual(len(res["dropped"]), 1)
 
+    def test_T_ALC_20_event_without_seq_is_flagged(self):
+        """没有序号的事件：排不进顺序，也**检测不了重放**。
+
+        此前这类事件被静默放过（`isinstance(seq, int)` 不成立就跳过比对），
+        于是"反复重放同一条无序号事件"在检查里是干净的。与模块"不得静默"
+        的原则直接冲突——检测不到不等于没发生。
+        """
+        r = self._reg()
+        evs = [{"source": "executor",
+                "event_type": "remote.replay_decision"} for _ in range(3)]
+        f = r.check(evs)["findings"]
+        self.assertEqual([x["kind"] for x in f], ["missing_seq"] * 3)
+        self.assertEqual(f[0]["verdict"], "FORGED_SUSPECT")
+        # 正向对照：带序号的干净流不该被误伤
+        self.assertTrue(r.check(
+            [{"seq": i, "source": "executor",
+              "event_type": "remote.replay_decision"} for i in (1, 2, 3)])["ok"])
+
+    def test_T_ALC_21_purge_requester_cannot_be_the_approver(self):
+        """自批隔离由代码执行，不是由文档声明。
+
+        这一条的起因很尴尬：`plan_purge` 的 docstring 写了"不得由提出者自批"，
+        而函数根本不收 `requester`——承诺了一件完全没检查的事。把文档里的话
+        变成断言，防止它以后再次退化成一句空话。
+        """
+        rp = RetentionPolicy()
+        rp.declare("x", 1)
+        exp = [{"event": {"seq": 1}, "category": "x", "verdict": "EXPIRED"}]
+        with self.assertRaises(LifecycleRejected) as ctx:
+            rp.plan_purge(exp, approver="alice", requester="alice")
+        self.assertIn("cannot be the approver", str(ctx.exception))
+        # 正向对照：换个人批就给计划，别做成永远拒绝
+        plan = rp.plan_purge(exp, approver="alice", requester="bob")
+        self.assertEqual(plan["count"], 1)
+        self.assertEqual(plan["requester"], "bob")
+
+    def test_T_ALC_22_reason_points_at_first_bad_line(self):
+        """诊断要指向**出事的那一行**，不是最后一行。
+
+        坏点之后的每一行都会因为链断而重新报一次错；此前 reason 被逐行覆盖，
+        篡改第 3 行的 5 行流，报出来的是"line 5: prev_hash 不接（链断）"——
+        事故定位被直接带偏。恢复是事故后第一个要看的东西，指错位置等于没恢复。
+        """
+        for i in range(1, 6):
+            self.audit.append(f"a.{i}", n=i)
+        p = self.tmp / "audit.jsonl"
+        lines = p.read_text(encoding="utf8").splitlines(True)
+        tampered = json.loads(lines[2])          # 篡改第 3 行
+        tampered["n"] = 999
+        lines[2] = json.dumps(tampered, ensure_ascii=False) + "\n"
+        p.write_text("".join(lines), encoding="utf8")
+
+        res = recover(self.audit)
+        self.assertFalse(res["complete"])
+        self.assertEqual(res["last_trusted_seq"], 2)
+        self.assertIn("line 3", res["reason"])        # 指向首个坏点
+        self.assertNotIn("line 5", res["reason"])
+        self.assertEqual(len(res["dropped"]), 3)
+
+    def test_T_ALC_23_non_object_line_is_reported_not_crashed(self):
+        """能解析但不是对象（裸 123）：要报出来，不能让恢复本身崩掉。
+
+        此前 `e.get(...)` 对非对象抛 AttributeError——那不是"检测到损坏"，
+        而是恢复工具自己挂了。审计流损坏的当口，恢复工具崩了等于彻底不可用。
+        """
+        self.audit.append("a.one")
+        p = self.tmp / "audit.jsonl"
+        p.write_text(p.read_text(encoding="utf8") + "123\n", encoding="utf8")
+
+        res = recover(self.audit)                 # 不得抛异常
+        self.assertFalse(res["complete"])
+        self.assertEqual(res["last_trusted_seq"], 1)
+        self.assertIn("不是 JSON 对象", res["reason"])
+        self.assertEqual(res["dropped"], ["123"])
+
     # ---- 诚实边界 ----
     def test_T_ALC_17_forged_source_field_is_not_caught(self):
         """这条断言的是"**拦不住**"，不是"拦得住"。
@@ -2598,6 +2704,62 @@ class DataGateTests(unittest.TestCase):
         self.assertEqual(self.g.transfer(["i-new"], "s3",
                                          {"approver": "owner"},
                                          requester="bob")["count"], 1)
+
+    def test_T_DG_20_silent_overwrite_rejected(self):
+        """活数据不许静默覆盖——覆盖能顺手改掉保留类别。
+
+        把 pii（保留 30 天）同 id 覆盖成 public（保留 3650 天），"超期保留"
+        这条控制就被绕过去了，而且一条审计都不留。这是 AUD-016-03 第二条
+        "该删的没删"最省事的绕法：不用删，改个类别就行。
+        """
+        self.g.retention.declare("pii", 30)
+        self.g.retention.declare("public", 3650)
+        self.g.put("x", "身份证号", "pii")
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.put("x", "公众号文章", "public")
+        self.assertIn("silent overwrite", str(ctx.exception))
+        # 断言到类别与内容都**没变**：只断言抛异常的话，
+        # "先覆盖完再抛异常"这种变异逃得掉
+        got = self.g.get("x")
+        self.assertEqual(got["category"], "pii")
+        self.assertEqual(got["content"], "身份证号")
+
+    def test_T_DG_21_resurrect_does_not_reset_the_retention_clock(self):
+        """保留时钟按数据**产生**的时刻算，不按恢复的时刻算。
+
+        否则"删掉再恢复"就是一台年龄清零机：同一份超期数据，走一遍
+        delete + resurrect 就重新变年轻，超期保留这条控制形同虚设。
+        """
+        self.g.retention.declare("pii", 30)
+        old = time.time() - 100 * 86400
+        self.g.put("x", "敏感", "pii", created_at=old)
+        self.assertEqual(len(self.g.sweep_retention()), 1)
+
+        self.g.delete("x", {"approver": "alice"})
+        self.g.resurrect("x", "敏感", "pii", {"approver": "security"})
+
+        # 恢复后仍超期；且年龄接着算，没被重置成 now
+        out = self.g.sweep_retention()
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["verdict"], "EXPIRED")
+        self.assertGreater(out[0]["age_days"], 30)
+
+    def test_T_DG_22_sweep_reports_live_data_only(self):
+        """已删除的项不再出现在保留报告里。
+
+        它们的内容已清空，把它当活数据报超期，得到的是一条**无法处置**的
+        噪音——你不能再去删一个墓碑。噪音型告警的真实后果是让人不再看报告。
+        """
+        self.g.retention.declare("pii", 30)
+        old = time.time() - 100 * 86400
+        self.g.put("live", "a", "pii", created_at=old)
+        self.g.put("gone", "b", "pii", created_at=old)
+        self.g.delete("gone", {"approver": "owner"})
+
+        out = self.g.sweep_retention()
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["event"]["event_type"], "pii")
+        self.assertEqual(out[0]["verdict"], "EXPIRED")
 
     # ---- 诚实边界 ----
     def test_T_DG_19_transferred_copy_survives_source_deletion(self):

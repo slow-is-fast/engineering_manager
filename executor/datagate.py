@@ -50,6 +50,12 @@ class DataGate:
             # 已删除的 id 不能悄悄重新入库——那是最常见的"删除后再现"
             raise DataGateRejected(
                 f"resurrect requires explicit approval: {item_id}")
+        if item_id in self.items:
+            # 活数据也不许静默覆盖。覆盖能顺手改掉 `category`：把 pii
+            # （保留 30 天）改成 public（保留 3650 天），"超期保留"这条控制
+            # 就被绕过去了，而且一条审计都不留。宁可拒绝，要改走显式通道。
+            raise DataGateRejected(
+                f"item already exists, silent overwrite rejected: {item_id}")
         self.items[item_id] = {
             "content": content, "category": category,
             "created_at": time.time() if created_at is None else created_at,
@@ -87,6 +93,9 @@ class DataGate:
         self.tombstones[item_id] = {
             "deleted_at": time.time(), "approver": approver,
             "reason": approval.get("reason"),
+            # 记住它原本的产生时刻：恢复时保留时钟得接着算，
+            # 不能让"删掉再恢复"把数据年龄清零（见 resurrect）。
+            "created_at": (it or {}).get("created_at"),
         }
         if it is not None:
             it["content"] = None            # 真的删，不是打标
@@ -108,8 +117,13 @@ class DataGate:
             raise DataGateRejected(
                 f"same approver cannot both delete and resurrect: {item_id}")
         self.tombstones.pop(item_id)
-        self.items[item_id] = {"content": content, "category": category,
-                               "created_at": time.time()}
+        # 保留时钟按数据**产生**的时刻算，不按恢复的时刻算：
+        # 否则"删掉再恢复"就能把年龄清零，超期保留这条控制形同虚设。
+        original = t.get("created_at")
+        self.items[item_id] = {
+            "content": content, "category": category,
+            "created_at": time.time() if original is None else original,
+        }
         self.audit.append_from(SOURCE, "datagate.item_resurrected",
                                item_id=item_id, approver=approver,
                                earlier_deletion_approver=t["approver"])
@@ -117,9 +131,22 @@ class DataGate:
 
     # ---- 保留：复用 RetentionPolicy ----
     def sweep_retention(self, now=None):
-        pseudo = [{"seq": i, "event_type": it["category"],
-                   "timestamp": it["created_at"]}
-                  for i, (k, it) in enumerate(sorted(self.items.items()), 1)]
+        """扫**活**数据：已删（有 tombstone）的不在此列。
+
+        已删项的内容已经清空，把它当活数据报超期，得到的是一条无法处置的
+        噪音——你不能再去删一个墓碑。
+
+        诚实边界：tombstone 自身的保留期**本模块不做治理**。它必须留着，
+        否则无法证明"删过"、也无法阻止未经授权的 resurrect；它没有登记
+        保留期并不意味着"可以一直留"，而是这个决定属于保留策略层
+        （ALC-01 的 RetentionPolicy），不该由数据闸门自己拍。
+        """
+        pseudo = []
+        for i, (k, it) in enumerate(sorted(self.items.items()), 1):
+            if k in self.tombstones:
+                continue
+            pseudo.append({"seq": i, "event_type": it["category"],
+                           "timestamp": it["created_at"]})
         return self.retention.expired(pseudo, now=now)
 
     # ---- 传输 ----

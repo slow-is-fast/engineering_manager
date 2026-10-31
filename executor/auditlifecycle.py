@@ -48,7 +48,10 @@ class ProvenanceRegistry:
     def check(self, events):
         """返回 {"ok": bool, "findings": [...]}。
 
-        四类可疑：来源缺失 / 未登记 / 事件类型越界 / 同一来源 seq 回放。
+        五类可疑：来源缺失 / 未登记 / 事件类型越界 / 序号缺失 / 同一来源 seq 回放。
+
+        序号缺失也算可疑：没有序号的事件既排不进顺序，也**检测不了重放**——
+        把它静默放过，等于给重放留了一条检测不到的通道。
         """
         findings = []
         last_seq = {}
@@ -65,18 +68,24 @@ class ProvenanceRegistry:
                                  "verdict": "FORGED_SUSPECT", "source": src,
                                  "detail": "来源未登记，按可疑处理"})
                 continue
+            if isinstance(seq, bool) or not isinstance(seq, int):
+                # 没有可用序号：排不进顺序，也检测不了重放。按可疑处理，
+                # 而不是"检测不到就算干净"——那正是重放想要的待遇。
+                findings.append({"seq": None, "kind": "missing_seq",
+                                 "verdict": "FORGED_SUSPECT", "source": src,
+                                 "detail": "事件没有可用序号，无法排序也无法检测重放"})
+                continue
             allowed = self.sources[src]["event_types"]
             if allowed is not None and etype not in allowed:
                 findings.append({"seq": seq, "kind": "event_type_out_of_scope",
                                  "verdict": "FORGED_SUSPECT", "source": src,
                                  "detail": f"{src} 未被授权写 {etype}"})
             prev = last_seq.get(src)
-            if prev is not None and isinstance(seq, int) and seq <= prev:
+            if prev is not None and seq <= prev:
                 findings.append({"seq": seq, "kind": "source_seq_replay",
                                  "verdict": "FORGED_SUSPECT", "source": src,
                                  "detail": f"该来源 seq 回退（{prev} → {seq}），疑似重放"})
-            if isinstance(seq, int):
-                last_seq[src] = seq
+            last_seq[src] = seq
         return {"ok": not findings, "findings": findings}
 
 
@@ -126,16 +135,24 @@ class RetentionPolicy:
                             "age_days": round(age, 4), "limit_days": limit})
         return out
 
-    def plan_purge(self, expired, approver=None):
+    def plan_purge(self, expired, approver=None, requester=None):
         """超期事件要删——但删除本身必须有批准，且不得由提出者自批。
 
         没有批准的删除计划不生成：保留违规是合规问题，但"顺手删掉"会
         把审计流变成可以随便修剪的东西，那是更大的问题。
+
+        自批隔离**由代码执行，不是由文档声明**：`requester` 与 `approver`
+        同一人即拒绝。此前这一条只写在 docstring 里而函数不收 requester，
+        等于承诺了一件根本没检查的事——正是本规范要防的那种记账失真。
         """
         if not approver:
             raise LifecycleRejected(
                 f"purge requires an approver: {len(expired)} expired events")
-        return {"approver": approver, "count": len(expired),
+        if requester and approver == requester:
+            raise LifecycleRejected(
+                f"purge requester cannot be the approver: {requester}")
+        return {"approver": approver, "requester": requester,
+                "count": len(expired),
                 "items": [{"seq": x["event"].get("seq"),
                            "category": x["category"],
                            "verdict": x["verdict"]} for x in expired]}
@@ -163,18 +180,28 @@ def recover(audit_log):
         try:
             e = json.loads(line)
         except json.JSONDecodeError:
-            reason = f"line {i}: 不可解析（截断或损坏）"
-            started = True
+            bad = f"line {i}: 不可解析（截断或损坏）"
         else:
-            if e.get("prev_hash") != prev:
-                reason = f"line {i}: prev_hash 不接（链断）"
-                started = True
+            if not isinstance(e, dict):
+                # 能解析但不是对象（如裸 123/"x"/[]）——它不是"损坏"，
+                # 而是根本不参与链校验；得报出来，不能让 AttributeError
+                # 把恢复本身搞崩：恢复失败 = 审计流彻底不可用。
+                bad = f"line {i}: 不是 JSON 对象，无法参与链校验"
+            elif e.get("prev_hash") != prev:
+                bad = f"line {i}: prev_hash 不接（链断）"
             elif e.get("hash") != audit_log._hash(e):
-                reason = f"line {i}: hash 不匹配（内容被改）"
-                started = True
+                bad = f"line {i}: hash 不匹配（内容被改）"
             elif e.get("seq") != expect_seq:
-                reason = f"line {i}: seq {e.get('seq')} != 期望 {expect_seq}"
-                started = True
+                bad = f"line {i}: seq {e.get('seq')} != 期望 {expect_seq}"
+            else:
+                bad = None
+        if bad is not None:
+            # 只记**第一个**坏点：诊断要指向出事的那一行。
+            # 否则后面每一行都会把 reason 顶掉，最后报出来的是末尾那条
+            # 无关的"链断"，事故定位被直接带偏。
+            if not started:
+                reason = bad
+            started = True
         if started:
             dropped.append(line)
             continue

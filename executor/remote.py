@@ -103,6 +103,15 @@ class RemoteGateway:
                     reconcile_result.get("result") != "MATCH":
                 raise RemoteRejected(
                     f"replay_requires_verified_reconcile: {op_id} on {system}")
+            # 结论必须与**本次**操作、同一个系统绑定。
+            # 少了这一步，"先去核对"就变成"随便找一份核对过的结论"：
+            # 拿 A 操作在安全系统上对上的 MATCH，可以放行 B 操作在危险系统
+            # 上的重放——两个系统的决策都是 RECONCILE_FIRST，检查照样过。
+            if reconcile_result.get("op_id") != op_id or \
+                    reconcile_result.get("system") != system:
+                raise RemoteRejected(
+                    f"reconcile_result_not_for_this_operation: "
+                    f"{op_id} on {system}")
             self.audit.append("remote.replay_after_reconcile", op_id=op_id,
                               system=system, state=reconcile_result.get("state"))
             return {**p, "decision": "REPLAY_AFTER_RECONCILE",
@@ -120,6 +129,7 @@ class RemoteGateway:
                               reason="no_actual" if actual is None
                                      else "query_unavailable")
             return {"result": "UNVERIFIABLE", "op_id": op_id,
+                    "system": system,
                     "reason": "no_actual" if actual is None
                               else "query_unavailable",
                     "next": MANUAL}
@@ -127,10 +137,15 @@ class RemoteGateway:
             self.audit.append("remote.drift_detected", op_id=op_id, system=system,
                               expected=expected, actual=actual)
             return {"result": "DRIFT_DETECTED", "op_id": op_id,
+                    "system": system,
                     "expected": expected, "actual": actual, "next": MANUAL}
         self.audit.append("remote.reconciled", op_id=op_id, system=system,
                           state=expected)
-        return {"result": "MATCH", "op_id": op_id, "state": expected}
+        # 结论必须自带 op_id 与 system：下游 replay 要靠这两个字段核对
+        # "这个结论是不是为**本次**操作做的"。缺了它们就只能看 result，
+        # 于是别处对上的一次结论可以拿来放行这里的高危重放。
+        return {"result": "MATCH", "op_id": op_id, "system": system,
+                "state": expected}
 
     def compensate(self, op_id, plan_ref, result):
         """补偿结果只有"完全成功"才算成功。

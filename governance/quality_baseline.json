@@ -5,7 +5,7 @@
   "purpose": "项目级受保护质量基线。基线不是「当前状态快照」，而是**经独立审查后批准的下限**：任何一项被下调都必须重新走审批，不能跟着代码一起悄悄改。",
   "baseline_version": "1",
   "reviewed_by": "slow-is-fast (Owner)",
-  "reviewed_at": "2026-10-31T08:48:32+08:00",
+  "reviewed_at": "2026-10-31T09:55:37+08:00",
   "applies_to_sha": "ecb30e65115c1d64b7ec4037a0d686f942712f4d",
   "required_checks": [
     "scripts/validate_controls.py",
@@ -27,12 +27,12 @@
   ],
   "executor_pin_version": {
     "control_plane_repo": "slow-is-fast/aasegs-gov-plane",
-    "pinned_commit": "376308122058aee46a583d9a72e99abd47c59952",
-    "pinned_tree": "036d54e08b72538143fa10ca7172e8f04214bf9c"
+    "pinned_commit": "0f244a05b18a6a8bad50f731b7913809aa6c9765",
+    "pinned_tree": "8d83dc9462ca92662a6a799e0accef12f90f1ec6"
   },
   "test_thresholds": {
-    "min_test_count": 202,
-    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 202，下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
+    "min_test_count": 210,
+    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 210（冷读复核新增 T-REM-22 / T-ALC-20..23 / T-DG-20..22 共 8 条），下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
     "require_all_pass": true
   },
   "exceptions": [
