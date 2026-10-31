@@ -110,8 +110,8 @@ jobs:
       - name: "T-CLOSE audit issue closure (no unbacked closure, acceptance asserted)"
         run: python scripts/gov_run.py --check scripts/check_audit_closure.py
 
-      # ALC-01 / DG-01 的验收：链完整性、来源可归因、保留期、本次运行的
+      # AUD-014-03 / AUD-016-03 的验收：链完整性、来源可归因、保留期、本次运行的
       # 必需检查是否全部落地、evidence 台账（登记/哈希/删除批准/超期）。
       # 这条一旦红，上面某一项就是"没跑"或"没记上"——两者都不该算过。
-      - name: "T-ALC-01 audit trail + evidence ledger verification"
+      - name: "T-GOV audit trail + evidence ledger (AUD-014-03 / AUD-016-03)"
         run: python scripts/gov_run.py --verify

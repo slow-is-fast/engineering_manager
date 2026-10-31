@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""ALC-01 / DG-01 的**生产入口**：让审计生命周期与数据闸门真的跑在门禁上。
+"""AUD-014-03 / AUD-016-03 的**生产入口**：让审计生命周期与数据闸门真的跑在门禁上。
+
+编号口径（踩过一次坑，写在这里免得再错）：`AUD-XXX-NN` 是 §四 验收断言编号，
+`EVD-01` / `ISO-01` 之类才是控制目录里的控制编号。本文件曾自称 "ALC-01 / DG-01"，
+而这两个编号在 rule-registry（53 条）和 control-catalog（49 条）里都不存在——
+一个看起来像控制、实际查不到的东西，比没有编号更糟。保留期、来源识别、恢复
+以及删除/保留/传输这几件事，目前**在控制目录里没有专属条目**，它们由 §四
+断言层承载，控制层是空的；这是待补的缺口，不是已完成的覆盖。
 
 为什么要有这个文件
 ------------------
@@ -394,7 +401,10 @@ def accept_evidence(*, root=ROOT, ledger_path=None, by=None, reason=None,
 
     ledger = {
         'version': '1.0',
-        'control': 'DG-01',
+        # 这里是 §四 断言编号，不是控制编号：控制目录里没有一条控制管
+        # "证据文件的生命周期"，写一个查不到的 DG-01 只会制造虚假覆盖感。
+        'assertion': 'AUD-016-03',
+        'supporting_controls': ['ISO-01'],
         'purpose': ('证据登记台账。新增证据必须显式登记；登记后内容改动、'
                     '未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。'),
         'generated_at': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
@@ -436,7 +446,8 @@ def detect_run_id(explicit=None):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='治理运行入口（ALC-01 / DG-01）')
+    ap = argparse.ArgumentParser(
+        description='治理运行入口（AUD-014-03 / AUD-016-03）')
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--check', metavar='PATH', help='跑一项必需检查并记账')
     g.add_argument('--verify', action='store_true', help='验收整条审计流')

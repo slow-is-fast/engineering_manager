@@ -1,7 +1,8 @@
 {
   "version": "1.0",
-  "control": "ALC-01",
-  "rule_ref": "AUD-014-03",
+  "assertion": "AUD-014-03",
+  "supporting_controls": ["EVD-01", "EVD-02"],
+  "id_note": "本文件曾被写成 \"control\": \"ALC-01\"、\"rule_ref\": \"AUD-014-03\"——两个都不对：ALC-01 在 rule-registry(53) 与 control-catalog(49) 里都不存在；AUD-014-03 是 §四 验收断言编号，不是规则编号。保留期/来源识别/恢复这三件事目前没有专属控制条目，由断言层承载。",
   "purpose": "治理运行的审计流策略。机器读，不是文档：sources 决定 ProvenanceRegistry 认哪些来源、retention 决定 RetentionPolicy 判多久超期。改这里等于改控制。",
   "trail_path": "evidence/audit/trail.jsonl",
   "gate_audit_path": "evidence/audit/evidence_gate.jsonl",
