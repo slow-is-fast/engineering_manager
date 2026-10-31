@@ -6,7 +6,7 @@
   "baseline_version": "1",
   "reviewed_by": "slow-is-fast (Owner)",
   "reviewed_at": "2026-10-31T16:17:21+08:00",
-  "applies_to_sha": "41cba9441836bb42ba50b70e36b597c0b55a3399",
+  "applies_to_sha": "78e209bb2a77e9d3a25972bd2a3fd000b8fb0656",
   "required_checks": [
     "scripts/validate_controls.py",
     "tests/test_executor_negative.py",
