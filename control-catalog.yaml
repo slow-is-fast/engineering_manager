@@ -1240,6 +1240,162 @@
       },
       "evidence_at": "2026-10-29",
       "evidence_kind": "automated"
+    },
+    {
+      "id": "RTN-01",
+      "requirement_ref": "AASEGS-LFC-001",
+      "owner": "governance_owner",
+      "enforcer": "scripts/gov_run.py + executor/auditlifecycle.RetentionPolicy",
+      "evidence": "未登记类别被标为可疑（T-ALC-09）；超期事件被点出；缺失时间戳不得当作未超期（T-ALC-10）",
+      "failure": "deny：未登记类别不得无限保留，超期未处置即判红",
+      "test": "T-ALC-09",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.1",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
+    },
+    {
+      "id": "PRV-01",
+      "requirement_ref": "AASEGS-LFC-002",
+      "owner": "governance_owner",
+      "enforcer": "executor/auditlifecycle.ProvenanceRegistry",
+      "evidence": "未登记来源被标为可疑（T-ALC-03）；来源缺失、事件类型越界、seq 回退、无序号五类各自命中",
+      "failure": "deny：可疑事件拒绝静默放过，无序号即无法检测重放",
+      "test": "T-ALC-03",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.2",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
+    },
+    {
+      "id": "RCV-01",
+      "requirement_ref": "AASEGS-LFC-003",
+      "owner": "governance_owner",
+      "enforcer": "executor/auditlifecycle.recover",
+      "evidence": "截断/篡改后取回最后可信前缀，被丢段落原样交出（T-ALC-16）；诊断指向首个坏点而非末行（T-ALC-22）",
+      "failure": "quarantine and deny：坏段隔离并交出，拒绝接在坏链上追加",
+      "test": "T-ALC-16",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.3",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
+    },
+    {
+      "id": "RSR-01",
+      "requirement_ref": "AASEGS-LFC-004",
+      "owner": "governance_owner",
+      "enforcer": "executor/datagate.DataGate（tombstone）+ scripts/gov_run.py 证据台账",
+      "evidence": "批准删除可通过但重现失败（GOV-16）；重新登记不得继承原删除批准（GOV-19）；同 id 活数据静默覆盖被拒（T-DG-20）",
+      "failure": "deny：删除后重现一律拒绝，须按新登记重新走批准",
+      "test": "GOV-16",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.4",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-016"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
+    },
+    {
+      "id": "EVL-01",
+      "requirement_ref": "AASEGS-LFC-005",
+      "owner": "governance_owner",
+      "enforcer": "scripts/gov_run.py --accept-evidence / --verify（evidence 台账）",
+      "evidence": "登记后内容改动被检出（GOV-13）；未批准删除失败（GOV-15）；未登记证据文件被点出（GOV-14）；提出者不得自批",
+      "failure": "deny：改动/消失/重现任一命中即判红，登记制不登记不算证据",
+      "test": "GOV-15",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.5",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-014"
+      ],
+      "state": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
+    },
+    {
+      "id": "DRL-01",
+      "requirement_ref": "AASEGS-DRL-001",
+      "owner": "security_owner",
+      "enforcer": "executor/drill.py（**未接入生产路径**：仅由单元测试调用，见状态里的 configured=false）",
+      "evidence": "四类场景齐备且未过期才算完成（T-DRL-01）；缺一类即阻断（T-DRL-02）；声称 production 演练被拒（T-DRL-05）；覆盖重演被拒（T-DRL-06）；每步无证据被拒（T-DRL-07）",
+      "failure": "deny：缺步骤/无证据/未复验/无复盘结论一律拒绝收口",
+      "test": "T-DRL-01",
+      "status": "tested",
+      "integration_evidence_uri": "evidence/control_layer_20261031T073500Z.md",
+      "source_ref": "v1.1.1 §13 审计流、证据生命周期与演练编排 · 13.6",
+      "risk_level": "P0",
+      "addresses": [
+        "AASEGS-AUD-015"
+      ],
+      "state": {
+        "documented": true,
+        "configured": false,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "evidence_at": "2026-10-31",
+      "evidence_kind": "automated"
     }
   ],
   "baseline": "1.1.0",

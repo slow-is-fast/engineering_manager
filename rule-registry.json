@@ -2349,7 +2349,271 @@
         "excepted": false
       },
       "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-LFC-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.1",
+      "statement": "审计与证据数据必须按类别声明保留期；未登记类别不得无限保留，缺失时间戳不得当作未超期，超期必须处置且处置动作本身可审计。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "RTN-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ALC-09"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-LFC-002",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.2",
+      "statement": "每条审计事件必须携带已登记且可归因的来源；来源缺失、来源未登记、事件类型越界、无可用序号、序号回退五类一律判为可疑并拒绝静默放过——无序号即无法检测重放。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "PRV-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ALC-03"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-LFC-003",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.3",
+      "statement": "审计流被截断或篡改后必须能取回最后一个可信前缀，并把被丢弃段落原样交出供人工判断；诊断必须指向第一个坏点，不得只返回一个笼统状态码。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "RCV-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-ALC-16"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-LFC-004",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.4",
+      "statement": "经批准删除的数据不得静默重现；同一标识再次出现必须作为新登记处理并重新计算保留期，不得继承原删除批准。",
+      "requirement": "MUST NOT",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "RSR-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "GOV-16"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-LFC-005",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.5",
+      "statement": "证据必须先登记后使用；登记后内容被改动、未经批准消失、批准删除后重新出现均须被检出并判红；删除须批准且提出者不得自批。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "governance_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "EVL-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "GOV-15"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
+    },
+    {
+      "rule_id": "AASEGS-DRL-001",
+      "source_location": "AASEGS_v1.1.1_实施完整性修订版.md · §13 审计流、证据生命周期与演练编排 · 13.6",
+      "statement": "四类隔离场景（凭证泄露、越权写入、审计中断、数据暴露）必须各自演练并收口：每一步都要证据，恢复必须被复验而非声称，复盘必须有结论与待办；演练记录超过 90 天视为过期需重演；同一场景不得覆盖重演；演练环境只能是 simulated，声称 production 一律拒绝。",
+      "requirement": "MUST",
+      "scope": {
+        "projects": [
+          "*"
+        ]
+      },
+      "risk_level": "P0",
+      "owner": "security_owner",
+      "enforcement": {
+        "type": "technical",
+        "controls": [
+          "DRL-01"
+        ],
+        "gap": null
+      },
+      "evidence_required": [
+        "rule_id",
+        "actor",
+        "decision",
+        "evidence_ref"
+      ],
+      "failure_behavior": [
+        "deny_or_block",
+        "emit_audit_event"
+      ],
+      "verification": {
+        "tests": [
+          "T-DRL-01"
+        ]
+      },
+      "status": {
+        "documented": true,
+        "configured": true,
+        "tested": true,
+        "verified": false,
+        "degraded": false,
+        "excepted": false
+      },
+      "exception_ref": null
     }
   ],
-  "coverage_note": null
+  "coverage_note": " 2026-10-31 补 §13：保留期/来源识别/恢复/删除后不得重现/证据生命周期/演练编排六条（LFC-001..005、DRL-001），此前仅由 §四 断言层承载，控制层为空。"
 }

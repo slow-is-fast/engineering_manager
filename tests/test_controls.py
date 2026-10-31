@@ -15,7 +15,9 @@ class CatalogTests(unittest.TestCase):
         c = load()['controls']
         ids = [x['id'] for x in c]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(49, len(ids))
+        # 精确钉数，不是下限：控制条目增加或减少都必须有人显式改这一行。
+        # 用下限的话，新增 6 条之后偷偷删掉 5 条照样绿。
+        self.assertEqual(55, len(ids))
         for x in c:
             for k in ('owner', 'enforcer', 'evidence', 'failure', 'test'):
                 self.assertTrue(x[k])
@@ -26,7 +28,7 @@ class CatalogTests(unittest.TestCase):
         rules = reg['rules']
         rids = [r['rule_id'] for r in rules]
         self.assertEqual(len(rids), len(set(rids)))
-        self.assertEqual(53, len(rids))
+        self.assertEqual(59, len(rids))
         for r in rules:
             for cid in r['enforcement']['controls']:
                 self.assertIn(cid, cat, f"{r['rule_id']} -> unknown control {cid}")
@@ -43,7 +45,7 @@ class CatalogTests(unittest.TestCase):
     def test_v111_controls_declare_risk_and_audit_mapping(self):
         c = load()['controls']
         new = [x for x in c if x['id'].split('-')[0] not in LEGACY]
-        self.assertEqual(27, len(new))
+        self.assertEqual(33, len(new))
         for x in new:
             self.assertIn(x['risk_level'], ('P0', 'P1', 'P2'))
             self.assertTrue(x['source_ref'])
