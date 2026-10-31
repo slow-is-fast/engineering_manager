@@ -437,7 +437,7 @@ Reviewer 必须与开发 Run 在身份/凭证上分离，具有只读访问，�
 | 规则引用不到的控制 | 8 | 双向闭合检查的反方向读数：控制必须被某条规则引用，否则须在 `governance/control_coverage.json` 登记处置（`audit_driven` 指明审计问题，`defense_in_depth` 指明派生规则），否则 `validate_controls.py` 失败。8 条全部已登记（§14 新增的 6 条均为规则支撑，不在此列） |
 | tested 控制的证据类型 | 50 automated / **0 drill** | `evidence_kind` 必填：`automated` = `test` 可解析到真实用例或 CI 步骤、每次改动都会再跑；`drill` = 只有一次性演练记录，URI 必须指向 PR。2026-10-30 记账复核时查出 3 条 drill（`QA-01`/`QA-02`/`BASE-01`），同日已全部转为 automated——**演练证明门禁当时有效，不能证明此后每次改动都被检查过**。注意 `automated` 只保证"每次改动会再跑"，不保证已接入生产路径：DRL-01 的 `state.configured=false` 即属此列 |
 | 已具备运行时证据 | 50 | tested 控制数；由 `scripts/check_admission_gate.py`（GATE-01）机器判定而非文档声明。执行器类为逻辑验证，verified 待独立账号级信任域（EXC-02），当前 verified=0 |
-| §四 验收断言 | 90 条（满足 67） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented/excepted）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`）。未满足 23 条中，人工待办 21 条（受 EXC-01）、`script_exit_1` 1 条（AUD-021-01 报告可复现）、`excepted` 1 条（AUD-013-03，受 EXC-01 约束）；**显式未实现 0 条**（2026-10-31 由 6 → 2 → 0） |
+| §四 验收断言 | 90 条（满足 68，2026-10-31 读数） | `governance/acceptance_matrix.json`：把 22 项验收标准分解为可判定断言（test/script/evidence/manual/unimplemented/excepted）。**断言未全通过时声明 CLOSED 即判记账不实**（`closure_without_acceptance`）。未满足 22 条中，人工待办 21 条（受 EXC-01）、`excepted` 1 条（AUD-013-03，受 EXC-01 约束）；**显式未实现 0 条**（2026-10-31 由 6 → 2 → 0）。**本行数字以 `python scripts/check_audit_closure.py --acceptance` 现跑为准**：部分断言的判定依赖工作区状态，写死必然过期——2026-10-31 当天就发生过一次（AUD-021-01 在脏工作区下判 `script_exit_1`，提交后转 OK） |
 | 已关闭 | 0 | 全部按未关闭处理；INFRA-01（平台级缺口）已解除——分支保护于 2026-10-29 生效 |
 
 本文件已于 2026-10-29 经 Owner（slow-is-fast）批准转正为正式生效版本（见文首转正记录）。P0 问题的关闭证据至少包括：对应控制条目 `state.tested=true`、`state.verified=true`、`integration_evidence_uri` 非空，以及 §12 准入门槛的机器判定记录。文档中的条款表述不能替代上述证据。
