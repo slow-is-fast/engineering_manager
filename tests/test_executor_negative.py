@@ -40,6 +40,8 @@ from executor.auditlifecycle import (ProvenanceRegistry, RetentionPolicy,
                                      recover, LifecycleRejected)
 from executor.audit import GENESIS
 from executor.datagate import DataGate, DataGateRejected
+from executor.drill import (DrillOrchestrator, DrillRejected, SCENARIOS,
+                            FRESHNESS_DAYS)
 from datetime import date
 
 from executor.checkpoint import (CheckpointStore, BaselineChanged,
@@ -1975,6 +1977,77 @@ class ExecutorNegativeTests(unittest.TestCase):
                       [s["reason"] for s in
                        res4["issues"]["AUD-101"]["acceptance"]["unsatisfied"]])
 
+    def _assertion_exception(self, eid, expires="2027-01-31"):
+        """供 `excepted` 断言引用的例外夹具（别和类里原有的 _exc 撞名）。"""
+        return {"id": eid, "status": "ACTIVE", "approver": "human-owner",
+                "approver_type": "human", "expires": expires,
+                "waives": {"controls": ["C1"], "requirement": ["tested"]},
+                "compensating_controls": ["分凭证"], "revocation": "引入第二主体"}
+
+    def test_t_closure_excepted_assertion_still_blocks(self):
+        """`excepted` 是"把洞标记出来"，不是"把洞填平"。
+
+        这条断言的全部意义：例外**仍然计入未满足**、仍然让问题无法
+        machine_complete、仍然阻止"声明已关闭"。一旦把它当 ok=True，
+        `excepted` 就变成"改一个字段就能让未满足的断言消失"的后门——
+        比 `unimplemented` 更危险，因为它看起来像被处理过了。
+        """
+        acc = {"AUD-101": [{"id": "AUD-101-01", "kind": "excepted",
+                            "exception_ref": "EXC-01",
+                            "text": "受 EXC-01 约束，不可自动化"}],
+               "AUD-102": [{"id": "AUD-102-01", "kind": "test",
+                            "ref": "test_fixture_ok", "text": "fixture"}],
+               "AUD-103": [{"id": "AUD-103-01", "kind": "test",
+                            "ref": "test_fixture_ok", "text": "fixture"}]}
+        base = self._closure_repo(statuses=("CLOSED", "OPEN", "OPEN"),
+                                  acceptance=acc,
+                                  exceptions=[self._assertion_exception("EXC-01")])
+        res = ClosureEvaluator(base, now=date(2026, 10, 30)).load().evaluate()
+        a = res["issues"]["AUD-101"]["acceptance"]
+
+        # 例外有效 ≠ 断言满足
+        self.assertEqual(a["satisfied"], 0)
+        self.assertFalse(a["machine_complete"])
+        self.assertEqual(a["excepted_invalid"], 0)
+        self.assertEqual([s["id"] for s in a["excepted"]], ["AUD-101-01"])
+        self.assertEqual(a["unsatisfied"][0]["reason"], "excepted")
+        # 声明关闭仍然被拦
+        self.assertIn("closure_without_acceptance",
+                      [v["reason"] for v in res["violations"]])
+        self.assertEqual(
+            [v for v in res["violations"]
+             if v["reason"] == "closure_without_acceptance"][0]["blocking"],
+            ["AUD-101-01"])
+
+    def test_t_closure_excepted_with_invalid_exception_is_not_excepted(self):
+        """引用一个不存在 / 已过期的例外，连"登记例外"都算不上。"""
+        acc = {"AUD-101": [{"id": "AUD-101-01", "kind": "excepted",
+                            "exception_ref": "EXC-EXPIRED",
+                            "text": "引用了过期例外"}],
+               "AUD-102": [{"id": "AUD-102-01", "kind": "test",
+                            "ref": "test_fixture_ok", "text": "fixture"}],
+               "AUD-103": [{"id": "AUD-103-01", "kind": "test",
+                            "ref": "test_fixture_ok", "text": "fixture"}]}
+        base = self._closure_repo(statuses=("OPEN", "OPEN", "OPEN"),
+                                  acceptance=acc,
+                                  exceptions=[self._assertion_exception("EXC-EXPIRED",
+                                                              expires="2026-01-01")])
+        res = ClosureEvaluator(base, now=date(2026, 10, 30)).load().evaluate()
+        a = res["issues"]["AUD-101"]["acceptance"]
+        self.assertEqual(a["excepted_invalid"], 1)
+        self.assertEqual(a["unsatisfied"][0]["reason"],
+                         "excepted_without_valid_exception")
+        self.assertFalse(a["machine_complete"])
+        # 连 exception_ref 都不写，同样不采信
+        acc2 = json.loads(json.dumps(acc))
+        acc2["AUD-101"][0].pop("exception_ref")
+        base2 = self._closure_repo(statuses=("OPEN", "OPEN", "OPEN"),
+                                   acceptance=acc2,
+                                   exceptions=[self._assertion_exception("EXC-01")])
+        res2 = ClosureEvaluator(base2, now=date(2026, 10, 30)).load().evaluate()
+        self.assertEqual(
+            res2["issues"]["AUD-101"]["acceptance"]["excepted_invalid"], 1)
+
 
 class RemoteGatewayTests(unittest.TestCase):
     """AUD-009-03（目标系统不支持幂等 / 查询不可用）与 AUD-010-03（漂移与补偿失败）。
@@ -2776,6 +2849,169 @@ class DataGateTests(unittest.TestCase):
         self.g.delete("i-1", {"approver": "owner"})
         self.assertEqual(handed_out, "敏感内容")     # 副本仍在
         self.assertIsNone(self.g.items["i-1"]["content"])   # 源端已清
+
+
+class DrillTests(unittest.TestCase):
+    """AUD-015-03：四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露）。
+
+    测的是"有没有练过"，不是"处置记录填得规范"——后者由 INC-01 覆盖。
+    一次都没练过的流程，在真出事时等于没有流程，而这类缺口平时完全不可见。
+    """
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-drill-"))
+        self.o = DrillOrchestrator(self.tmp / "drill.jsonl")
+        self.audit = AuditLog(self.tmp / "drill.jsonl")
+
+    def _run(self, scenario, operator="tester"):
+        self.o.start(scenario, operator=operator)
+        self.o.record_step(scenario, "containment", evidence=["隔离证据"],
+                           by=operator)
+        self.o.record_step(scenario, "recovery", evidence=["复验证据"],
+                           verified=True, by=operator)
+        self.o.record_step(scenario, "postmortem", evidence=["复盘记录"],
+                           findings=["根因一条"], actions=["待办一条"],
+                           by=operator)
+        return self.o.close(scenario)
+
+    # ---- 正向对照 ----
+    def test_T_DRL_01_all_four_scenarios_complete(self):
+        """四类走完一遍才算完成——AUD-015-03 的 ref 指向这条。"""
+        for s in SCENARIOS:
+            self.assertEqual(self._run(s)["status"], "CLOSED")
+        summary = self.o.require_complete()
+        self.assertTrue(summary["complete"])
+        self.assertEqual(summary["done"], list(SCENARIOS))
+        self.assertEqual(summary["missing"], [])
+        self.assertEqual(summary["stale"], [])
+
+    def test_T_DRL_02_missing_scenario_blocks_completion(self):
+        """缺一类的演练报告不能算"演练完成"。"""
+        for s in SCENARIOS[:-1]:
+            self._run(s)
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.require_complete()
+        self.assertIn("data_exposure", str(ctx.exception))
+
+    def test_T_DRL_03_unknown_scenario_rejected(self):
+        with self.assertRaises(DrillRejected):
+            self.o.start("aliens_landed", operator="tester")
+
+    def test_T_DRL_04_drill_requires_operator(self):
+        """没人署名的演练 = 没人负责。"""
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.start("credential_leak", operator=None)
+        self.assertIn("operator", str(ctx.exception))
+
+    def test_T_DRL_05_cannot_claim_production_drill(self):
+        """模拟就是模拟。把模拟说成生产演练，比不演练更糟。"""
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.start("credential_leak", env="production",
+                         operator="tester")
+        self.assertIn("simulated", str(ctx.exception))
+
+    def test_T_DRL_06_rerun_cannot_overwrite_failed_attempt(self):
+        """再跑一次并覆盖，就能把失败的那次抹掉。重演必须显式开新的。"""
+        self.o.start("credential_leak", operator="tester")
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.start("credential_leak", operator="tester")
+        self.assertIn("overwrite", str(ctx.exception))
+
+    def test_T_DRL_07_step_without_evidence_rejected(self):
+        """空证据 = 声称做过。处置记录里最不值钱的就是"我做了"。"""
+        self.o.start("credential_leak", operator="tester")
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.record_step("credential_leak", "containment", evidence=[],
+                               by="tester")
+        self.assertIn("evidence", str(ctx.exception))
+
+    def test_T_DRL_08_unverified_recovery_rejected(self):
+        """"我恢复了"不等于"验证过恢复了"。"""
+        self.o.start("credential_leak", operator="tester")
+        self.o.record_step("credential_leak", "containment", evidence=["e"],
+                           by="tester")
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.record_step("credential_leak", "recovery", evidence=["e"],
+                               verified=False, by="tester")
+        self.assertIn("verified", str(ctx.exception))
+
+    def test_T_DRL_09_postmortem_without_conclusions_rejected(self):
+        """复盘没结论等于没复盘，只写"已复盘"三个字不算。"""
+        self.o.start("credential_leak", operator="tester")
+        self.o.record_step("credential_leak", "containment", evidence=["e"],
+                           by="tester")
+        self.o.record_step("credential_leak", "recovery", evidence=["e"],
+                           verified=True, by="tester")
+        with self.assertRaises(DrillRejected):
+            self.o.record_step("credential_leak", "postmortem", evidence=["e"],
+                               findings=None, actions=["a1"], by="tester")
+        with self.assertRaises(DrillRejected):
+            self.o.record_step("credential_leak", "postmortem", evidence=["e"],
+                               findings=["f1"], actions=None, by="tester")
+
+    def test_T_DRL_10_step_cannot_be_recorded_twice(self):
+        self.o.start("audit_outage", operator="tester")
+        self.o.record_step("audit_outage", "containment", evidence=["e1"],
+                           by="tester")
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.record_step("audit_outage", "containment", evidence=["e2"],
+                               by="tester")
+        self.assertIn("already recorded", str(ctx.exception))
+
+    def test_T_DRL_11_close_requires_all_steps(self):
+        self.o.start("audit_outage", operator="tester")
+        self.o.record_step("audit_outage", "containment", evidence=["e"],
+                           by="tester")
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.close("audit_outage")
+        self.assertIn("recovery", str(ctx.exception))
+        self.assertIn("postmortem", str(ctx.exception))
+
+    def test_T_DRL_12_stale_drill_does_not_count(self):
+        """练过一次不等于永远练过：过期的记录不再计入完成。"""
+        t0 = time.time()
+        self.o = DrillOrchestrator(self.tmp / "drill2.jsonl", now=t0)
+        for s in SCENARIOS:
+            self._run(s)
+        self.o.require_complete(now=t0)                    # 当时有效
+        with self.assertRaises(DrillRejected) as ctx:
+            self.o.require_complete(now=t0 + 200 * 86400)  # 过期后
+        self.assertIn("credential_leak", str(ctx.exception))
+        stale = self.o.summary(now=t0 + 200 * 86400)["stale"]
+        self.assertEqual(len(stale), len(SCENARIOS))
+        self.assertGreater(FRESHNESS_DAYS, 0)
+
+    def test_T_DRL_13_step_before_start_rejected(self):
+        with self.assertRaises(DrillRejected):
+            self.o.record_step("credential_leak", "containment", evidence=["e"],
+                               by="tester")
+
+    def test_T_DRL_14_drill_is_audited(self):
+        """演练本身也要留痕：事后得能查到是谁在什么时候练的。"""
+        self._run("data_exposure")
+        self.assertEqual(len(self.audit.read("drill.started")), 1)
+        self.assertEqual(len(self.audit.read("drill.containment")), 1)
+        self.assertEqual(len(self.audit.read("drill.recovery")), 1)
+        self.assertEqual(len(self.audit.read("drill.postmortem")), 1)
+        self.assertEqual(len(self.audit.read("drill.closed")), 1)
+        ok, errors = self.audit.verify()
+        self.assertTrue(ok, errors)
+
+    # ---- 诚实边界 ----
+    def test_T_DRL_15_simulated_drill_does_not_prove_production_readiness(self):
+        """这条断言的是"**证明不了**"，不是"证明得了"。
+
+        四类模拟演练全绿，说明流程被走过一遍、每一步有证据、复盘有结论；
+        它**不能**说明真出事时系统能扛住——真实环境有真实凭证隔离、真实
+        故障注入与独立值守，本模块一个都不具备（AUD-015-04，manual）。
+        写成用例而不是注释，是为了防止后来者看到"演练完成"就当成"演练过生产"。
+        """
+        for s in SCENARIOS:
+            self._run(s)
+        summary = self.o.require_complete()
+        self.assertTrue(summary["complete"])
+        # 完成的记录里仍然只写着 simulated——没有任何字段声称过生产
+        for s in SCENARIOS:
+            self.assertEqual(self.o.records[s]["env"], "simulated")
 
 
 if __name__ == "__main__":

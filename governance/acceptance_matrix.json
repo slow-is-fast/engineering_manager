@@ -7,7 +7,9 @@
     "script": "执行仓库内校验脚本，退出码 0 才算满足（复用既有校验器，不另建判据）。",
     "evidence": "证据文件必须存在且包含指定字符串（防占位文件顶替）。",
     "manual": "机器无法判定，须人工/独立环境执行并登记签署；未登记签署一律计为 pending。",
-    "unimplemented": "该条款当前没有任何机器用例覆盖——显式记账，不假装满足，也不假装「已通过人工」。"
+    "unimplemented": "该条款当前没有任何机器用例覆盖——显式记账，不假装满足，也不假装「已通过人工」。",
+  "excepted": "受 `exception_ref` 指向的已登记例外约束，当前不打算（也无法）补机器覆盖。**仍然计入未满足**，仍然让该问题无法 machine_complete、仍然阻止「声明已关闭」——例外是「把洞标记出来」，不是「把洞填平」。引用的例外必须满足 exception_valid（ACTIVE + 人类批准人 + 未过期 + 有补偿控制 + 有撤销条件 + 有 waives 目标），否则记 excepted_without_valid_exception。与 unimplemented 的区别：后者是「还没做」，前者是「已知做不到且已登记风险」。",
+  "kinds_note": "`excepted` 是 2026-10-31 新增的档位，用于 AUD-013-03。它不改变任何计数口径（仍计入未满足），只是让「受例外约束」不再和「忘了做」混在同一个桶里。"
   },
   "honest_limits": [
     "kind=test 只证明「该用例存在且随 CI 套件执行过」，不证明它覆盖了条款的全部边界情形。",
@@ -414,9 +416,10 @@
         },
         {
           "id": "AUD-013-03",
-          "kind": "unimplemented",
+          "kind": "excepted",
+          "exception_ref": "EXC-01",
           "target": "QA-03",
-          "text": "开发 Run 冒用 Reviewer 的第二凭证实测（受 EXC-01 约束）"
+          "text": "开发 Run 冒用 Reviewer 的第二凭证实测：第二人类主体不可达（EXC-01 已实证：第二 PAT 不构成独立审批主体，GitHub 按主体而非凭证判定独立性），因此**无法自动化**。机器侧能做的补偿同样受同一例外约束——scripts/verify_reviewer_credential.py --expect-deny 需人工注入 reviewer token，CI 的 GITHUB_TOKEN 不是 reviewer 凭证，用它测会变成另一件事。记为 excepted 而非 unimplemented 或 manual：它与「还没做」不同（已知做不到且已登记风险），也不冒充人工项。**仍然计入未满足**，AUD-013 仍不得 machine_complete。"
         },
         {
           "id": "AUD-013-04",
@@ -477,9 +480,10 @@
         },
         {
           "id": "AUD-015-03",
-          "kind": "unimplemented",
+          "kind": "test",
+          "ref": "test_T_DRL_01_all_four_scenarios_complete",
           "target": "INC-01",
-          "text": "四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露）"
+          "text": "四类隔离演练（凭证泄露/越权写入/审计中断/数据暴露）：编排器要求四类全部跑过且各自收口，每一步都要证据（空证据 = 只声称做过），恢复必须被复验过而非「我恢复了」，复盘必须有结论与待办，演练记录 90 天后过期需重演，同一场景不许覆盖重演（否则能抹掉失败的那次）。**编排的是受控模拟演练**：env 只能是 simulated，声称 production 一律拒绝——把模拟说成生产演练比不演练更糟。真实生产隔离实操不在本模块范围内（AUD-015-04，manual）"
         },
         {
           "id": "AUD-015-04",

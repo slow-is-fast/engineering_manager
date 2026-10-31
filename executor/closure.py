@@ -39,13 +39,14 @@ import subprocess
 import sys
 from datetime import date
 
-from .gate import (GateInputError, exception_waives, load_exceptions,
-                   norm_issue_id, parse_audit_issues)
+from .gate import (GateInputError, exception_valid, exception_waives,
+                   load_exceptions, norm_issue_id, parse_audit_issues)
 
 DEFAULT_TTL = {"P0": 30, "P1": 90, "P2": 180, "_unknown": 30}
 OPEN_STATES = ("OPEN", "IN_PROGRESS", "READY_FOR_REVIEW", "REOPENED")
 CLAIMED_DONE = ("CLOSED", "ACCEPTED_RISK")
-ASSERTION_KINDS = ("test", "script", "evidence", "manual", "unimplemented")
+ASSERTION_KINDS = ("test", "script", "evidence", "manual", "unimplemented",
+                   "excepted")
 RECURSION_GUARD = ("check_audit_closure",)
 
 
@@ -192,6 +193,21 @@ class ClosureEvaluator:
         elif kind == "unimplemented":
             # 显式记账：当前没有机器覆盖，既不假装满足，也不假装已验证
             st.update(ok=False, reason="not_implemented", detail=a.get("target"))
+        elif kind == "excepted":
+            # 登记例外：受某个已登记例外约束，当前不打算（也无法）补机器覆盖。
+            #
+            # **它仍然算未满足**，也仍然让该问题无法 machine_complete——
+            # 例外是"把洞标记出来"，不是"把洞填平"。这条分支的全部意义就在这里：
+            # 一旦把 excepted 当 ok=True，它就变成"改一个字段就能让未满足的
+            # 断言消失"的后门，比 unimplemented 更危险，因为它看起来像处理过了。
+            ref = a.get("exception_ref")
+            valid = bool(ref) and any(
+                e.get("id") == ref and exception_valid(e, self.now)
+                for e in (self.exceptions or []))
+            st.update(ok=False, excepted=True,
+                      reason="excepted" if valid
+                             else "excepted_without_valid_exception",
+                      detail=ref)
         else:  # manual
             sign = a.get("signoff") or {}
             signed = bool(sign.get("by") and sign.get("ref") and sign.get("date"))
@@ -210,11 +226,18 @@ class ClosureEvaluator:
         if not states:
             return {"mapped": False, "reason": "no_assertions"}
         unsatisfied = [s for s in states if not s["ok"]]
+        excepted = [s for s in states if s.get("excepted")]
         return {"mapped": True, "total": len(states),
                 "satisfied": len(states) - len(unsatisfied),
                 "unsatisfied": unsatisfied,
                 "manual_pending": sum(1 for s in states
                                       if s.get("manual") and not s["ok"]),
+                # 例外**计入未满足**，只是单独列出来让人看得见它是例外而不是
+                # 遗漏。excepted_invalid 指引用了一个不存在/已过期的例外——
+                # 那种连"登记例外"都算不上。
+                "excepted": excepted,
+                "excepted_invalid": sum(1 for s in excepted
+                                        if s.get("reason") != "excepted"),
                 "machine_complete": not unsatisfied,
                 "assertions": states}
 
