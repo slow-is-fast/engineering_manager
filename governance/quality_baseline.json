@@ -33,7 +33,7 @@
   },
   "test_thresholds": {
     "min_test_count": 269,
-    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 272（冷读复核 8 条 + 生产路径接入 T-GOV-01..20 + 演练编排 T-DRL-01..15 + excepted 档 2 条 + 治理引用完整性 T-REF-01..11 + 凭证域放行路径 T-CD-01..05 + §10.31 放行路径体检 6 条 T-GATE-01×2/T-CLM-01×2/T-GOV-20·21 + §10.31续 审计闭合守卫 T-AUD-CLS×3），下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
+    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 276（冷读复核 8 条 + 生产路径接入 T-GOV-01..20 + 演练编排 T-DRL-01..15 + excepted 档 2 条 + 治理引用完整性 T-REF-01..11 + 凭证域放行路径 T-CD-01..05 + §10.31 放行路径体检 6 条 T-GATE-01×2/T-CLM-01×2/T-GOV-20·21 + §10.31续 审计闭合守卫 T-AUD-CLS×3 + 本轮 executor pin 守卫 T-VD-PIN×4），下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
     "require_all_pass": true
   },
   "exceptions": [

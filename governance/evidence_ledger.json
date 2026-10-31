@@ -5,9 +5,9 @@
     "ISO-01"
   ],
   "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
-  "generated_at": "2026-10-31T18:00:16+0800",
+  "generated_at": "2026-10-31T22:12:39+0800",
   "generated_by": "slow-is-fast (Owner)",
-  "reason": "§10.31续 审计闭合放行路径体检：check_audit_closure.py --enforce 路径此前无守卫用例，补 T-AUD-CLS×3（test_unbacked_closure_rejected/test_stale_evidence_blocks_closure/test_open_issue_not_closure_violation），2 处 fail-open 变异(M1/M2) 0 逃逸；实际用例 269→272；新增证据 fail_open_audit_closure_20261031T175000Z.md",
+  "reason": "本轮 executor pin 放行路径体检闭环：verify_executor_pin.py 此前无本地守卫（test_executor_negative.py 只测 executor.* 运行期逻辑，不导入该校验脚本），补 T-VD-PIN×4（happy + tree/content/local 三处失败关闭点），3 处 fail-open 变异(M1/M2/M3) 0 逃逸；新增 evidence/fail_open_executor_pin_20261031T220000Z.md；报告 §8 如实修订为'9 项中 8 项已有守卫、仅本项为唯一真缺口已闭环'；质量基线备注实际 272→276",
   "items": [
     {
       "id": "evidence/acceptance_layer_20261030T153000Z.md",
@@ -118,6 +118,12 @@
       "created_at": 1793469000
     },
     {
+      "id": "evidence/fail_open_executor_pin_20261031T220000Z.md",
+      "sha256": "3a7fc11eb5c17df6129da50887fdefb8e80e236d455272d5386995d31fbf5c86",
+      "category": "evidence",
+      "created_at": 1793484000
+    },
+    {
       "id": "evidence/fail_open_health_check_20261031T183000Z.md",
       "sha256": "a837ca3ad8c5afb5bccf0463b457f5dd49c6a54e7b393a5b98d00aed819e36ff",
       "category": "evidence",
@@ -161,7 +167,7 @@
     },
     {
       "id": "evidence/overall_review_20261031T081500Z.md",
-      "sha256": "c859495570f72298f61fad4aa4fcee5ee4ac0ed62dac127009d084da2d3a9188",
+      "sha256": "bd5f6201f9c37cf95579fd7898270f859944136e479b4b9ddda44b1742fe1695",
       "category": "evidence",
       "created_at": 1793434500
     },

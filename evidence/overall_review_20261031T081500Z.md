@@ -126,7 +126,15 @@
 2. ~~**规则层状态复核**~~ 已完成，见 §10.30：`rule_status_participation: schema_only`。
 3. ~~**给剩下的检查补"有没有放行路径"的体检**~~ 高风险 3 项已完成，见 §10.31：
    GATE-01 / CLM-01 / GOV 证据验收共 15 处变异、0 逃逸，并补 6 条守卫用例。
-   其余 9 项必需检查（validate_controls、各 check_* 等）尚未过一遍，仍建议择机补。
+   经机器核验，其余 9 项里 8 项已有负向守卫：validate_controls→negative_static；
+   verify_credential_domain→test_credential_domain（T-CD-01..05）；
+   verify_evidence_freshness→test_evidence_freshness（T-RVF-01）；
+   verify_ci_app_binding / verify_test_floor / verify_quality_baseline→test_baseline_negative；
+   check_governance_refs→test_governance_refs（T-REF-02..11）；negative_static 自身即测试。
+   **唯一真缺口 verify_executor_pin.py 已于本轮补全**：补 4 条守卫用例
+   （test_happy_path_passes / test_tree_mismatch_rejected / test_content_hash_mismatch_rejected
+   / test_local_vendor_mismatch_rejected）+ 3 处 fail-open 变异 0 逃逸，详见
+   `evidence/fail_open_executor_pin_20261031T220000Z.md`。至此 13 项必需检查放行路径体检全部覆盖。
 4. 之后才是继续补断言：剩下的 21 条 manual 是硬约束，不是工作量问题。
 
 ---
