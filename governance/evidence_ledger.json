@@ -5,9 +5,9 @@
     "ISO-01"
   ],
   "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
-  "generated_at": "2026-10-31T15:07:55+0800",
+  "generated_at": "2026-10-31T16:07:30+0800",
   "generated_by": "slow-is-fast (Owner)",
-  "reason": "§10.27 治理引用完整性检查的证据文档：T-REF-01..11 用例、12/12 变异检验明细、豁免清单收紧、首次运行报出的 EXC-01 到期日不一致",
+  "reason": "§10.28 控制层补齐证据：六条 §14 条款、RTN/PRV/RCV/RSR/EVL/DRL 六条控制、断言层 target 更正三处、§12.2 统计表失真更正、4/4 变异",
   "items": [
     {
       "id": "evidence/acceptance_layer_20261030T153000Z.md",
@@ -62,6 +62,12 @@
       "sha256": "5f3fa2d239e0a89673144f6da23c51895a345307dd30ce30976e746e4c81b667",
       "category": "evidence",
       "created_at": 1793397000
+    },
+    {
+      "id": "evidence/control_layer_20261031T073500Z.md",
+      "sha256": "1659436d32994a1a56bbd1d97de86d14b43dca320febeb12173c8284e67706c3",
+      "category": "evidence",
+      "created_at": 1793432100
     },
     {
       "id": "evidence/cred01_20261030T133000Z.md",
