@@ -5,9 +5,9 @@
     "ISO-01"
   ],
   "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
-  "generated_at": "2026-10-31T16:49:46+0800",
+  "generated_at": "2026-10-31T16:54:00+0800",
   "generated_by": "slow-is-fast (Owner)",
-  "reason": "发现7处置：凭证域检查改为失败关闭（能写控制面即判红，不再 INFO 假绿），新增 T-CD-01..05 用例与 6 处变异检验(0逃逸)；整体复核报告(§11)二次编辑补充累计变异与待决策项",
+  "reason": "§10.30 规则层 status 声明为非约束性字段（schema_only）；整体复核报告(§11)划掉规则层状态待决策项 + 二次编辑补充发现7处置与累计变异",
   "items": [
     {
       "id": "evidence/acceptance_layer_20261030T153000Z.md",
@@ -149,7 +149,7 @@
     },
     {
       "id": "evidence/overall_review_20261031T081500Z.md",
-      "sha256": "507e5e096347886514e4aa474c74c29a6e57adaabb2cc5397018201c156af3f8",
+      "sha256": "f513e6e4d3c6e0f5efef74592ad0da2e87f9c59c080ae7efeea47c976ada259d",
       "category": "evidence",
       "created_at": 1793434500
     },
@@ -176,6 +176,12 @@
       "sha256": "c3c059933a748fd9efb08e0df4c1f27de1c1e12d244782e481bce8051ac0d74a",
       "category": "evidence",
       "created_at": 1793301000
+    },
+    {
+      "id": "evidence/rule_status_20261031T165000Z.md",
+      "sha256": "9584f46bea51a7ab52ce1648b464e038e070403c27aaa8d794a513ec1d11604b",
+      "category": "evidence",
+      "created_at": 1793465400
     },
     {
       "id": "evidence/runtime_drill2_20261029T150500Z.md",

@@ -2,6 +2,8 @@
   "version": "1.1.1",
   "schema": "AASEGS v1.1.1 §1",
   "source_document": "AASEGS_v1.1.1_实施完整性修订版.md",
+  "rule_status_participation": "schema_only",
+  "rule_status_note": "规则层 status 仅由 validate_controls.py 做结构校验（键集与布尔类型），不参与任何门禁判定。权威执行信号来自 control-catalog.state 与 §四 验收矩阵。因此规则层 status 不按规则逐条维护——历史默认 documented=true 不反映真实执行状态，不得被读作该规则『是否已落地』的证据。需要规则级执行状态时，应查其 enforcement.controls 指向的控制条目（state 才是会被校验与门禁的依据）。",
   "rules": [
     {
       "rule_id": "GOV-01",
