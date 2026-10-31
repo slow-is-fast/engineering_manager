@@ -39,6 +39,7 @@ from executor.remote import RemoteGateway, RemoteRejected, MANUAL
 from executor.auditlifecycle import (ProvenanceRegistry, RetentionPolicy,
                                      recover, LifecycleRejected)
 from executor.audit import GENESIS
+from executor.datagate import DataGate, DataGateRejected
 from datetime import date
 
 from executor.checkpoint import (CheckpointStore, BaselineChanged,
@@ -2414,6 +2415,205 @@ class AuditLifecycleTests(unittest.TestCase):
                                 "source": "executor"}])["ok"])
         # 只有当它越出该来源的事件类型范围时才露馅
         self.assertFalse(self._reg().check([forged])["ok"])
+
+
+class DataGateTests(unittest.TestCase):
+    """AUD-016-03：删除后再现、超期保留、未经批准的数据传输。"""
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aasegs-dg-"))
+        self.audit_path = self.tmp / "audit.jsonl"
+        self.g = DataGate(self.audit_path)
+        self.audit = AuditLog(self.audit_path)
+
+    # ---- 正向对照 ----
+    def test_T_DG_01_live_item_readable(self):
+        self.g.put("i-1", "内容", "invoice")
+        got = self.g.get("i-1")
+        self.assertEqual(got["state"], "LIVE")
+        self.assertEqual(got["content"], "内容")
+
+    # ---- 删除后再现 ----
+    def test_T_DG_02_deleted_item_returns_tombstone_without_content(self):
+        self.g.put("i-1", "敏感内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        got = self.g.get("i-1")
+        self.assertEqual(got["state"], "TOMBSTONE")
+        self.assertNotIn("content", got)
+        # 源头的确清掉了，不只是改了标记
+        self.assertIsNone(self.g.items["i-1"]["content"])
+
+    def test_T_DG_03_silent_reentry_rejected(self):
+        """删掉之后换个方式重新入库 = 删除形同虚设。必须走显式 resurrect。"""
+        self.g.put("i-1", "内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.put("i-1", "换皮回来", "invoice")
+        self.assertIn("resurrect requires explicit approval", str(ctx.exception))
+
+    def test_T_DG_04_resurrect_requires_approval(self):
+        self.g.put("i-1", "内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.resurrect("i-1", "x", "invoice", {})
+        self.assertIn("requires an approver", str(ctx.exception))
+
+    def test_T_DG_05_same_approver_cannot_delete_and_resurrect(self):
+        """同一人既能批删又能批准恢复，等于一个人就能让删除失效。"""
+        self.g.put("i-1", "内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.resurrect("i-1", "x", "invoice", {"approver": "owner"})
+        self.assertIn("same approver", str(ctx.exception))
+
+    def test_T_DG_06_two_person_resurrect_accepted(self):
+        """正向对照：换了批准人就允许——别做成永远拒绝。"""
+        self.g.put("i-1", "内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        r = self.g.resurrect("i-1", "新内容", "invoice",
+                             {"approver": "security"})
+        self.assertEqual(r["state"], "LIVE")
+        self.assertEqual(self.g.get("i-1")["content"], "新内容")
+
+    def test_T_DG_07_delete_requires_approval(self):
+        self.g.put("i-1", "内容", "invoice")
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.delete("i-1", None)
+        self.assertIn("requires an approver", str(ctx.exception))
+
+    def test_T_DG_08_redundant_delete_rejected(self):
+        """重复删除本该是空操作，但"允许"会把原批准人顶掉：
+        A 批删 → B 再删一次 → A 批恢复，双人隔离就没了。宁可拒绝。
+        """
+        self.g.put("i-1", "内容", "invoice")
+        self.g.delete("i-1", {"approver": "owner"})
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.delete("i-1", {"approver": "attacker"})
+        self.assertIn("already deleted", str(ctx.exception))
+        self.assertEqual(self.g.tombstones["i-1"]["approver"], "owner")
+
+    def test_T_DG_09_unknown_item_rejected(self):
+        with self.assertRaises(DataGateRejected):
+            self.g.get("ghost")
+
+    # ---- 超期保留（复用 RetentionPolicy）----
+    def test_T_DG_10_expired_retention_flagged(self):
+        self.g.retention.declare("invoice", 30)
+        self.g.put("i-1", "老发票", "invoice",
+                   created_at=time.time() - 40 * 86400)
+        out = self.g.sweep_retention()
+        self.assertEqual([x["verdict"] for x in out], ["EXPIRED"])
+
+    def test_T_DG_11_undeclared_category_flagged(self):
+        self.g.retention.declare("invoice", 30)
+        self.g.put("i-1", "随手放的", "misc")
+        self.assertEqual(self.g.sweep_retention()[0]["verdict"], "UNDECLARED")
+
+    # ---- 未经批准的传输 ----
+    def test_T_DG_12_undeclared_destination_rejected(self):
+        self.g.put("i-1", "内容", "invoice")
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.transfer(["i-1"], "personal-bucket", {"approver": "owner"})
+        self.assertIn("undeclared destination", str(ctx.exception))
+
+    def test_T_DG_13_transfer_without_approval_rejected(self):
+        self.g.put("i-1", "内容", "invoice")
+        self.g.declare_destination("s3")
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.transfer(["i-1"], "s3")
+        self.assertIn("requires an approver", str(ctx.exception))
+
+    def test_T_DG_14_self_approved_transfer_rejected(self):
+        self.g.put("i-1", "内容", "invoice")
+        self.g.declare_destination("s3")
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.transfer(["i-1"], "s3", {"approver": "bob"},
+                            requester="bob")
+        self.assertIn("cannot approve own transfer", str(ctx.exception))
+
+    def test_T_DG_15_transfer_uses_same_exit_as_read(self):
+        """传输复用 get 这条出口：删过的东西在任何出口都出不去。
+
+        单独给导出开一条路，是"删除后再现"最常见的成因。
+        """
+        self.g.put("i-1", "内容", "invoice")
+        self.g.declare_destination("s3")
+        self.g.delete("i-1", {"approver": "owner"})
+        with self.assertRaises(DataGateRejected) as ctx:
+            self.g.transfer(["i-1"], "s3", {"approver": "owner"},
+                            requester="bob")
+        self.assertIn("non-live item", str(ctx.exception))
+
+    def test_T_DG_16_approved_transfer_accepted(self):
+        self.g.put("i-1", "内容", "invoice")
+        self.g.declare_destination("s3")
+        r = self.g.transfer(["i-1"], "s3", {"approver": "owner"},
+                            requester="bob")
+        self.assertEqual(r["count"], 1)
+        ev = self.audit.read("datagate.transferred")
+        self.assertEqual(len(ev), 1)
+        self.assertEqual(ev[0]["source"], "datagate")
+
+    def test_T_DG_17_opt_out_destination_still_must_be_declared(self):
+        """`requires_approval=False` 是登记时治理决定，不能事后偷偷加。
+
+        正向对照：显式登记的免审批目的地可以传；但它仍然**必须先登记**。
+        """
+        self.g.put("i-1", "内容", "invoice")
+        self.g.declare_destination("internal-log", requires_approval=False)
+        self.assertEqual(self.g.transfer(["i-1"], "internal-log")["count"], 1)
+        with self.assertRaises(DataGateRejected):
+            self.g.transfer(["i-1"], "another-internal-log")
+
+    # ---- 场景：三件事走完一遍（ref 指向这条）----
+    def test_T_DG_18_retention_deletion_transfer_in_one_lifecycle(self):
+        """AUD-016-03 覆盖删除后再现 + 超期保留 + 未经批准传输三件事，而
+        验收矩阵每条断言的 `ref` 只能指一条用例。T-DG-02..17 各自只测一件，
+        指过去会丢掉另外两件——补一条在同一批数据上走完三者的场景用例。
+        """
+        self.g.retention.declare("invoice", 30)
+        self.g.declare_destination("s3")
+
+        # ① 超期保留：40 天前的发票必须被点出来
+        self.g.put("i-old", "老发票", "invoice",
+                   created_at=time.time() - 40 * 86400)
+        verdicts = [x["verdict"] for x in self.g.sweep_retention()]
+        self.assertEqual(verdicts, ["EXPIRED"])
+
+        # ② 删除后再现：删掉之后读不出内容，也传不出去
+        self.g.delete("i-old", {"approver": "owner", "reason": "超过保留期"})
+        gone = self.g.get("i-old")
+        self.assertEqual(gone["state"], "TOMBSTONE")
+        # 断言到"不含内容"而不只是"状态是 TOMBSTONE"：只断言状态的话，
+        # "标记为已删但内容还留着"这种变异这条用例看不出来（实测确实没看出来）
+        self.assertNotIn("content", gone)
+        self.assertIsNone(self.g.items["i-old"]["content"])
+        with self.assertRaises(DataGateRejected):
+            self.g.transfer(["i-old"], "s3", {"approver": "owner"},
+                            requester="bob")
+
+        # ③ 未经批准的传输：活数据搬到没登记的目的地也不行
+        self.g.put("i-new", "新发票", "invoice")
+        with self.assertRaises(DataGateRejected):
+            self.g.transfer(["i-new"], "nowhere", {"approver": "owner"})
+        self.assertEqual(self.g.transfer(["i-new"], "s3",
+                                         {"approver": "owner"},
+                                         requester="bob")["count"], 1)
+
+    # ---- 诚实边界 ----
+    def test_T_DG_19_transferred_copy_survives_source_deletion(self):
+        """这条断言的是"**管不到**"，不是"管得到"。
+
+        数据一旦交出去，删源端并不能让那边的副本消失——本模块管的是**自己
+        的数据平面行为**，管不到已经离开本系统的副本（对端留存、下游缓存、
+        已发出的导出产物）。写成用例是为了防止后来者误以为"删了就干净了"。
+        """
+        self.g.put("i-1", "敏感内容", "invoice")
+        self.g.declare_destination("s3")
+        handed_out = self.g.get("i-1")["content"]
+        self.g.transfer(["i-1"], "s3", {"approver": "owner"}, requester="bob")
+        self.g.delete("i-1", {"approver": "owner"})
+        self.assertEqual(handed_out, "敏感内容")     # 副本仍在
+        self.assertIsNone(self.g.items["i-1"]["content"])   # 源端已清
 
 
 if __name__ == "__main__":

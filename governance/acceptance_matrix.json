@@ -508,9 +508,10 @@
         },
         {
           "id": "AUD-016-03",
-          "kind": "unimplemented",
+          "kind": "test",
           "target": "ISO-01",
-          "text": "删除后再现、超期保留、未经批准的数据传输"
+          "text": "删除后再现、超期保留、未经批准的数据传输：真删 + tombstone 且读/导出/传输复用同一出口，显式 resurrect 需批准且批准人不得是删除批准人，重复删除被拒以免顶掉批准人；超期与未登记保留期类别被点出；目的地须先登记、批准人不得是发起者",
+          "ref": "test_T_DG_18_retention_deletion_transfer_in_one_lifecycle"
         },
         {
           "id": "AUD-016-04",

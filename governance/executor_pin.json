@@ -3,16 +3,16 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "c87a46b1c33b6eaca2a7647d5d936083f541d179",
-  "tree_sha": "22a05bd8026ef9b561844317d911ea68ce7b547a",
-  "content_hash_sha256": "8c0d6d381d71df56bf2f6f173045c80aefd135704fa395efb6c64bb0c99a5bee",
+  "commit_sha": "376308122058aee46a583d9a72e99abd47c59952",
+  "tree_sha": "036d54e08b72538143fa10ca7172e8f04214bf9c",
+  "content_hash_sha256": "c9a812aababb49112ee196f2dd2e44c3a8b2ae4d704540f262a622dd3060449c",
   "content_hash_scheme": "for each file under executor/ sorted by posix relpath: sha256(relpath + '\\n' + raw_bytes), concatenated",
-  "pinned_at": "2026-10-31T07:22:54+08:00",
+  "pinned_at": "2026-10-31T08:48:08+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "73c77322c8d7b808fc489b92f7d831342fc61f52",
-    "content_hash_sha256": "cae97b37bf6ebdab1b2ed172148a94092484553167d696064c75dbd9bab69753"
+    "commit_sha": "c87a46b1c33b6eaca2a7647d5d936083f541d179",
+    "content_hash_sha256": "8c0d6d381d71df56bf2f6f173045c80aefd135704fa395efb6c64bb0c99a5bee"
   },
-  "bump_reason": "ALC-01 新增 executor/auditlifecycle.py：AUD-014-03 保留策略（未登记类别不得无限保留、删除须批准）、伪造来源识别（缺失/未登记/类型越界/seq 回退）、恢复（截断或篡改后取回最后可信前缀且 dropped 原样交出）；控制面用例 109→128（T-ALC-01..19），16 个变异全部捕获、0 逃逸"
+  "bump_reason": "DG-01 新增 executor/datagate.py：AUD-016-03 删除后再现（真删 + tombstone，读/导出/传输共用同一出口；显式 resurrect 需批准且批准人不得是删除批准人；重复删除被拒以免顶掉批准人）、超期保留（复用 RetentionPolicy）、未经批准的传输（目的地须先登记 + 自批隔离）；控制面用例 128→147（T-DG-01..19），16 个变异全部捕获、0 逃逸"
 }
