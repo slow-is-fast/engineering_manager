@@ -5,7 +5,7 @@
   "purpose": "项目级受保护质量基线。基线不是「当前状态快照」，而是**经独立审查后批准的下限**：任何一项被下调都必须重新走审批，不能跟着代码一起悄悄改。",
   "baseline_version": "1",
   "reviewed_by": "slow-is-fast (Owner)",
-  "reviewed_at": "2026-10-31T14:39:34+08:00",
+  "reviewed_at": "2026-10-31T15:01:46+08:00",
   "applies_to_sha": "dbbc3acc172e8ca26f20fd4dd189cb7ecf578328",
   "required_checks": [
     "scripts/validate_controls.py",
@@ -19,7 +19,8 @@
     "scripts/check_claims.py",
     "scripts/verify_ci_app_binding.py",
     "scripts/verify_test_floor.py",
-    "scripts/verify_quality_baseline.py"
+    "scripts/verify_quality_baseline.py",
+    "scripts/check_governance_refs.py"
   ],
   "trusted_ci_sources": [
     "github-actions (workflow: governance, repo: slow-is-fast/engineering_manager)",
@@ -31,15 +32,15 @@
     "pinned_tree": "64f7d421ee0a6aad7963a2b3dc97f103e206d8b2"
   },
   "test_thresholds": {
-    "min_test_count": 247,
-    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 247（冷读复核 8 条 + 生产路径接入 T-GOV-01..20 + 演练编排 T-DRL-01..15 + excepted 档 2 条），下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
+    "min_test_count": 258,
+    "min_test_count_note": "tests/**/*.py 的 def test_* / async def test_* 与 tests/negative_static.py 的 T_XXX_ 之和（AST 统计）。删除验收测试即触发失败（PR #2 演练的常态化版本）。当前实际 258（冷读复核 8 条 + 生产路径接入 T-GOV-01..20 + 演练编排 T-DRL-01..15 + excepted 档 2 条 + 治理引用完整性 T-REF-01..11），下限已对齐实际值——**删除余量为 0**：任何一条用例消失都会红。新增用例不受此限（防退化，不防进步）。",
     "require_all_pass": true
   },
   "exceptions": [
     {
       "id": "EXC-01",
       "scope": "第二人类主体 / 独立 Reviewer 不可达（单人开发者）",
-      "expires": "2027-04-30"
+      "expires": "2027-01-31"
     },
     {
       "id": "EXC-02",

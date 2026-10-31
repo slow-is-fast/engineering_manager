@@ -96,6 +96,16 @@ jobs:
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
         run: python scripts/gov_run.py --check scripts/check_claims.py
 
+      # T-REF-01：治理引用完整性——字段里写的编号必须真的解析得到。
+      # 2026-10-31 发现 ALC-01 / DG-01 / REM-01 / REM-02 被写进 commit message、
+      # audit_policy.json 的 control 字段、CI 步骤名，而它们在 rule-registry(53)
+      # 与 control-catalog(49) 里都不存在。看起来像控制编号、实际查不到的东西，
+      # 比没有编号更糟——它制造"这条已经被某条控制管住了"的错觉。
+      # validate_controls.py 只校验注册表与控制目录之间的双向一致性，不扫引用
+      # 方；这条补的正是引用方那一半。
+      - name: "T-REF-01 governance reference integrity (no invented IDs)"
+        run: python scripts/gov_run.py --check scripts/check_governance_refs.py
+
       # GATE-01：成熟度/风险等级准入判定。CI 采用防退化下限而非"必须达标 G2"：
       # 下限是 Owner 实际达到并批准的最低等级。报告里 DENY 是门槛的正确结论
       # （当前账本不满足更高等级是事实），不算失败；跌破 G1（输入损坏/事实源
