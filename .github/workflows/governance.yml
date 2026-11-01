@@ -93,6 +93,13 @@ jobs:
       - name: "T-QA-04 quality baseline complete and not drifted"
         run: python scripts/gov_run.py --check scripts/verify_quality_baseline.py
 
+      # T-QA-04b：注册 <-> 执行 双向闭合。2026-11-01 事故：required_checks
+      # 15 项而 workflow 只有 13 个 --check 步骤，本地 suite 全绿毫无感知，
+      # 推送后才被 --verify 拦下。本步骤把检测前移到本地/CI 同一步：
+      # 注册了但没接线、接线了但没注册、步骤指向不存在的文件，一律红。
+      - name: "T-QA-04b required checks wired in CI (bidirectional)"
+        run: python scripts/gov_run.py --check scripts/verify_required_checks_wired.py
+
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
         run: python scripts/gov_run.py --check scripts/check_claims.py
 
