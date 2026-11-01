@@ -2,6 +2,7 @@
 """apply_signoffs 的失败关闭守卫 + dry-run/apply 行为。
 
 核心不变量：任一签署条目不合法 → 整批原子中止，不写任何字段、不改任何文件。
+含 #6 review-agent 绑定守卫（opt-in，环境变量 GOV_REVIEW_AGENT）。
 """
 import json
 import os
@@ -71,6 +72,16 @@ class ApplySignoffTests(unittest.TestCase):
             cmd += extra
         return subprocess.run(cmd, env=env, capture_output=True, text=True)
 
+    def _run_env(self, extra, env_extra, acting='slow-is-fast'):
+        env = dict(os.environ)
+        env['GOV_ACTING_IDENTITY'] = acting
+        env.update(env_extra)
+        cmd = [sys.executable, str(SCRIPT), '--signoffs', str(self.signoffs_path),
+               '--matrix', str(self.matrix_path)]
+        if extra:
+            cmd += extra
+        return subprocess.run(cmd, env=env, capture_output=True, text=True)
+
     def _matrix_after(self):
         return json.loads(self.matrix_path.read_text(encoding='utf-8'))
 
@@ -98,6 +109,9 @@ class ApplySignoffTests(unittest.TestCase):
         self.assertEqual(a['signoff']['date'], '2026-11-01')
         self.assertEqual(a['signoff']['ref'], str(self.ev))
         self.assertEqual(a['signoff']['applied_by'], 'bob')
+        # #6 审计增强字段
+        self.assertIn('review_agent', a['signoff'])
+        self.assertIn('flipped_at', a['signoff'])
 
     # ---- 失败关闭：各类非法条目整批中止 ----
     def test_self_sign_aborts(self):
@@ -168,7 +182,7 @@ class ApplySignoffTests(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         # 合法那条也不该被写（原子）
         self.assertNotIn('signoff',
-                          self._matrix_after()['issues']['AUD-001']['assertions'][1])
+                         self._matrix_after()['issues']['AUD-001']['assertions'][1])
 
     # ---- 空 jsonl ----
     def test_empty_signoffs_exits_clean(self):
@@ -183,6 +197,44 @@ class ApplySignoffTests(unittest.TestCase):
             _valid_entry('AUD-001-03', self.ev), 'slow-is-fast', self.matrix)[0])
         self.assertFalse(app.validate_entry(
             _valid_entry('AUD-001-03', self.ev, reviewer='x'), 'x', self.matrix)[0])
+
+    # ---- #6 review-agent 绑定（opt-in via GOV_REVIEW_AGENT） ----
+    def test_review_agent_opt_in_disabled_keeps_old_behavior(self):
+        # 不设 GOV_REVIEW_AGENT：维持原行为，--by 任意值即可
+        self._write_signoffs([_valid_entry('AUD-001-03', self.ev)])
+        r = self._run_env(['--apply', '--by', 'bob'], {})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('CLOSED', r.stdout)
+
+    def test_review_agent_binding_ok(self):
+        # GOV_REVIEW_AGENT 设置且 --by 匹配、且 ≠ 作者：翻转成功
+        self._write_signoffs([_valid_entry('AUD-001-03', self.ev)])
+        r = self._run_env(
+            ['--apply', '--by', 'reviewbot'],
+            {'GOV_REVIEW_AGENT': 'reviewbot', 'GOV_AUTHOR_IDENTITY': 'hy3'})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        m = self._matrix_after()
+        a = [x for x in m['issues']['AUD-001']['assertions']
+             if x['id'] == 'AUD-001-03'][0]
+        self.assertEqual(a['signoff']['review_agent'], 'reviewbot')
+
+    def test_review_agent_binding_executor_mismatch_aborts(self):
+        # --by 不等于 GOV_REVIEW_AGENT：拒绝
+        self._write_signoffs([_valid_entry('AUD-001-03', self.ev)])
+        r = self._run_env(
+            ['--apply', '--by', 'bob'],
+            {'GOV_REVIEW_AGENT': 'reviewbot'})
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('executor_not_review_agent', r.stdout)
+
+    def test_review_agent_is_author_rejected(self):
+        # review-agent 与作者身份相同：拒绝（防自批）
+        self._write_signoffs([_valid_entry('AUD-001-03', self.ev)])
+        r = self._run_env(
+            ['--apply', '--by', 'reviewbot'],
+            {'GOV_REVIEW_AGENT': 'reviewbot', 'GOV_AUTHOR_IDENTITY': 'reviewbot'})
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('review_agent_is_author', r.stdout)
 
 
 if __name__ == '__main__':

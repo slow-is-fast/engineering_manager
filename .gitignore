@@ -6,6 +6,8 @@ evidence/audit/
 __pycache__/
 *.pyc
 pm/
+# caretaker 的快照状态文件：运行产物，不入版本库（见 scripts/matrix_caretaker.py）
+.caretaker_state.json
 *.epub
 *.mobi
 *.azw3

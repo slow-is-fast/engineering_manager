@@ -12,6 +12,10 @@
 - 默认 dry-run：只报告"哪些断言会被标记 closed、哪些条目非法（含原因）"，不触碰文件。
 - `--apply` 才改写矩阵，且必须带 `--by`（谁执行了本次 apply，记入审计）。改写后由
   人类提交；本工具不自动 commit。
+- **#6 自动翻绑定（opt-in）**：若设置环境变量 `GOV_REVIEW_AGENT`，则 `--by` 必须
+  等于该 review-agent 身份，且其不得等于作者身份 `GOV_AUTHOR_IDENTITY`（落实
+  `owner_designations.md` #6 的「执行者=review-agent 且 ≠ author」与防自批守卫）。
+  未设置时维持原行为，向后兼容。
 
 用法：
   python scripts/apply_signoffs.py                # dry-run，基于默认路径
@@ -57,6 +61,22 @@ def _find_assertion(matrix, assertion_id):
     return None, None
 
 
+def check_review_agent_binding(by):
+    """#6 自动翻逻辑：把「翻断言」的执行者绑定到指定的独立 review-agent。
+    仅当 GOV_REVIEW_AGENT 环境变量被设置时启用（opt-in），未设置则维持
+    原有行为，避免破坏既有调用与测试。返回 (ok, reason)。
+    """
+    review_agent = os.environ.get('GOV_REVIEW_AGENT')
+    if not review_agent:
+        return True, 'opt_in_disabled'
+    if by != review_agent:
+        return False, 'executor_not_review_agent'
+    author = os.environ.get('GOV_AUTHOR_IDENTITY')
+    if author and by == author:
+        return False, 'review_agent_is_author'
+    return True, 'ok'
+
+
 def validate_entry(entry, acting, matrix):
     """返回 (is_valid, reason)。任何不合法都导致整批中止。"""
     assertion_id = entry.get('assertion_id') or ''
@@ -90,6 +110,7 @@ def validate_entry(entry, acting, matrix):
 
 def build_signoff_field(entry, by):
     reviewed_at = entry.get('reviewed_at') or ''
+    ts = datetime.now(timezone(timedelta(hours=8))).isoformat()
     return {
         'by': entry.get('reviewer'),
         'role': entry.get('role'),
@@ -97,7 +118,10 @@ def build_signoff_field(entry, by):
         'date': reviewed_at[:10],
         'signature': entry.get('signature'),
         'applied_by': by,
-        'applied_at': datetime.now(timezone(timedelta(hours=8))).isoformat(),
+        'applied_at': ts,
+        # #6 审计增强：把翻转绑定到独立 review-agent 身份，并记录翻转时间。
+        'review_agent': os.environ.get('GOV_REVIEW_AGENT') or by,
+        'flipped_at': ts,
     }
 
 
@@ -114,7 +138,12 @@ def plan(matrix, entries, acting):
     return will_close, invalid
 
 
-def dry_run(matrix, entries, acting):
+def dry_run(matrix, entries, acting, by=None):
+    if by:
+        ok, reason = check_review_agent_binding(by)
+        if not ok:
+            print(f'ABORT(apply_signoffs): review-agent 绑定校验失败：{reason}')
+            return 2
     will_close, invalid = plan(matrix, entries, acting)
     print(f'DRY-RUN: {len(entries)} 条签署条目，{len(will_close)} 条可闭合，'
           f'{len(invalid)} 条非法')
@@ -129,6 +158,10 @@ def dry_run(matrix, entries, acting):
 
 
 def apply(matrix_path, matrix, entries, acting, by):
+    ok, reason = check_review_agent_binding(by)
+    if not ok:
+        print(f'ABORT(apply_signoffs): review-agent 绑定校验失败：{reason}')
+        return 2
     will_close, invalid = plan(matrix, entries, acting)
     if invalid:
         print(f'ABORT(apply_signoffs): {len(invalid)} 条非法签署，整批中止，未改动文件：')
@@ -177,7 +210,7 @@ def main() -> None:
             sys.exit('FAIL(apply_signoffs): --apply 必须带 --by（谁执行了本次 apply）')
         sys.exit(apply(matrix_path, matrix, entries, args.acting, args.by))
     else:
-        sys.exit(dry_run(matrix, entries, args.acting))
+        sys.exit(dry_run(matrix, entries, args.acting, by=args.by))
 
 
 if __name__ == '__main__':
