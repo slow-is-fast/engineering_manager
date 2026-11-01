@@ -49,6 +49,7 @@
     "scripts/verify_quality_baseline.py": [[]],
     "scripts/verify_required_checks_wired.py": [[]],
     "scripts/verify_exception_expiry.py": [[]],
+    "scripts/export_owner_worklist.py": [["--check"]],
     "scripts/check_governance_refs.py": [[]],
     "scripts/check_control_refs.py": [[]],
     "scripts/matrix_caretaker.py": [[]]

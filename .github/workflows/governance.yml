@@ -107,6 +107,13 @@ jobs:
       - name: "T-EXP-01 exception expiry (expired exceptions fail closed)"
         run: python scripts/gov_run.py --check scripts/verify_exception_expiry.py
 
+      # T-OWN-01：Owner 工作清单必须与矩阵同步。清单的全部价值在于"照着做能闭合"，
+      # 矩阵变了清单没变，它就从工具变成陷阱（显示未签其实已签、或反之）。
+      # 注意 check_args 配的是 [["--check"]]——不带 --check 会跑成生成模式，
+      # 每次都改写文件且永远绿，那是典型的假绿。
+      - name: "T-OWN-01 owner worklist matches matrix (projection in sync)"
+        run: python scripts/gov_run.py --check scripts/export_owner_worklist.py
+
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
         run: python scripts/gov_run.py --check scripts/check_claims.py
 
