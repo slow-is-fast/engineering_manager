@@ -31,20 +31,20 @@
 1. **读记忆**：`.workbuddy/memory/` 最新日志 + `GLOSSARY.md` 对齐用词 → 对齐上下文与未决项。
 2. **基线确认**：逐项跑本次触达的 required_checks（`python scripts/gov_run.py --check <路径>`）。注意 `--all` 在本地**必红**于 `verify_credential_domain`（T-VD-01b 设计内不可判定：人类 PAT 横跨两域），那不是回归；**"本地全绿"的正确定义 = 除该检查外 15 项全绿，加上 CI 里 16 项全绿**。
 3. **改动**：同一文件的多次 Edit 必须**串行**（并行会基于同一快照互相覆盖，工具报成功但改动丢失）；改完 `grep` **双向核对**——该在的在、不该多的没有（`grep -c` 计数）。
-4. **门禁复验**：全套件（当前 355 tests ≥ floor 355，`discover -s tests -p "test_*.py"`）+ 本次触达的检查脚本；`gov_run --check` 的退出码要单独取（`echo $?`/`PIPESTATUS`，不要被管道尾命令吃掉）。
+4. **门禁复验**：全套件（当前 358 tests ≥ floor 358，`discover -s tests -p "test_*.py"`）+ 本次触达的检查脚本；`gov_run --check` 的退出码要单独取（`echo $?`/`PIPESTATUS`，不要被管道尾命令吃掉）。
 5. **提交**：显式 `git add <路径列表>` → commit；正文含反引号/特殊字符一律用 `git commit -F - <<'EOF' … EOF`，不拼在命令行参数里。
 6. **留痕**：`.workbuddy/memory/当日.md` 追加（append-only，不覆写）。
 
 ## 3. 断言关闭流程（manual → closed；Agent 只能走到第 3 步）
 
 1. 证据落盘 `evidence/` 并登记（`gov_run --accept-evidence --by … --reason …`）。
-2. `record_signoff.py --assertion-id … --reviewer <独立主体> --role {independent-reviewer|owner|security-owner} --verdict approved --evidence <路径> --basis <≥10 字>`——防自签：reviewer ≠ `GOV_ACTING_IDENTITY`；证据哈希当场存证。
+2. `record_signoff.py --assertion-id … --reviewer <独立主体> --role {independent-reviewer|owner|security-owner} --verdict approved --evidence <路径> --basis <≥10 字>`——防自签：reviewer ≠ `GOV_ACTING_IDENTITY`（若你本人就是默认值 `slow-is-fast`，跑命令前先 `export GOV_ACTING_IDENTITY=agent-runner`）；证据哈希当场存证。**不得手写 `signoffs.jsonl`**：每行带 `signature`，`apply_signoffs` 会重算校验，缺签名或事后改任何字段 → `signature_missing` / `signature_mismatch` 整批中止（完整性校验，非密码学防伪）。
 3. `apply_signoffs.py --dry-run`（投影 diff 给 Owner）→ Owner 确认 → `--apply --by <执行者>`。守卫：任一条目非法（self_sign / bad_role / not_approved / unknown_assertion / not_manual / no_evidence / evidence_hash_mismatch）→ **整批原子中止**。#6 自动翻绑定（opt-in）：设 `GOV_REVIEW_AGENT` 后 `--by` 必须等于它且 ≠ `GOV_AUTHOR_IDENTITY`，否则中止（`executor_not_review_agent` / `review_agent_is_author`）。
 4. **人工** review 并 commit 矩阵改动（本工具不自动 commit）。**矩阵一改就重生成清单**：`python scripts/export_owner_worklist.py`——`T-OWN-01` 会比对，忘了就红（清单与矩阵不一致时以矩阵为准）。
 
 ## 4. 机器检查点（你的提交会被这些拦）
 
-- **18 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin`(T-VD-01) / `verify_credential_domain`(T-VD-01b，**本地必红属设计内**：人类 PAT 横跨两域不可判定) / `verify_test_floor`(T-QA-02, floor 355) / `verify_quality_baseline`(T-QA-04) / `verify_required_checks_wired`(T-QA-04b) / `verify_exception_expiry`(T-EXP-01，**例外到期即红**) / `export_owner_worklist`(T-OWN-01，`--check` 模式) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
+- **18 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin`(T-VD-01) / `verify_credential_domain`(T-VD-01b，**本地必红属设计内**：人类 PAT 横跨两域不可判定) / `verify_test_floor`(T-QA-02, floor 358) / `verify_quality_baseline`(T-QA-04) / `verify_required_checks_wired`(T-QA-04b) / `verify_exception_expiry`(T-EXP-01，**例外到期即红**) / `export_owner_worklist`(T-OWN-01，`--check` 模式) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
 - **接线三条腿必须同时成立**（2026-11-01 两次事故的沉淀，由 T-QA-04b 钉住）：
   1. **注册** —— 在 `quality_baseline.required_checks` 里；
   2. **执行** —— 在 `.github/workflows/*.yml` 里有 `gov_run.py --check <path>` 步骤；

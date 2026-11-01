@@ -5,6 +5,7 @@
 含 #6 review-agent 绑定守卫（opt-in，环境变量 GOV_REVIEW_AGENT）。
 """
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts' / 'apply_signoffs.py'
 sys.path.insert(0, str(ROOT / 'scripts'))
 import apply_signoffs as app  # noqa: E402
-from record_signoff import _ev_hash  # noqa: E402
+from record_signoff import _ev_hash, _canon  # noqa: E402
 
 
 def _matrix_with(assertions_by_issue):
@@ -28,7 +29,9 @@ def _matrix_with(assertions_by_issue):
 
 def _valid_entry(assertion_id, evidence, reviewer='alice', role='independent-reviewer',
                 verdict='approved', reviewed_at='2026-11-01T10:00:00+08:00'):
-    return {
+    # 签名必须与 record_signoff 的真实算法一致——占位符会在 _verify_signature
+    # 处被判 signature_mismatch（2026-11-01 补的完整性校验）。
+    e = {
         'assertion_id': assertion_id,
         'reviewer': reviewer,
         'role': role,
@@ -37,8 +40,9 @@ def _valid_entry(assertion_id, evidence, reviewer='alice', role='independent-rev
         'evidence_hash': _ev_hash([str(evidence)]),
         'verdict': verdict,
         'basis': '抽样覆盖若干控制，结论一致',
-        'signature': 'sigplaceholder',
     }
+    e['signature'] = hashlib.sha256(_canon(e).encode('utf-8')).hexdigest()[:16]
+    return e
 
 
 class ApplySignoffTests(unittest.TestCase):
@@ -197,6 +201,38 @@ class ApplySignoffTests(unittest.TestCase):
             _valid_entry('AUD-001-03', self.ev), 'slow-is-fast', self.matrix)[0])
         self.assertFalse(app.validate_entry(
             _valid_entry('AUD-001-03', self.ev, reviewer='x'), 'x', self.matrix)[0])
+
+    # ---- 完整性签名（2026-11-01：字段算了却没人校验 = 手写可绕过） ----
+    def test_missing_signature_aborts(self):
+        e = _valid_entry('AUD-001-03', self.ev)
+        del e['signature']
+        self._write_signoffs([e])
+        r = self._run(['--apply', '--by', 'slow-is-fast'])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('signature_missing', r.stdout)
+
+    def test_tampered_basis_aborts(self):
+        # 事后改 basis（字段全合法）也必须被签名失配拦住
+        e = _valid_entry('AUD-001-03', self.ev)
+        e['basis'] = '事后改写成另一段说明'
+        self._write_signoffs([e])
+        r = self._run(['--apply', '--by', 'slow-is-fast'])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('signature_mismatch', r.stdout)
+
+    def test_handwritten_entry_cannot_bypass_record_signoff(self):
+        # 手写一行 JSONL（不经过 record_signoff）——签名算不出来就进不来。
+        # 注意：算得出哈希的人仍能伪造，这条拦的是"随手拼一行"，
+        # 不是密码学防伪（真实独立性靠 reviewer≠执行主体 + 人工 review commit）。
+        self._write_signoffs([{
+            'assertion_id': 'AUD-001-03', 'reviewer': 'alice',
+            'role': 'independent-reviewer', 'verdict': 'approved',
+            'evidence_refs': [str(self.ev)],
+            'evidence_hash': _ev_hash([str(self.ev)]),
+            'basis': '手写的一行，没有签名', 'reviewed_at': '2026-11-01T10:00:00+08:00'}])
+        r = self._run(['--apply', '--by', 'slow-is-fast'])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('signature_missing', r.stdout)
 
     # ---- #6 review-agent 绑定（opt-in via GOV_REVIEW_AGENT） ----
     def test_review_agent_opt_in_disabled_keeps_old_behavior(self):

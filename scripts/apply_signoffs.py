@@ -31,7 +31,8 @@ from pathlib import Path
 
 # 复用 record_signoff 的约束与哈希校验（导入安全：main 受 __main__ 保护）
 sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
-from record_signoff import INDEPENDENT_ROLES, _ev_hash  # noqa: E402
+from record_signoff import INDEPENDENT_ROLES, _ev_hash, _canon  # noqa: E402
+import hashlib  # noqa: E402
 
 DEFAULT_SIGNOFFS = Path(__file__).resolve().parents[1] / 'governance' / 'signoffs.jsonl'
 DEFAULT_MATRIX = Path(__file__).resolve().parents[1] / 'governance' / 'acceptance_matrix.json'
@@ -77,6 +78,32 @@ def check_review_agent_binding(by):
     return True, 'ok'
 
 
+def _verify_signature(entry):
+    """校验 record_signoff 写入的签名（防手写/防事后篡改）。
+
+    ## 这条校验补的是什么（2026-11-01）
+    `record_signoff` 一直会写 `signature = sha256(canon(entry 去签名))[:16]`，
+    但 `apply_signoffs` 从来没校验过它——字段算了就没人看。后果：任何人手写
+    一行 JSONL（reviewer 随意填、role 合法、verdict=approved、evidence_hash
+    按算法算出）就能翻断言，**整个签署流程可被绕过而不留痕**。这跟本规范
+    反复讲的"字段存在、语义清楚、无人执行"是同一类问题。
+
+    ## 它的边界（诚实声明）
+    这是**完整性**校验，不是密码学防伪：算法公开、无密钥，能算哈希的人也能
+    伪造。真正的独立性靠 ①reviewer ≠ 执行主体 ②矩阵改动经人工 review 后
+    commit ③未来 EXC-02 解决后引入带密钥的签名。它拦住的是：手写/拼错字段、
+    事后改 basis 或 evidence_refs、复制他人记录改 id —— 这些都会让签名失配。
+    """
+    sig = (entry.get('signature') or '').strip()
+    if not sig:
+        return False, 'signature_missing'
+    body = {k: v for k, v in entry.items() if k != 'signature'}
+    want = hashlib.sha256(_canon(body).encode('utf-8')).hexdigest()[:16]
+    if sig != want:
+        return False, 'signature_mismatch'
+    return True, 'ok'
+
+
 def validate_entry(entry, acting, matrix):
     """返回 (is_valid, reason)。任何不合法都导致整批中止。"""
     assertion_id = entry.get('assertion_id') or ''
@@ -105,6 +132,10 @@ def validate_entry(entry, acting, matrix):
     # 防"签完再改证据"：重新算哈希比对存证
     if _ev_hash(refs) != stored_hash:
         return False, 'evidence_hash_mismatch'
+    # 最后一道闸：完整性签名（语义错误先报，报错信息更有指导性）
+    ok, reason = _verify_signature(entry)
+    if not ok:
+        return False, reason
     return True, 'ok'
 
 

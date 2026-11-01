@@ -64,14 +64,22 @@ Owner 已明确不提供真环境（`owner_designations.md` #4 续二）。这�
 
 ## 签署命令模板
 
+> **第一步是定身份**：跑工具的那方（Agent/CI）与签署人必须**是两个名字**。
+> `record_signoff` 会拒绝 `--reviewer` 等于执行主体的签署（防自签）。
+> 若你本人就是默认执行主体 `slow-is-fast`，跑命令时先显式把执行主体设成别的：
+
 ```bash
-# 0) 证据先落盘并登记（hash 当场存证）
+export GOV_ACTING_IDENTITY=agent-runner   # 本次执行方（Agent），不是签署人
+```
+
+```bash
+# 0) 证据先落盘到 evidence/，再登记（哈希当场存证）
 python scripts/gov_run.py --accept-evidence --by <执行者> --reason "<为什么>"
 
 # 1) 记录独立复核签署（reviewer 必须是独立主体，Agent 不得代签）
 python scripts/record_signoff.py \
   --assertion-id <断言 id，如 AUD-001-03> \
-  --reviewer <独立主体> \
+  --reviewer <独立主体，如你的名字> \
   --role independent-reviewer \
   --verdict approved \
   --evidence evidence/<证据文件> \
@@ -84,6 +92,11 @@ python scripts/apply_signoffs.py --apply --by <执行者>
 # 3) 重生成本清单（矩阵已变），然后由人审并 commit
 python scripts/export_owner_worklist.py
 ```
+
+**不要手写 `signoffs.jsonl`。** 每行都带 `signature`（`record_signoff` 生成），
+`apply_signoffs` 会重算校验：缺签名或事后改过任何字段都会 `signature_missing` /
+`signature_mismatch` 并整批中止。注意这是**完整性**校验而非密码学防伪——
+真正的独立性靠「reviewer ≠ 执行主体」+ 矩阵改动经人工 review 后 commit。
 
 ## 例外到期
 
