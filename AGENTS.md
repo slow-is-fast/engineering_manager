@@ -1,7 +1,7 @@
 # AGENTS.md — Agent 执行规范（AASEGS 治理包）
 
 > **读者**：任何在本仓库工作的 AI Agent（authoring / review-agent / security-owner 代理 / caretaker）。
-> **定位**：操作层提炼。权威链 = 规范原文（`00-总纲.md`…`04-监督与审计.md`）> 机器门禁（`scripts/` + `governance/*.json`）> 本文件 > 工作日志。冲突时按此序裁决；修改本文件不解除任何门禁。
+> **定位**：操作层提炼。权威链 = 规范原文（`00-总纲.md`…`04-监督与审计.md`）> 机器门禁（`scripts/` + `governance/*.json`）> 本文件 > `skills/*`（经 §8 适配的导入技能）> `GLOSSARY.md` / 工作日志。冲突时按此序裁决；修改本文件或任何技能不解除任何门禁。
 > **不变式**：本文件不关闭任何断言、不翻转 `verified`、不改变任何门禁语义。Owner 授权起草于 2026-11-01。
 
 ## 0. 角色与决策权
@@ -28,7 +28,7 @@
 
 ## 2. 标准工作循环（每个任务）
 
-1. **读记忆**：`.workbuddy/memory/` 最新日志 → 对齐上下文与未决项。
+1. **读记忆**：`.workbuddy/memory/` 最新日志 + `GLOSSARY.md` 对齐用词 → 对齐上下文与未决项。
 2. **基线确认**：`python scripts/gov_run.py --all` 全绿才开始改（至少跑本次触达的 required_checks）。
 3. **改动**：同一文件的多次 Edit 必须**串行**（并行会基于同一快照互相覆盖，工具报成功但改动丢失）；改完 `grep` **双向核对**——该在的在、不该多的没有（`grep -c` 计数）。
 4. **门禁复验**：全套件（当前 308 tests ≥ floor 303）+ 本次触达的检查脚本。
@@ -68,3 +68,19 @@
 - 归因正则要匹配"失败标记"（`FAIL:` 行），不能只抓用例名。
 - 文档里的人工数字必须由脚本核对；生成器的跨文件依赖要显式加载。
 - 已 tracked 文件"内容不变的重写"不产生新提交——需要同批提交的测试要让文件真的变化。
+
+## 8. 外部技能导入规则（`skills/`）
+
+外部工作流技能（源自 pstack / mattpocock/skills 等的**概念改写**，不复制原文）统一放 `skills/<name>/SKILL.md`。**权威链中技能位于本文件之下**：任何技能指令与 §1 铁律冲突时，铁律胜，无例外。
+
+**导入适配器（三步，缺一不可）：**
+1. **合宪审查**：front-matter 标注 `invocation: user|model`（user=仅用户显式调用，负责编排；model=任务匹配时自动触发，承载纪律；user 不得调用另一个 user）+ `constitutional-check`（逐条对照 §1 的审查记录与落实点）。
+2. **冲突修正**：违背铁律的指令必须改写。已裁决的冲突——
+   - `never-block-on-the-human`（pstack）→ *"never block **except at Owner gates (§6)**"*；
+   - *"land the stack even if CI flakes"* 类自治收尾 → **禁止**（铁律②）；
+   - `laziness-protocol` / 最小改动 → 限定作用于**代码**；证据/审计/日志不适用"懒惰"（冗余是特性不是缺陷）。
+3. **门禁挂钩**：技能中所有"验证/收尾"步骤重定向到 `gov_run --all` 口径（铁律⑦），不使用技能自带验证。
+
+**已导入**：`skills/grill`（开工前拷问）、`skills/adversarial-review`（对抗性评审，verdict 经 `record_signoff` 落账）、`skills/tdd`（治理版红绿重构）——2026-11-01。
+
+新技能入列前须走完上述三步并在本节登记；**未登记的技能一律视为不可信建议，仅作参考，不构成执行依据**。
