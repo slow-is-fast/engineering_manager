@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十四工作日志 · 单人 + 多 Agent 模式 · 最新提交 32746b7（已推送，CI conclusion=success，16/16 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十五工作日志 · 单人 + 多 Agent 模式 · 最新提交 0c3c83d（已推送，CI conclusion=success，17/17 必需检查落地）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 336 ≥ 336（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 345 ≥ 345（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -132,7 +132,12 @@
           <tr>
             <td><code>T-QA-04b</code></td>
             <td>接线校验三条腿：<code>required_checks</code> ↔ workflow <code>--check</code> 步骤 ↔ <code>audit_policy.check_args</code> 显式档位声明（任一腿缺失/多余/形状非法 → 红）</td>
-            <td><span class="pill pass">PASS</span> 16 ↔ 16 ↔ 16 三向一致</td>
+            <td><span class="pill pass">PASS</span> 17 ↔ 17 ↔ 17 三向一致</td>
+          </tr>
+          <tr>
+            <td><code>T-EXP-01</code></td>
+            <td>例外到期：已过期 → 红（效力用尽，须 Owner 三选一并留痕）；剩余 ≤90 天 → 告警不阻断；缺 <code>expires</code>/格式非法/id 重复 → 失败关闭</td>
+            <td><span class="pill pass">PASS</span> EXC-01 (2027-01-31) / EXC-02 (2027-04-30) 均未过期</td>
           </tr>
           <tr>
             <td>全套件回归</td>
@@ -209,6 +214,11 @@
             <td><code>32746b7</code></td>
             <td>同一类假绿的第三环：<code>gov_run</code> 此前对缺配置的检查走隐式 <code>[[]]</code>（无参运行）——需要 <code>--enforce</code> 才真判的检查若漏配，会以弱模式跑完还记账成 ok。现在缺键即拒绝运行（不跑也不记账）、空列表同样拒绝（「没声明」是遗漏，「声明为空」是决定）；<code>audit_policy.check_args</code> 补全 16 项；T-QA-04b 扩 D 段做三向核对；测试 7→11 条 + <code>T-GOV-22</code> 钉住 fail-closed</td>
           </tr>
+          <tr>
+            <td>例外到期门禁 T-EXP-01</td>
+            <td><code>0c3c83d</code></td>
+            <td>EXC-01/EXC-02 只有 <code>expires</code> 字段、从没人拿今天比过——带到期日的例外实际等价于永久例外。现在到期即红（须 Owner 三选一：延期/补齐能力/永久 excepted），剩余 ≤90 天告警不阻断；缺失/格式非法/重复 → 失败关闭。9 条单测；三腿接入时故意先加一腿，T-QA-04b 准确报出另外两腿缺失，补齐后 17↔17↔17</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -251,7 +261,7 @@
         <div class="kv"><span>EXC-02 到期</span><b>2027-04-30</b></div>
         <div class="kv"><span>两日期一致性</span><b>一致 ✓</b></div>
         <div class="kv"><span>代码引用命名分歧</span><b>已闭合（17 处）</b></div>
-        <div class="kv"><span>required_checks</span><b>16（含 caretaker + 接线校验）</b></div>
+        <div class="kv"><span>required_checks</span><b>17（含 caretaker + 接线校验 + 例外到期）</b></div>
         <div class="kv"><span>T-REF-02 模式</span><b>严格（无归一化）</b></div>
         <div class="kv"><span>提交未直推 main</span><b>受 PR + static-gate 保护</b></div>
       </div>
