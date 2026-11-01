@@ -2,9 +2,9 @@
 """executor.memory —— 共享记忆生命周期（MEM-01 / CTX-02 / CTX-03）。
 
 规则（v1.1.1 §4）：
-- AGT-007（P1）：晋升为跨任务共享记忆必须进行**来源校验与授权审核**；
-- AGT-008（P1）：共享记忆必须可撤销、可检索版本历史；
-- AGT-009（P1）：**过期、被否定或撤销的记忆不得用于新任务的规范性决策**。
+- AASEGS-AGT-007（P1）：晋升为跨任务共享记忆必须进行**来源校验与授权审核**；
+- AASEGS-AGT-008（P1）：共享记忆必须可撤销、可检索版本历史；
+- AASEGS-AGT-009（P1）：**过期、被否定或撤销的记忆不得用于新任务的规范性决策**。
 
 状态机：DRAFT → PENDING_REVIEW → APPROVED → (REVOKED | EXPIRED)
         任意非终态 → INVALIDATED（来源失效时的级联）
@@ -88,7 +88,7 @@ class MemoryStore:
                               source_kind=source_kind)
             return 1
 
-    # ---------------- 来源校验（AGT-007） ----------------
+    # ---------------- 来源校验（AASEGS-AGT-007） ----------------
     def verify_source(self, mid, verifier, ref):
         with self._lock:
             d = self._load()

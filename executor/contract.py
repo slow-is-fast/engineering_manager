@@ -81,7 +81,7 @@ class TaskContractValidator:
         for k in ("approver", "policy_hash", "expires_at"):
             if proof.get(k) is None:
                 self._reject(task_id, "incomplete_approval_proof", missing=k)
-        # GOV-17 / AGT-001：不得由提交方自己批准（作者不能自批）
+        # GOV-17 / AASEGS-AGT-001：不得由提交方自己批准（作者不能自批）
         if proof.get("approver") == contract.get("owner"):
             self._reject(task_id, "self_approval", approver=proof.get("approver"))
 

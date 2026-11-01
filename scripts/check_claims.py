@@ -42,7 +42,7 @@ EVIDENCE_MARKERS = (
     'evidence:', 'evidence_ref', '实测', 'latency=', 'P95', 'p95',
     'http://', 'https://', 'run ', 'commit ', 'SHA', '有传播延迟',
 )
-# 明确否定/免责的表述不是"宣扬完美"，正相反——AGT-005 管的是吹嘘，不是提醒
+# 明确否定/免责的表述不是"宣扬完美"，正相反——AASEGS-AGT-005 管的是吹嘘，不是提醒
 NEGATION_MARKERS = ('不代表', '不等于', '并非', '不能证明', '不构成', '不可假定',
                     '不宣称', '不做绝对')
 
@@ -87,7 +87,7 @@ def main() -> None:
             violations.append((f.relative_to(BASE), i + 1, line.strip()[:80]))
 
     if violations:
-        print('FAIL(CLM-01): 无证据支撑的绝对化声明（AGT-005）：')
+        print('FAIL(CLM-01): 无证据支撑的绝对化声明（AASEGS-AGT-005）：')
         for path, ln, text in violations:
             print(f'  {path}:{ln}: {text}')
         sys.exit(1)

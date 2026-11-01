@@ -2,8 +2,8 @@
 """executor.authgate —— 资源端授权校验与撤销竞态契约（AUTH-01 / AUTH-02）。
 
 服务的规则：
-- AASEGS-GOV-04（P1）：失败关闭。
-- AASEGS-GOV-12（P0）：权威层级只是决策规则，必须靠权限/沙箱/CI 实现；
+- GOV-04（P1）：失败关闭。
+- GOV-12（P0）：权威层级只是决策规则，必须靠权限/沙箱/CI 实现；
   **Prompt 不具备安全边界的法律效力或技术强制性**。
 - AASEGS-AGT-004（P0）：标记 revocation_pending 的任务不得继续副作用操作。
 - AASEGS-AGT-011（P0）：**上下文压缩摘要本身不能构成权限证据**。
@@ -18,7 +18,7 @@ AUTH-01（资源端/独立网关授权检查，deny on any failure）
   1. 无租约 → 拒绝；
   2. 租约必须是**可独立验签**的签名凭证：形态不符、算法未知、验签材料缺失、
      签名不匹配 → 拒绝；
-  3. **压缩摘要、记忆文本、Prompt 声明一律不构成权限证据**（AGT-011/GOV-12），
+  3. **压缩摘要、记忆文本、Prompt 声明一律不构成权限证据**（AASEGS-AGT-011/GOV-12），
      以 dict/文本/``authority="prompt"`` 形式提交的权限主张一律拒绝；
   4. 租约必须与本次请求的 run_id/task_id 绑定，不符 → 拒绝（防跨任务借用）；
   5. 过期 → 拒绝；已撤销 → 拒绝；**撤销传播延迟期内同样拒绝**——
@@ -33,7 +33,7 @@ AUTH-02（撤销回执与竞态契约）
      （``confirmed_no_effect`` / ``confirmed_effect`` / ``unknown``）；
   10. 核对后仍为 ``unknown``（无法确认凭证是否已失效）→ **隔离执行通道并转人工**，
       人工放行前该通道上一切操作拒绝；
-  11. 审批过期/拒绝/撤销 → 立即**闭合租约**（SUP-004），闭合后不可再用。
+  11. 审批过期/拒绝/撤销 → 立即**闭合租约**（AASEGS-SUP-004），闭合后不可再用。
 
 诚实边界（重要，不得据本模块宣称"身份体系已落地"）：
 - 本模块是**进程内**的签发/校验分离：验签材料仍在同一进程内存中交换，
@@ -156,7 +156,7 @@ class ResourceGateway:
         # 1) 无租约
         if token is None:
             self._deny(None, "missing_lease", now=now)
-        # 3) 压缩摘要 / 记忆文本 / Prompt 声明不构成权限证据（AGT-011/GOV-12）
+        # 3) 压缩摘要 / 记忆文本 / Prompt 声明不构成权限证据（AASEGS-AGT-011/GOV-12）
         if isinstance(token, dict) or isinstance(token, (list, tuple)):
             self._deny(None, "summary_not_evidence", now=now,
                        shape=type(token).__name__)
@@ -351,7 +351,7 @@ class ResourceGateway:
                           approver=human_approver, ref=ref)
         return "RELEASED"
 
-    # ---- SUP-004：审批过期/拒绝/撤销 → 闭合租约 ----
+    # ---- AASEGS-SUP-004：审批过期/拒绝/撤销 → 闭合租约 ----
     def close_for_approval(self, lease_id, approval_state, approval_ref):
         if approval_state not in APPROVAL_CLOSED_STATES:
             raise GatewayDenied(f"invalid_approval_state: {approval_state}")
