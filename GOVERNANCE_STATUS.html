@@ -93,10 +93,10 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续十六工作日志 · 单人 + 多 Agent 模式 · 最新提交 e29e2a8</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十二工作日志 · 单人 + 多 Agent 模式 · 最新提交 fe72107（已推送，CI run 41281961119 全绿）</p>
     <div class="verdict">
       <span class="dot"></span>
-      <p><b>Agent 侧已彻底穷尽且全绿</b>；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
+      <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
     </div>
   </header>
 
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 315 ≥ 303</td>
+            <td><span class="pill pass">PASS</span> 324 ≥ 324（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -131,8 +131,13 @@
           </tr>
           <tr>
             <td>全套件回归</td>
-            <td>14 个 unittest 模块（含 <code>test_control_refs</code> 9 条 + <code>test_matrix_caretaker</code> 8 条）</td>
-            <td><span class="pill pass">OK</span> 308 tests</td>
+            <td>unittest 模块（含 <code>test_matrix_caretaker</code> 16 条 + <code>test_apply_signoffs</code> 18 条）</td>
+            <td><span class="pill pass">OK</span> 324 tests</td>
+          </tr>
+          <tr>
+            <td><code>T-VD-01</code></td>
+            <td>executor pin 三重校验（commit 真实存在 / tree 一致 / tarball 与本地 vendor 内容哈希一致）</td>
+            <td><span class="pill pass">PASS</span> pin=7c8a086 content=e2f2ff7d（评审捕获的潜伏红已闭环）</td>
           </tr>
         </tbody>
       </table>
@@ -168,6 +173,21 @@
             <td>#2→B Security-Owner 代理 + #3 caretaker + #6 review-agent 绑定</td>
             <td><code>e29e2a8</code></td>
             <td>#2 由 A（Owner 兼任）改为 B（独立 AI agent 作 Security-Owner 代理）；新建 <code>scripts/matrix_caretaker.py</code>（只读巡检，结构违反→2、漂移告警默认0/--strict 3）；<code>apply_signoffs.py</code> 加 opt-in <code>GOV_REVIEW_AGENT</code> 绑定；caretaker 接入 <code>quality_baseline</code> required_checks（14→15）</td>
+          </tr>
+          <tr>
+            <td>/adversarial-review 首跑（技能层落地后首次实战）</td>
+            <td>未落账（前置②红终止）</td>
+            <td>捕获横跨 12 提交、潜伏 1 天的 T-VD-01 红（56d9daf 改 vendor 未 bump pin）+ draft findings F3–F7 + 2 处评审者自曝流程违规——评审主体≠作者、不降级的前置设计按预期工作</td>
+          </tr>
+          <tr>
+            <td>上游同步 + pin bump 闭环</td>
+            <td>gov-plane PR #1（squash <code>7c8a086</code>）+ 本地 <code>5113c85</code></td>
+            <td>5 文件注释对齐补丁经 PR 同步到控制面（base 分支保护要求 review，单人仓库以 <code>--admin</code> 合并，executor-tests 已 pass）；pin 指向新 commit，content_hash 与本地 vendor 逐字节一致，T-VD-01 恢复绿</td>
+          </tr>
+          <tr>
+            <td>评审 findings F3–F6 修复</td>
+            <td><code>fe72107</code></td>
+            <td>F3 caretaker --state 写路径 fail-closed（拒治理目录/受保护文件/输入文件）；F4 state 缺失回退 git HEAD~1 基线（CI 漂移不再失聪）；F5 指纹纳入 kind/type 治理语义；F6 补测 9 条；F7（env 身份咨询性信任）记录为已知限制不修；下限 303→324（删除余量 0）</td>
           </tr>
         </tbody>
       </table>
@@ -236,10 +256,11 @@
         <p class="sub" style="margin-top:0">可选增强（需 Owner 拍板或非 Agent 资源）</p>
         <ul class="tight">
           <li><b>收紧 T-REF-02（已完成）</b>：续十三已去掉 AGT/SUP 短名归一化、改为严格模式（拼写分歧即悬空）。</li>
-          <li><b>verify_executor_pin 本地守卫</b>：当前本地无用例，需 <code>gh</code> 访问 gov-plane 仓，仅 CI 可验 —— "全绿快照"唯一未覆盖项。</li>
+          <li><b>verify_executor_pin 本地守卫（已达成）</b>：本地已认证 <code>gh</code> 后可跑（T-VD-PIN×4 单元守卫 + 运行时三重校验均绿）；仅 T-VD-01b 凭证域判定按设计只能 CI 判（本地人类 PAT 横跨两域属不可判定，fail-closed 拒绝）。</li>
           <li><b>CI 启用 caretaker --strict</b>：默认漂移仅告警不阻塞；如需漂移即红，在 CI 设 <code>CARETAKER_STRICT=1</code>。</li>
           <li><b>配置 review-agent 绑定实值</b>：设 <code>GOV_REVIEW_AGENT</code> / <code>GOV_AUTHOR_IDENTITY</code> 后，apply 自动翻才强制绑定校验（当前 opt-in，未设则向后兼容）。</li>
           <li><b>#4/#5 真正解锁</b>：需 Owner 实际提供非模拟环境 + 独立账号/主机，并在该环境跑通验证脚本；届时 EXC-02 可视为不再需要、verified 方可翻转。</li>
+          <li><b>正式评审交接（选项 ③）</b>：/adversarial-review 首跑的正式评审（对 <code>fe72107</code> 的 F3–F6 修复）须由<b>不同家族的 review-agent 在新会话</b>执行（本会话为 draft 评审者，不可自评）；本 draft findings（F3–F7）作为其输入，F1（T-VD-01）与 F3–F6 已闭环，F7 记录为已知限制。</li>
         </ul>
       </div>
     </div>
