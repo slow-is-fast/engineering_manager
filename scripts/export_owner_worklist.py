@@ -150,10 +150,16 @@ def render(rows, exps, fp_matrix, fp_exceptions):
     if signed:
         A('### 已签署')
         A('')
+        A('（字段来自 `apply_signoffs.build_signoff_field`：`by` 是复核者，`applied_by` 是执行翻转的人。）')
+        A('')
         for r in signed:
             s = r['signoff'] or {}
-            A(f"- `{r['id']}` · {s.get('reviewer', '?')} · {s.get('verdict', '?')} · "
-              f"{_clip(s.get('basis', ''), 60)}")
+            # 真实字段名是 `by`（apply_signoffs 的历史命名），不是 reviewer；
+            # 兼容 reviewer 只是为了让旧数据/手工构造的记录也能显示。
+            who = s.get('by') or s.get('reviewer') or '?'
+            A(f"- `{r['id']}` · {who}（{s.get('role') or '?'}）· "
+              f"{s.get('date') or '?'} · applied_by={s.get('applied_by') or '?'} · "
+              f"sig={_clip(s.get('signature') or '', 12)}")
         A('')
 
     A('## 一、可先做：仅需文档/审阅与 Owner 判断')

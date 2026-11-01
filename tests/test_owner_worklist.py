@@ -25,9 +25,13 @@ def _repo(tmp, signed=False):
                'assertions': [{'id': 'AUD-001-03', 'kind': 'manual',
                                'human_gate': 'sampling_review', 'text': '人工抽样复核记录'}]}
     if signed:
+        # 与 apply_signoffs.build_signoff_field 的真实输出保持一致：
+        # 复核者字段名是 `by`，不是 reviewer（端到端测试抓出的偏差）。
         issue_a['assertions'][0]['signoff'] = {
-            'reviewer': 'alice', 'verdict': 'approved', 'basis': '抽了 30 条样本',
-            'role': 'independent-reviewer'}
+            'by': 'alice', 'role': 'independent-reviewer',
+            'ref': 'evidence/x.md', 'date': '2026-11-01',
+            'signature': 'abc123def456', 'applied_by': 'builder',
+            'applied_at': '2026-11-01T10:00:00+08:00'}
     issue_b = {'severity': 'P0', 'criteria': 'y', 'close_condition': '隔离环境测试通过',
                'assertions': [{'id': 'AUD-004-05', 'kind': 'manual',
                                'human_gate': 'isolated_env_integration_test',
