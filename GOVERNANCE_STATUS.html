@@ -254,6 +254,11 @@
             <td><code>governance/review_handoff.md</code></td>
             <td>给「新会话 + 不同家族 review-agent」的自包含输入：范围 <code>fe72107^..a0879b6</code> 共 20 个提交、F1–F7 状态与<b>独立验证命令</b>、前置②在本机不可能字面满足的口径（本地 <code>17/18</code> + CI 18/18）、已知限制（不要重复报）、以及 §5「作者最可能错的六处」（如 T-QA-04b 读不懂 <code>if:</code> 条件步骤、<code>check_args</code> 只保证声明过不保证声明对）。不产出 verdict，落账仍须评审主体自己执行</td>
           </tr>
+          <tr>
+            <td>AUD-001-03 复核材料（人工抽样复核的输入，第一次跑就抓出 10 处悬空引用）</td>
+            <td><code>eb124e5</code></td>
+            <td>此前这条 <code>manual</code> 断言只有校验器一行 PASS，Owner 面对 59 条规则无从下手。新 <code>scripts/export_coverage_pack.py</code> 产出 <code>governance/coverage_pack_aud001.md</code>：覆盖率（<b>把「字符串里有引用」53/59 与「引用能解析」45/59 分成两个数</b>，合成一个就会让 76% 冒充 100%）、双向差异、以及按 <code>sha256(rule_id)</code> 排序取前 10 条的抽样清单（每条给规则原文＋控制证据＋用例源码＋三个待打勾判断）。<b>抓到真问题</b>：<code>rule-registry.json</code> 有 10 处 <code>verification.tests</code> 指向不存在的用例（含 2 条 P0 规则），根因是校验器只查控制目录侧、规则侧从无检查；其中 <code>T-QA-05</code> 正是 10-30 已发现过的幽灵用例，控制目录改了、注册表还留着。材料不下判断、不签署——它的价值全在「不替人下判断」；<code>--check</code> 有指纹但<b>未接入任何门禁</b>，文首明写，免得被读成「有人看着」</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -270,12 +275,12 @@
           <tr><td>1</td><td>独立 Reviewer 身份（非提交方本人）</td><td>AUD-001 / 002 / 014 / 020</td><td><span class="pill wait">已记录（续十四）</span></td></tr>
           <tr><td>2</td><td>Security Owner 角色建制</td><td>AUD-015-04（硬性）</td><td><span class="pill wait">已记录 B（续十六）</span></td></tr>
           <tr><td>3</td><td>数据矩阵责任人 owner 指派</td><td>AUD-016-04</td><td><span class="pill wait">已记录 C·caretaker 已实现（续十六）</span></td></tr>
-          <tr><td>4</td><td>真实环境资源（非模拟）</td><td>AUD-004 / 009 / 010 / 012（受 EXC-02）</td><td><span class="pill wait">已记录 B·Owner 确认不提供（沿用 EXC-02）</span></td></tr>
+          <tr><td>4</td><td>真实环境资源（非模拟）</td><td>9 条：AUD-004 / 005 / 006 / 009 / 010 / 011 / 012 / 018 / 021</td><td><span class="pill wait">已记录 B·Owner 确认不提供（沿用 EXC-02）</span></td></tr>
           <tr><td>5</td><td>独立账号 / 独立主机</td><td>解锁 EXC-02 → verified 可达</td><td><span class="pill wait">已记录 B（本地隔离近似·≠真实独立）</span></td></tr>
           <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill wait">已记录 B·auto-flip 已实现（续十六）</span></td></tr>
         </tbody>
       </table>
-      <p class="note"><b>逐条可执行清单：<code>governance/owner_worklist.md</code></b>（由矩阵自动生成，含分类、所需资源、签署命令模板；T-OWN-01 保证它与矩阵同步，手改即红）。落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。</p>
+      <p class="note"><b>逐条可执行清单：<code>governance/owner_worklist.md</code></b>（由矩阵自动生成，含分类、所需资源、签署命令模板；T-OWN-01 保证它与矩阵同步，手改即红）。落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。这三条路径的具体做法、代价，以及为什么「永久 excepted」在本机制下不可表达（<code>T-EXP-01</code> 要求例外必须有到期日），见 <code>owner_action_plan.md</code> §7；注意 <code>EXC-02</code> 的 <code>waives.requirement</code> 只有 <code>verified</code>，<b>不覆盖这 9 条 manual 断言</b>，所以它们目前没有任何终止条件。AUD-001-03 的抽样材料已就绪：<code>governance/coverage_pack_aud001.md</code>（10 条，逐条三个勾）。</p>
     </div>
   </section>
 
