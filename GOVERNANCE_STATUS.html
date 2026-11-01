@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十六工作日志 · 单人 + 多 Agent 模式 · 最新提交 7a575b9（已推送，CI conclusion=success，18/18 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十七工作日志 · 单人 + 多 Agent 模式 · 最新提交 83c8b0e（已推送，CI conclusion=success，18/18 必需检查落地）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 352 ≥ 352（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 355 ≥ 355（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -228,6 +228,11 @@
             <td>Owner 签署工作清单（生成 + 防漂移）</td>
             <td><code>7a575b9</code></td>
             <td><code>governance/owner_worklist.md</code>：22 条 manual/excepted 按「仅需文档与判断 12 ／ 需真实环境或真机资源 9 ／ 例外内 1」保守分类，需资源那条带「所需资源」列；含 accept-evidence → record_signoff → dry-run → apply → 重生成 的完整命令模板。T-OWN-01 用 <code>--check</code> 模式钉住"清单与矩阵必须同步"（手改也红）；<code>check_args</code> 配 <code>[["--check"]]</code>——不带就是生成模式（每次改写文件且永远绿），这是显式档位第一次真实派上用场</td>
+          </tr>
+          <tr>
+            <td>签署链路端到端演练（清单模板可用性自证）</td>
+            <td><code>83c8b0e</code></td>
+            <td>清单给出的五步命令链此前从没串起来跑过。<code>test_owner_chain_e2e</code> 在隔离目录用合成主体跑完整链路（accept-evidence → record_signoff → dry-run 断言矩阵未变 → apply → 重生成清单 → 自检），<b>当场抓出真 bug</b>：清单「已签署」节显示 <code>? · ? ·</code>——生成器读 <code>signoff.reviewer</code>，而 <code>apply_signoffs</code> 实际写的是 <code>by</code>。单测一直绿是因为 fixture 自造了 reviewer 键（测试自洽、现实不符）；已修并把 fixture 改成真实形状</td>
           </tr>
         </tbody>
       </table>
