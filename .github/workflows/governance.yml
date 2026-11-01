@@ -106,6 +106,21 @@ jobs:
       - name: "T-REF-01 governance reference integrity (no invented IDs)"
         run: python scripts/gov_run.py --check scripts/check_governance_refs.py
 
+      # T-REF-02：代码引用完整性（严格模式）。2026-11-01 补：9fbe189 把它加进
+      # required_checks 时漏了 workflow 步骤，本地 required_checks 与 CI 实际
+      # 步骤数从此不一致——推送后 gov_run --verify 的「必需检查全部落地」守卫
+      # 立即拦下（exit 5）。这是该守卫第一次在真实流程里抓住「注册了但没跑」
+      # 的控制，正是它存在的意义。
+      - name: "T-REF-02 code reference integrity (strict, no prefix normalization)"
+        run: python scripts/gov_run.py --check scripts/check_control_refs.py
+
+      # AUD-016-04 决策 C：caretaker 只读巡检。2026-11-01 补：e29e2a8 接入
+      # required_checks 时同样漏了 workflow 步骤（同上，被 --verify 拦下）。
+      # CI 无状态文件 → caretaker 自动回退 git HEAD~1 基线（F4），漂移按
+      # 默认仅告警（exit 0）；结构违反仍硬失败（exit 2）。
+      - name: "AUD-016-04 matrix caretaker read-only inspection"
+        run: python scripts/gov_run.py --check scripts/matrix_caretaker.py
+
       # GATE-01：成熟度/风险等级准入判定。CI 采用防退化下限而非"必须达标 G2"：
       # 下限是 Owner 实际达到并批准的最低等级。报告里 DENY 是门槛的正确结论
       # （当前账本不满足更高等级是事实），不算失败；跌破 G1（输入损坏/事实源
