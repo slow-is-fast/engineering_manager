@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十二工作日志 · 单人 + 多 Agent 模式 · 最新提交 372969d（已推送，CI run 41282401867 全绿，15/15 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十三工作日志 · 单人 + 多 Agent 模式 · 最新提交 e80d91a（已推送，CI run conclusion=success，16/16 必需检查落地）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,12 +122,17 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 324 ≥ 324（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 331 ≥ 331（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
             <td>质量基线完整性（required_checks 存在、漂移、单调性）</td>
-            <td><span class="pill pass">PASS</span> 15 项必需检查</td>
+            <td><span class="pill pass">PASS</span> 16 项必需检查</td>
+          </tr>
+          <tr>
+            <td><code>T-QA-04b</code></td>
+            <td>接线校验：<code>required_checks</code> ↔ workflow <code>--check</code> 步骤双向闭合（注册了没跑 / 跑了没注册 / 步骤指向不存在文件 → 红）</td>
+            <td><span class="pill pass">PASS</span> 16 ↔ 16 双向一致</td>
           </tr>
           <tr>
             <td>全套件回归</td>
@@ -194,6 +199,11 @@
             <td><code>372969d</code></td>
             <td>推送积压提交后 <code>gov_run --verify</code> 拦下「注册了但 CI 从未跑」的 2 项控制（check_control_refs、matrix_caretaker——required_checks 15 项 vs workflow 13 步骤的结构性漂移）；补齐 2 个步骤后 CI 15/15 全绿（run 41282401867）。教训：required_checks 与 workflow 步骤数的漂移是本地盲区，落地验收是最后一道网</td>
           </tr>
+          <tr>
+            <td>T-QA-04b 接线校验（把教训变成门禁）</td>
+            <td><code>e80d91a</code></td>
+            <td>新建 <code>scripts/verify_required_checks_wired.py</code> — 双向核对 <code>required_checks</code> 与所有 workflow 的 <code>gov_run.py --check</code> 步骤：注册了没接线 / 接线了没注册 / 步骤指向不存在文件 一律红；无 workflow 或无任何 --check → 失败关闭；注释行不算接线。7 条单测含真实仓库自检回归锁，接入后 16↔16 一致。检测不再依赖推送</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -236,7 +246,7 @@
         <div class="kv"><span>EXC-02 到期</span><b>2027-04-30</b></div>
         <div class="kv"><span>两日期一致性</span><b>一致 ✓</b></div>
         <div class="kv"><span>代码引用命名分歧</span><b>已闭合（17 处）</b></div>
-        <div class="kv"><span>required_checks</span><b>15（含 caretaker）</b></div>
+        <div class="kv"><span>required_checks</span><b>16（含 caretaker + 接线校验）</b></div>
         <div class="kv"><span>T-REF-02 模式</span><b>严格（无归一化）</b></div>
         <div class="kv"><span>提交未直推 main</span><b>受 PR + static-gate 保护</b></div>
       </div>
