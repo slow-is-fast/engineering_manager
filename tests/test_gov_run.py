@@ -66,6 +66,10 @@ def _mkroot(tmpdir, *, retention_days=180, extra_evidence=0):
             'gov.evidence.registered': 365,
         },
         'evidence_retention': {'evidence': 365, 'test-artifact': 90},
+        # 2026-11-01：run_check 改为 fail-closed——每项必需检查必须在
+        # check_args 里显式声明调用参数（哪怕 [[]]），缺键即拒绝运行。
+        # 「没声明参数」和「声明为空」是两件事：前者是遗漏，后者是决定。
+        'check_args': {OK_SCRIPT: [[]]},
     }
     _write(root / 'governance' / 'audit_policy.json',
            json.dumps(policy, ensure_ascii=False, indent=2))
@@ -128,6 +132,11 @@ class GovRunCheckTests(unittest.TestCase):
         base['required_checks'].append(BAD_SCRIPT)
         _write(self.root / 'governance' / 'quality_baseline.json',
                json.dumps(base, ensure_ascii=False))
+        # fail-closed 后，进基线只是第一步：调用参数也必须显式声明
+        pol = gov.policy_of(self.root)
+        pol['check_args'][BAD_SCRIPT] = [[]]
+        _write(self.root / 'governance' / 'audit_policy.json',
+               json.dumps(pol, ensure_ascii=False))
         code, msgs = gov.run_check(BAD_SCRIPT, root=self.root, run_id='r1')
         self.assertEqual(code, gov.EXIT_CHECK_FAILED, msgs)
         ev = AuditLog(self.trail).read('gov.check.completed')
@@ -160,6 +169,25 @@ class GovRunCheckTests(unittest.TestCase):
         ev = AuditLog(self.trail).read('gov.check.completed')[0]
         self.assertEqual(ev['args'], [['--fail']])            # 且留痕
         self.assertEqual(ev['invocations'], 1)
+
+    def test_GOV_22_undeclared_check_args_refuses_to_run(self):
+        """缺 check_args 声明时拒绝运行，且一个字都不记账。
+
+        2026-11-01 收紧：此前缺配置走隐式 `[[]]`（无参运行）。某检查若需要
+        `--enforce` 才真判，配置漏了就会以弱模式跑完还记账成 ok——与「CI 不得
+        自行指定档位」要防的是同一类假绿，只是这次是治理配置自己忘了说话。
+        这条用例钉住 fail-closed，防止有人把隐式默认改回来。
+        """
+        pol = gov.policy_of(self.root)
+        del pol['check_args'][OK_SCRIPT]
+        _write(self.root / 'governance' / 'audit_policy.json',
+               json.dumps(pol, ensure_ascii=False))
+
+        code, msgs = gov.run_check(OK_SCRIPT, root=self.root, run_id='r1')
+        self.assertEqual(code, gov.EXIT_CHECK_FAILED, msgs)
+        self.assertIn('check_args', ''.join(msgs))
+        # 拒绝 = 不跑也不记账（否则会留下一条假 ok）
+        self.assertEqual(AuditLog(self.trail).read('gov.check.completed'), [])
 
     def test_GOV_04_broken_chain_refuses_append_and_quarantines(self):
         """链断了不许往上接新事件，坏段必须原样交出来。"""

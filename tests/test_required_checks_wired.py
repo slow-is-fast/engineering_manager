@@ -16,11 +16,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts' / 'verify_required_checks_wired.py'
 
 
-def _repo(tmp, required, steps, step_names=None):
+def _repo(tmp, required, steps, args_map='default'):
     (tmp / 'governance').mkdir(parents=True, exist_ok=True)
     (tmp / '.github' / 'workflows').mkdir(parents=True, exist_ok=True)
     (tmp / 'governance' / 'quality_baseline.json').write_text(
         json.dumps({'required_checks': required}), encoding='utf-8')
+    # D 段：每项必需检查都要在 audit_policy.check_args 里显式声明
+    args = {t: [[]] for t in required} if args_map == 'default' else args_map
+    (tmp / 'governance' / 'audit_policy.json').write_text(
+        json.dumps({'check_args': args}), encoding='utf-8')
     for target in required + [s for s in steps if s not in required]:
         p = tmp / target
         if p.suffix and not p.exists():
@@ -95,6 +99,8 @@ class RequiredChecksWiredTests(unittest.TestCase):
         (self.tmp / '.github' / 'workflows').mkdir(parents=True)
         (self.tmp / 'governance' / 'quality_baseline.json').write_text(
             json.dumps({'required_checks': ['scripts/typo.py']}), encoding='utf-8')
+        (self.tmp / 'governance' / 'audit_policy.json').write_text(
+            json.dumps({'check_args': {'scripts/typo.py': [[]]}}), encoding='utf-8')
         (self.tmp / '.github' / 'workflows' / 'governance.yml').write_text(
             'jobs:\n  g:\n    steps:\n'
             '      - run: python scripts/gov_run.py --check scripts/typo.py\n',
@@ -102,6 +108,40 @@ class RequiredChecksWiredTests(unittest.TestCase):
         r = _run(self.tmp)
         self.assertNotEqual(r.returncode, 0)
         self.assertIn('指向不存在的文件', out(r))
+
+    # ---- D 段：调用参数必须显式声明 ----
+    def test_undeclared_check_args_fails(self):
+        # 注册了但没声明参数 -> 会走隐式默认档位（弱模式假绿的入口）
+        _repo(self.tmp, ['scripts/a.py', 'scripts/b.py'],
+              ['scripts/a.py', 'scripts/b.py'],
+              args_map={'scripts/a.py': [[]]})
+        r = _run(self.tmp)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('未在 audit_policy.check_args 显式声明', out(r))
+        self.assertIn('scripts/b.py', out(r))
+
+    def test_orphan_check_args_fails(self):
+        # 配置了某检查的参数，但它不在 required_checks 里 -> 配了不会跑
+        _repo(self.tmp, ['scripts/a.py'], ['scripts/a.py'],
+              args_map={'scripts/a.py': [[]], 'scripts/ghost.py': [[]]})
+        r = _run(self.tmp)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('配置了不会跑的检查', out(r))
+
+    def test_bad_check_args_shape_fails(self):
+        # 空列表 / 非列表 -> 结构非法（空列表意味着"零次调用"，等于不跑）
+        _repo(self.tmp, ['scripts/a.py'], ['scripts/a.py'],
+              args_map={'scripts/a.py': []})
+        r = _run(self.tmp)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('非空列表的列表', out(r))
+
+    def test_missing_audit_policy_fails_closed(self):
+        _repo(self.tmp, ['scripts/a.py'], ['scripts/a.py'])
+        (self.tmp / 'governance' / 'audit_policy.json').unlink()
+        r = _run(self.tmp)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('audit_policy.json', out(r))
 
     def test_real_repo_selfcheck(self):
         # 真实仓库当前必须双向一致——这条是本次事故的回归锁

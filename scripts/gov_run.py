@@ -175,7 +175,25 @@ def run_check(name, *, root=ROOT, run_id=None, runner=None):
     # 一项检查可能是**多次调用**（比如 check_admission_gate 先出报告、
     # 再用 --require-level G1 判下限）。整串调用序列也是治理配置的一部分：
     # 少跑一次、或漏掉收紧的那一次，都等于把门禁调软。
-    invocations = policy.get('check_args', {}).get(name) or [[]]
+    #
+    # 2026-11-01 收紧：此前缺配置时走 `or [[]]`（隐式无参运行）。这是另一个
+    # 默认开启的开关——某检查其实需要 `--enforce` 才真判，配置漏了就会以弱
+    # 模式跑完还记账成 ok，与「CI 不得自行指定档位」要防的是同一类假绿，
+    # 只不过这次是**治理配置自己忘了说话**。现在缺键即拒绝，空列表也拒绝：
+    # 「没声明参数」和「声明为空」是两件事，前者是遗漏，后者是决定。
+    # 每项必需检查都必须在 audit_policy.check_args 里显式出现（哪怕 `[[]]`），
+    # 由 T-QA-04b 在本地/CI 双向核对把这条钉住。
+    args_map = policy.get('check_args') or {}
+    if name not in args_map:
+        return EXIT_CHECK_FAILED, [
+            f'{name}: 未在 audit_policy.check_args 中声明调用参数 —— 拒绝以隐式默认'
+            f'档位运行（fail closed）。请显式写 `"{name}": [[]]` 表示"无参单次调用"，'
+            f'或写出真实调用序列。']
+    invocations = args_map[name]
+    if not isinstance(invocations, list) or not invocations:
+        return EXIT_CHECK_FAILED, [
+            f'{name}: audit_policy.check_args 值必须是非空列表的列表'
+            f'（如 [[]]），当前为 {invocations!r}']
     code = EXIT_OK
     exit_code = 0
     tail = []

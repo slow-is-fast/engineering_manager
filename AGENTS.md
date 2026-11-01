@@ -29,9 +29,9 @@
 ## 2. 标准工作循环（每个任务）
 
 1. **读记忆**：`.workbuddy/memory/` 最新日志 + `GLOSSARY.md` 对齐用词 → 对齐上下文与未决项。
-2. **基线确认**：`python scripts/gov_run.py --all` 全绿才开始改（至少跑本次触达的 required_checks）。
+2. **基线确认**：逐项跑本次触达的 required_checks（`python scripts/gov_run.py --check <路径>`）。注意 `--all` 在本地**必红**于 `verify_credential_domain`（T-VD-01b 设计内不可判定：人类 PAT 横跨两域），那不是回归；**"本地全绿"的正确定义 = 除该检查外 15 项全绿，加上 CI 里 16 项全绿**。
 3. **改动**：同一文件的多次 Edit 必须**串行**（并行会基于同一快照互相覆盖，工具报成功但改动丢失）；改完 `grep` **双向核对**——该在的在、不该多的没有（`grep -c` 计数）。
-4. **门禁复验**：全套件（当前 308 tests ≥ floor 303）+ 本次触达的检查脚本。
+4. **门禁复验**：全套件（当前 336 tests ≥ floor 336，`discover -s tests -p "test_*.py"`）+ 本次触达的检查脚本；`gov_run --check` 的退出码要单独取（`echo $?`/`PIPESTATUS`，不要被管道尾命令吃掉）。
 5. **提交**：显式 `git add <路径列表>` → commit；正文含反引号/特殊字符一律用 `git commit -F - <<'EOF' … EOF`，不拼在命令行参数里。
 6. **留痕**：`.workbuddy/memory/当日.md` 追加（append-only，不覆写）。
 
@@ -44,8 +44,13 @@
 
 ## 4. 机器检查点（你的提交会被这些拦）
 
-- **15 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin` / `verify_test_floor`(T-QA-02, floor 303) / `verify_quality_baseline`(T-QA-04) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
-- **caretaker**：结构不变量违反 → exit 2（红）；与快照漂移 → 默认告警 exit 0，`--strict` 或 `CARETAKER_STRICT=1` → exit 3。
+- **16 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin`(T-VD-01) / `verify_credential_domain`(T-VD-01b，**本地必红属设计内**：人类 PAT 横跨两域不可判定) / `verify_test_floor`(T-QA-02, floor 336) / `verify_quality_baseline`(T-QA-04) / `verify_required_checks_wired`(T-QA-04b) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
+- **接线三条腿必须同时成立**（2026-11-01 两次事故的沉淀，由 T-QA-04b 钉住）：
+  1. **注册** —— 在 `quality_baseline.required_checks` 里；
+  2. **执行** —— 在 `.github/workflows/*.yml` 里有 `gov_run.py --check <path>` 步骤；
+  3. **声明档位** —— 在 `governance/audit_policy.json` 的 `check_args` 里显式写出调用序列（无参也要写 `[[]]`）。
+  缺任一条：T-QA-04b 红；`gov_run --check` 对第 3 条缺失直接拒绝运行（fail-closed，不跑也不记账）。
+- **caretaker**：结构不变量违反 → exit 2（红）；与快照漂移 → 默认告警 exit 0，`--strict` 或 `CARETAKER_STRICT=1` → exit 3。CI 无 state 时回退 `git HEAD~1` 基线（F4），漂移仍是告警而非静默。
 - **基线漂移**：`governance/*.json`、`scripts/`、`rule-registry.json`、`control-catalog.yaml`、`.github/` 若未与基线同批提交 → T-QA-04 红（fail-closed）。
 - **基线下调**：降阈值 / 减必需检查 / 扩例外，必须附 `change_approvals` 记录，否则 T-QA-04 拒绝。
 

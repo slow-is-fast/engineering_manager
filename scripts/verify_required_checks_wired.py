@@ -17,6 +17,12 @@ unittest 全绿对此毫无感知（suite 跑测试，不记账），直到推�
      - workflow 里有、基线里没有  -> 失败（跑了但没记账，或漏更新基线）
   B. 步骤指向的文件必须存在（打错路径的检查永远绿不了，却可能被误读成"已覆盖"）
   C. 不可判定即拒绝：找不到 workflow / 一个 `--check` 都没有 -> 失败关闭
+  D. 调用参数必须显式声明：required_checks <-> audit_policy.check_args 双向
+     - 2026-11-01 补。gov_run 此前缺配置时走隐式 `[[]]`（无参运行）——某检查
+       其实需要 `--enforce` 才真判，配置漏了就会以弱模式跑完还记账成 ok。
+       这与「CI 不得自行指定档位」要防的是同一类假绿，只是这次是治理配置
+       自己忘了说话。现在三项一起钉：缺声明的红、声明了但不在基线的红、
+       值不是"非空列表的列表"的红。
 
 边界（诚实声明）
 ----------------
@@ -99,6 +105,22 @@ def main():
     # B. 接线目标文件必须存在
     missing_files = sorted(t for t in wired_set if not (BASE / t).exists())
 
+    # D. 调用参数显式声明（required_checks <-> audit_policy.check_args）
+    policy_path = BASE / 'governance' / 'audit_policy.json'
+    args_map, undeclared, orphan_args, bad_shape = {}, [], [], []
+    if not policy_path.is_file():
+        fail(f'missing governance/audit_policy.json — 无法判定调用参数是否显式声明，拒绝放行')
+    try:
+        policy = json.loads(policy_path.read_text(encoding='utf8'))
+    except json.JSONDecodeError as exc:
+        fail(f'governance/audit_policy.json is not valid JSON: {exc}')
+    args_map = policy.get('check_args') or {}
+    undeclared = sorted(t for t in req_set if t not in args_map)
+    orphan_args = sorted(k for k in args_map if k not in req_set)
+    bad_shape = sorted(k for k, v in args_map.items()
+                       if not isinstance(v, list) or not v
+                       or any(not isinstance(x, list) for x in v))
+
     problems = []
     if unwired:
         problems.append('required_checks 里这些项没有对应的 CI --check 步骤'
@@ -108,6 +130,15 @@ def main():
                         f'（跑了但不在基线内）：{unregistered}')
     if missing_files:
         problems.append(f'CI 步骤指向不存在的文件：{missing_files}')
+    if undeclared:
+        problems.append('required_checks 里这些项未在 audit_policy.check_args 显式声明'
+                        f'调用参数（会走隐式默认档位）：{undeclared}')
+    if orphan_args:
+        problems.append('audit_policy.check_args 里有这些键，但 required_checks 未收录'
+                        f'（配置了不会跑的检查）：{orphan_args}')
+    if bad_shape:
+        problems.append('audit_policy.check_args 值必须是"非空列表的列表"（如 [[]]）'
+                        f'，这些项不合法：{bad_shape}')
     if problems:
         for p in problems:
             print(f'  - {p}')
@@ -115,7 +146,8 @@ def main():
              '执行不等于记账；两者必须闭合')
 
     print(f'PASS(T-QA-04b): {len(req_set)} required checks all wired in CI '
-          f'({len(wired)} --check steps across workflow files, bidirectional match)')
+          f'({len(wired)} --check steps across workflow files, bidirectional match) '
+          f'+ all explicitly declared in audit_policy.check_args')
     for t in sorted(wired_set):
         print(f'  - {t}  <- {", ".join(sorted(wired[t]))}')
 

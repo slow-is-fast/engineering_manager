@@ -35,10 +35,22 @@
     "test-artifact": 90
   },
   "check_args": {
+    "scripts/validate_controls.py": [[]],
+    "tests/test_executor_negative.py": [[]],
+    "tests/negative_static.py": [[]],
+    "scripts/verify_executor_pin.py": [[]],
     "scripts/verify_credential_domain.py": [["--expect-deny"]],
     "scripts/verify_evidence_freshness.py": [["--enforce"]],
     "scripts/check_admission_gate.py": [[], ["--require-level", "G1"]],
-    "scripts/check_audit_closure.py": [["--acceptance"], ["--enforce"]]
+    "scripts/check_audit_closure.py": [["--acceptance"], ["--enforce"]],
+    "scripts/check_claims.py": [[]],
+    "scripts/verify_ci_app_binding.py": [[]],
+    "scripts/verify_test_floor.py": [[]],
+    "scripts/verify_quality_baseline.py": [[]],
+    "scripts/verify_required_checks_wired.py": [[]],
+    "scripts/check_governance_refs.py": [[]],
+    "scripts/check_control_refs.py": [[]],
+    "scripts/matrix_caretaker.py": [[]]
   },
   "honest_limits": [
     "审计流是本地运行产物（evidence/audit/ 不入版本库），CI 里每次运行都从空开始；保留期在本地持续累积的流上才有实际约束力。",
