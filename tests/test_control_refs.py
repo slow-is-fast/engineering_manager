@@ -58,7 +58,7 @@ class ControlRefsTests(unittest.TestCase):
 
     def test_T_REF_02_clean_code_has_no_findings(self):
         root = _mkroot(self.tmp)
-        self._code("a.py", "# GOV-04 / AASEGS-GOV-12 / AGT-001 / ISO-01 refs\n")
+        self._code("a.py", "# GOV-04 / GOV-12 / AASEGS-AGT-001 / ISO-01 refs\n")
         self.assertEqual(cr.check(root), [])
 
     def test_T_REF_02_invented_agent_rule_is_caught(self):
@@ -69,17 +69,21 @@ class ControlRefsTests(unittest.TestCase):
         self.assertEqual([x["id"] for x in f], ["AGT-999"], f)
         self.assertEqual(f[0]["kind"], "code_ref_unresolved")
 
-    def test_T_REF_02_qualified_form_normalized(self):
-        """AASEGS-GOV-04 应归一化到 GOV-04 而通过，不算悬空。"""
+    def test_T_REF_02_qualified_form_rejected(self):
+        """AASEGS-GOV-04 不再是规范拼写，严格模式下应判为悬空。"""
         root = _mkroot(self.tmp)
-        self._code("c.py", "# AASEGS-GOV-04 is the qualified spelling\n")
-        self.assertEqual(cr.check(root), [])
+        self._code("c.py", "# AASEGS-GOV-04 is not canonical\n")
+        f = cr.check(root)
+        self.assertEqual([x["id"] for x in f], ["AASEGS-GOV-04"], f)
+        self.assertEqual(f[0]["kind"], "code_ref_unresolved")
 
-    def test_T_REF_02_short_agent_rule_normalized(self):
-        """AGT-001 应归一化到 AASEGS-AGT-001 而通过。"""
+    def test_T_REF_02_short_agent_rule_rejected(self):
+        """AGT-001 短名不再是规范拼写，严格模式下应判为悬空。"""
         root = _mkroot(self.tmp)
         self._code("d.py", "# AGT-001 binds to submitter\n")
-        self.assertEqual(cr.check(root), [])
+        f = cr.check(root)
+        self.assertEqual([x["id"] for x in f], ["AGT-001"], f)
+        self.assertEqual(f[0]["kind"], "code_ref_unresolved")
 
     def test_T_REF_02_T_prefix_exempt(self):
         """测试用例名 T-QA-01 / T-REF-01 不得误报。"""
