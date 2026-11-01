@@ -324,7 +324,7 @@
           <li><b>CI 启用 caretaker --strict</b>：默认漂移仅告警不阻塞；如需漂移即红，在 CI 设 <code>CARETAKER_STRICT=1</code>。</li>
           <li><b>配置 review-agent 绑定实值</b>：设 <code>GOV_REVIEW_AGENT</code> / <code>GOV_AUTHOR_IDENTITY</code> 后，apply 自动翻才强制绑定校验（当前 opt-in，未设则向后兼容）。</li>
           <li><b>#4/#5 真正解锁</b>：需 Owner 实际提供非模拟环境 + 独立账号/主机，并在该环境跑通验证脚本；届时 EXC-02 可视为不再需要、verified 方可翻转。</li>
-          <li><b>正式评审交接（选项 ③）</b>：正式评审须由<b>不同家族的 review-agent 在新会话</b>执行（本会话为 draft 评审者，不可自评）。<b>输入包已备好</b>：<code>governance/review_handoff.md</code>——范围 <code>fe72107^..a0879b6</code>（20 个提交，含首跑后新增的 7 项门禁与 4 处修复）、F1–F7 的状态与逐条独立验证命令、前置②的判定口径、已知限制清单，以及「作者最可能错的六处」。启动方式：新会话读该文件 → 按 §3 确认门禁口径 → 按 §4 复验 → 按 §7 落账。若要更保守，可从 <code>fe72107</code> 单独起一轮（只审 F3–F6 修复），再把 <code>372969d..a0879b6</code> 作为第二轮。</li>
+          <li><b>正式评审交接（选项 ③）</b>：正式评审须由<b>不同家族的 review-agent 在新会话</b>执行（本会话为 draft 评审者，不可自评）。<b>输入包已备好</b>：<code>governance/review_handoff.md</code>——范围 <code>fe72107^..6206abf</code>（21 个提交，含首跑后新增的 3 个门禁 T-QA-04b / T-EXP-01 / T-OWN-01 与 4 处同族缺陷修复）、F1–F7 的状态与逐条独立验证命令、前置②的判定口径、已知限制清单，以及「作者最可能错的六处」。启动方式：新会话读该文件 → 按 §3 确认门禁口径 → 按 §4 复验 → 按 §7 落账。若要更保守，可从 <code>fe72107</code> 单独起一轮（只审 F3–F6 修复），再把 <code>372969d..a0879b6</code> 作为第二轮。</li>
         </ul>
       </div>
     </div>
