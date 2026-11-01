@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十三工作日志 · 单人 + 多 Agent 模式 · 最新提交 e80d91a（已推送，CI run conclusion=success，16/16 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十四工作日志 · 单人 + 多 Agent 模式 · 最新提交 32746b7（已推送，CI conclusion=success，16/16 必需检查落地）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 331 ≥ 331（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 336 ≥ 336（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -131,8 +131,8 @@
           </tr>
           <tr>
             <td><code>T-QA-04b</code></td>
-            <td>接线校验：<code>required_checks</code> ↔ workflow <code>--check</code> 步骤双向闭合（注册了没跑 / 跑了没注册 / 步骤指向不存在文件 → 红）</td>
-            <td><span class="pill pass">PASS</span> 16 ↔ 16 双向一致</td>
+            <td>接线校验三条腿：<code>required_checks</code> ↔ workflow <code>--check</code> 步骤 ↔ <code>audit_policy.check_args</code> 显式档位声明（任一腿缺失/多余/形状非法 → 红）</td>
+            <td><span class="pill pass">PASS</span> 16 ↔ 16 ↔ 16 三向一致</td>
           </tr>
           <tr>
             <td>全套件回归</td>
@@ -203,6 +203,11 @@
             <td>T-QA-04b 接线校验（把教训变成门禁）</td>
             <td><code>e80d91a</code></td>
             <td>新建 <code>scripts/verify_required_checks_wired.py</code> — 双向核对 <code>required_checks</code> 与所有 workflow 的 <code>gov_run.py --check</code> 步骤：注册了没接线 / 接线了没注册 / 步骤指向不存在文件 一律红；无 workflow 或无任何 --check → 失败关闭；注释行不算接线。7 条单测含真实仓库自检回归锁，接入后 16↔16 一致。检测不再依赖推送</td>
+          </tr>
+          <tr>
+            <td>check_args 显式化 + fail-closed（接线的第三条腿）</td>
+            <td><code>32746b7</code></td>
+            <td>同一类假绿的第三环：<code>gov_run</code> 此前对缺配置的检查走隐式 <code>[[]]</code>（无参运行）——需要 <code>--enforce</code> 才真判的检查若漏配，会以弱模式跑完还记账成 ok。现在缺键即拒绝运行（不跑也不记账）、空列表同样拒绝（「没声明」是遗漏，「声明为空」是决定）；<code>audit_policy.check_args</code> 补全 16 项；T-QA-04b 扩 D 段做三向核对；测试 7→11 条 + <code>T-GOV-22</code> 钉住 fail-closed</td>
           </tr>
         </tbody>
       </table>
