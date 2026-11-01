@@ -25,6 +25,8 @@
                     本次运行的必需检查是否全部落地；另外用 DataGate 校验
                     `evidence/` 的登记、哈希与删除批准。
   `--all`           本地一把梭：生成 run_id → 依次跑全部必需检查 → verify。
+                    中途失败**不中止**（见主循环处的说明）：跑完全部再汇总，
+                    由退出码表达结论。
   `--accept-evidence`  把当前 evidence/ 登记进台账（需 --by 与 --reason）。
 
 失败关闭的几处，都是"宁可红"的地方
@@ -469,7 +471,8 @@ def main(argv=None):
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--check', metavar='PATH', help='跑一项必需检查并记账')
     g.add_argument('--verify', action='store_true', help='验收整条审计流')
-    g.add_argument('--all', action='store_true', help='本地一把梭：跑全部必需检查后验收')
+    g.add_argument('--all', action='store_true',
+                   help='本地一把梭：跑全部必需检查（不因单项失败中止）后验收')
     g.add_argument('--accept-evidence', action='store_true',
                    help='登记 evidence/ 下的证据文件')
     ap.add_argument('--run-id', default=None)
@@ -491,16 +494,29 @@ def main(argv=None):
         if not run_id:
             run_id = f'local-{time.strftime("%Y%m%dT%H%M%S")}'
         code = EXIT_OK
-        for name in baseline_of(root)['required_checks']:
+        names = baseline_of(root)['required_checks']
+        results = []
+        for name in names:
             c, m = run_check(name, root=root, run_id=run_id)
             print('\n'.join(m))
-            if c != EXIT_OK:
+            results.append((name, c))
+            if c != EXIT_OK and code == EXIT_OK:
                 code = c
-                break
+        # 2026-11-01：这里原先遇到首个失败就 break。本地第 5 项 T-VD-01b 是
+        # **设计内必红**（人类 PAT 横跨控制面与数据面，测不到要测的东西，
+        # 不可判定即拒绝），于是第 6–18 项永远停在"没跑过"——一项已知的红
+        # 成了其余十三项的遮羞布，而第 11/12/18 项（测试下限、基线漂移、
+        # 清单指纹）恰恰是改完东西后最容易红的那几项。既然要的是"本地还剩
+        # 什么问题"的全景，失败就该只决定退出码，不该决定还能看见多少。
+        failed = {n for n, c in results if c != EXIT_OK}
+        print(f'\n=== 必需检查汇总：{len(names) - len(failed)}/{len(names)} 通过 ===')
+        for name, c in results:
+            print(f'  {"ok    " if c == EXIT_OK else "FAILED"} {name}')
         if code == EXIT_OK:
             code, msgs = verify(root=root, run_id=run_id)
         else:
-            msgs = [f'检查未全部通过，跳过验收（run_id={run_id}）']
+            msgs = [f'检查未全部通过（{len(failed)}/{len(names)}），跳过验收'
+                    f'（run_id={run_id}）']
 
     for line in msgs:
         print(line)

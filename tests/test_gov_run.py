@@ -10,6 +10,8 @@
 这层用例的存在理由，就是"测试绿不等于控制生效"——模块全绿但没人调用，
 是这套规范最想防的那种自欺。
 """
+import contextlib
+import io
 import json
 import shutil
 import sys
@@ -425,6 +427,67 @@ class GovEvidenceTests(unittest.TestCase):
         self.assertEqual(code, gov.EXIT_EVIDENCE, msgs)
         self.assertTrue(any('删除后仍能从出口读到内容' in m for m in msgs),
                         msgs)
+
+
+class GovRunAllTests(unittest.TestCase):
+    """`--all` 的取证范围：失败只该决定退出码，不该决定还能看见多少。
+
+    这台机器上第 5 项 T-VD-01b 是**设计内必红**。旧实现遇到首个失败就
+    break，于是本地"一把梭"永远停在第 5 项，6–18 项有没有红无人得知——
+    而 11/12/18（测试下限、基线漂移、清单指纹）正是改完东西最容易红的
+    那几项。用例钉住的是"失败之后还在跑"，不是"失败之后更绿"。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='aasegs-all-')
+        self.root = _mkroot(self.tmp)
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.trail = self.root / 'evidence' / 'audit' / 'trail.jsonl'
+        _write(self.root / 'scripts' / 'ok2_check.py',
+               'import sys\nsys.exit(0)\n')
+
+    def _declare(self, checks):
+        base = gov.baseline_of(self.root)
+        base['required_checks'] = checks
+        _write(self.root / 'governance' / 'quality_baseline.json',
+               json.dumps(base, ensure_ascii=False))
+        pol = gov.policy_of(self.root)
+        for c in checks:
+            pol['check_args'].setdefault(c, [[]])
+        _write(self.root / 'governance' / 'audit_policy.json',
+               json.dumps(pol, ensure_ascii=False))
+
+    def _run_all(self, run_id):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = gov.main(['--all', '--root', str(self.root),
+                             '--run-id', run_id])
+        return code, buf.getvalue()
+
+    def test_GOV_23_all_keeps_running_after_a_failure(self):
+        self._declare([OK_SCRIPT, BAD_SCRIPT, 'scripts/ok2_check.py'])
+        code, out = self._run_all('r-all')
+        self.assertEqual(code, gov.EXIT_CHECK_FAILED)
+        ev = AuditLog(self.trail).read('gov.check.completed')
+        self.assertEqual([e['check'] for e in ev],
+                         [OK_SCRIPT, BAD_SCRIPT, 'scripts/ok2_check.py'])
+        self.assertIn('2/3 通过', out)
+        self.assertIn('FAILED ' + BAD_SCRIPT, out)
+
+    def test_GOV_24_all_skips_verify_when_something_failed(self):
+        """跑完全部不等于放行：验收仍然必须被拦住。"""
+        self._declare([OK_SCRIPT, BAD_SCRIPT, 'scripts/ok2_check.py'])
+        code, out = self._run_all('r-all')
+        self.assertNotEqual(code, gov.EXIT_OK)
+        self.assertEqual(AuditLog(self.trail).read('gov.trail.verified'), [])
+        self.assertIn('跳过验收', out)
+
+    def test_GOV_25_all_full_green_runs_verify(self):
+        self._declare([OK_SCRIPT])
+        code, out = self._run_all('r-all')
+        self.assertEqual(code, gov.EXIT_OK, out)
+        self.assertIn('1/1 通过', out)
+        self.assertTrue(AuditLog(self.trail).read('gov.trail.verified'))
 
 
 if __name__ == '__main__':
