@@ -236,6 +236,18 @@ class ApplySignoffTests(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertIn('review_agent_is_author', r.stdout)
 
+    def test_review_agent_binding_enforced_on_dry_run_too(self):
+        # F6：绑定守卫必须在 dry-run（不带 --apply）路径同样生效——
+        # 守卫是「前置②gov_run 全绿」级别的准入，不是写入期检查
+        self._write_signoffs([_valid_entry('AUD-001-03', self.ev)])
+        before = self._matrix_after()
+        r = self._run_env(
+            ['--by', 'bob'],  # dry-run：无 --apply
+            {'GOV_REVIEW_AGENT': 'reviewbot'})
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('executor_not_review_agent', r.stdout)
+        self.assertEqual(self._matrix_after(), before)  # 未改动
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -20,12 +20,21 @@ caretaker agent 担任。本脚本是该决策的**最小可落地**实现：
   - 3：检测到与上次快照的漂移，且处于 --strict 模式。
 
 本脚本只写自己的状态文件（--state，默认仓库根 .caretaker_state.json，已被
-.gitignore 忽略），不触碰治理 JSON。
+.gitignore 忽略），不触碰治理 JSON。写路径本身 fail-closed（F3）：--state
+指向 governance/、scripts/、受保护文档或任一输入文件时直接拒绝。
+
+基线来源有两级（F4）：state 文件优先；state 缺失或损坏时回退 git HEAD~1
+中三份矩阵的上次提交内容——否则 CI 每次都是「首跑写基线」，漂移检测失聪。
+git 回退不可用（新仓库/非 git 环境）才降级为写新基线。
+
+指纹覆盖（F5）：断言 id + kind、disposition key + owner + type、evidence id
+——kind/type 的治理语义变更同样触发漂移告警。
 """
 import argparse
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,6 +51,65 @@ def _load(path):
         return json.loads(path.read_text(encoding='utf-8'))
     except Exception as e:  # noqa: BLE001 - 解析失败要直接报红
         sys.exit(f'FAIL(caretaker): 解析失败 {path}: {e}')
+
+
+# ---- F3：--state 是本脚本唯一的写路径，必须拒绝指向任何会被误覆写的地方 ----
+# （评审 draft finding F3：--state 可指向治理文件并被 _save_state 覆写，
+#  违反「本脚本绝不修改治理 JSON」的自我承诺——写路径也必须 fail-closed。）
+def _reject_state_path(msg):
+    print(f'FAIL(caretaker): {msg}')
+    sys.exit(2)  # 与结构违反同档：fail-closed 阻塞
+
+
+def _ensure_state_path_safe(state_path, input_paths):
+    sp = state_path.resolve()
+    protected_dirs = [ROOT / 'governance', ROOT / 'scripts']
+    protected_files = [Path(__file__).resolve(), ROOT / 'GOVERNANCE_STATUS.html',
+                       ROOT / 'AGENTS.md', ROOT / 'GLOSSARY.md']
+    for d in protected_dirs:
+        if d.is_dir() and sp.is_relative_to(d.resolve()):
+            _reject_state_path(f'--state 不允许指向受保护目录内: {state_path}')
+    for f in protected_files:
+        if sp == f.resolve():
+            _reject_state_path(f'--state 不允许指向受保护文件: {state_path}')
+    for p in input_paths:
+        if sp == p.resolve():
+            _reject_state_path(f'--state 不允许与输入文件相同: {state_path}')
+
+
+# ---- F4：CI 无状态文件 → 每次都「首跑写基线」，漂移永远查不到 ----
+# （评审 draft finding F4：漂移检测在 CI 里失聪。回退：state 缺失/损坏时，
+#  从 git HEAD~1 读三份矩阵的上一次提交内容计算基线指纹，优雅降级。）
+def _git_baseline_fallback(input_paths):
+    try:
+        first = next(p for p in input_paths if p.is_file())
+        r = subprocess.run(['git', '-C', str(first.parent), 'rev-parse', '--show-toplevel'],
+                           capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            return None
+        root = Path(r.stdout.strip())
+        rels = []
+        for p in input_paths:
+            rel = p.resolve().relative_to(root).as_posix()
+            r2 = subprocess.run(['git', '-C', str(root), 'show', f'HEAD~1:{rel}'],
+                                capture_output=True, text=True, timeout=30)
+            if r2.returncode != 0:
+                return None  # 新文件 / 无历史 / 非 git 环境 -> 优雅降级
+            rels.append(json.loads(r2.stdout))
+        matrix, coverage, ledger = rels
+        return {
+            'fingerprint': fingerprint(matrix, coverage, ledger),
+            'counts': {
+                'issues': len(matrix.get('issues', {})),
+                'assertions': sum(len(rec.get('assertions', []))
+                                  for rec in matrix.get('issues', {}).values()),
+                'dispositions': len(coverage.get('dispositions', {})),
+                'evidence': len(ledger.get('items', [])),
+            },
+            'source': 'git:HEAD~1',
+        }
+    except Exception:  # noqa: BLE001 - 任何回退失败都降级为「无基线」
+        return None
 
 
 def check_matrix(doc, problems):
@@ -105,9 +173,13 @@ def check_ledger(doc, problems):
 
 
 def fingerprint(matrix, coverage, ledger):
-    m = [(iid, sorted((a or {}).get('id') for a in rec.get('assertions', [])))
+    # F5（评审 draft finding）：指纹此前只含断言 id 集合，kind 被悄悄从
+    # manual 改成 excepted（或 disposition type 互换）不会触发漂移告警——
+    # 而这类变更恰恰是治理语义变化，必须可见。
+    m = [(iid, sorted((str((a or {}).get('id')), (a or {}).get('kind'))
+                      for a in rec.get('assertions', [])))
          for iid, rec in sorted((matrix or {}).get('issues', {}).items())]
-    c = sorted((k, d.get('owner'))
+    c = sorted((k, d.get('owner'), d.get('type'))
                for k, d in (coverage or {}).get('dispositions', {}).items())
     e = sorted((it or {}).get('id') for it in (ledger or {}).get('items', []))
     raw = json.dumps({'m': m, 'c': c, 'e': e}, ensure_ascii=False, sort_keys=True)
@@ -159,6 +231,8 @@ def main():
         sys.exit(0)
 
     state_path = Path(args.state)
+    input_paths = [Path(args.matrix), Path(args.coverage), Path(args.ledger)]
+    _ensure_state_path_safe(state_path, input_paths)
     counts = {
         'issues': len((matrix or {}).get('issues', {})),
         'assertions': sum(len(r.get('assertions', [])) for r in (matrix or {}).get('issues', {}).values()),
@@ -167,24 +241,38 @@ def main():
     }
     fp = fingerprint(matrix, coverage, ledger)
 
-    if not state_path.is_file():
+    # ---- 基线来源：state 文件优先；缺失或损坏时回退 git HEAD~1（F4） ----
+    prev, prev_source = None, None
+    if state_path.is_file():
+        try:
+            loaded = json.loads(state_path.read_text(encoding='utf-8'))
+            if isinstance(loaded, dict) and loaded.get('fingerprint'):
+                prev, prev_source = loaded, 'state'
+        except Exception:  # noqa: BLE001 - 损坏 state 视为无基线，走 git 回退
+            pass
+    if prev is None:
+        fb = _git_baseline_fallback(input_paths)
+        if fb:
+            prev, prev_source = fb, fb['source']
+
+    if prev is None:
+        # state 缺失/损坏且 git 回退不可用（新仓库 / 非 git 环境）——真正首跑
         _save_state(state_path, fp, counts)
-        print(f'BASELINE(caretaker): 首次运行，已写基线 -> {state_path}')
+        print(f'BASELINE(caretaker): 无可用基线（state 缺失且 git 历史回退不可用），'
+              f'已写基线 -> {state_path}')
         print(f'  计数: issues={counts["issues"]} assertions={counts["assertions"]} '
               f'dispositions={counts["dispositions"]} evidence={counts["evidence"]}')
         sys.exit(0)
 
-    try:
-        prev = json.loads(state_path.read_text(encoding='utf-8'))
-    except Exception:  # noqa: BLE001 - 状态损坏则按「无基线」处理，重新写
-        prev = None
-
     if prev and prev.get('fingerprint') == fp:
-        print('OK(caretaker): 与上次快照一致，无漂移')
+        print(f'OK(caretaker): 与上次快照一致，无漂移（基线来源: {prev_source}）')
+        if prev_source != 'state':
+            _save_state(state_path, fp, counts)  # git 回退命中后固化到 state
         sys.exit(0)
 
     print('DRIFT(caretaker): 检测到与上次快照的结构指纹变化（告警，不修改治理文件）：')
-    print(f'  - 指纹: {prev.get("fingerprint", "<none>")[:12]}... -> {fp[:12]}...')
+    print(f'  - 指纹: {(prev or {}).get("fingerprint", "<none>")[:12]}... -> {fp[:12]}...'
+          f'（基线来源: {prev_source or "<none>"}）')
     if prev:
         pc = prev.get('counts', {})
         print(f'  上次计数: issues={pc.get("issues")} assertions={pc.get("assertions")} '

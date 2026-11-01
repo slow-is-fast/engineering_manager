@@ -118,6 +118,100 @@ class CaretakerTests(unittest.TestCase):
         self.assertEqual(r.returncode, 3, r.stderr)
         self.assertIn('DRIFT', r.stdout)
 
+    # ---- F6 补测：结构不变量的未测分支 ----
+    def test_invalid_kind_fails(self):
+        m = json.loads(self.mp.read_text(encoding='utf-8'))
+        m['issues']['AUD-001']['assertions'][0]['kind'] = 'guess'
+        _write(self.mp, m)
+        r = self._run(['--no-state'])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('非法 kind', r.stdout)
+
+    def test_audit_driven_disposition_missing_issue_fails(self):
+        c = json.loads(self.cp.read_text(encoding='utf-8'))
+        del c['dispositions']['REG-02']['issue']
+        _write(self.cp, c)
+        r = self._run(['--no-state'])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('缺 issue', r.stdout)
+
+    def test_defense_in_depth_disposition_missing_derived_from_fails(self):
+        c = {'version': '1.0', 'dispositions': {
+            'REG-09': {'type': 'defense_in_depth', 'reason': 'x',
+                       'owner': 'governance_owner'}}}
+        cp2 = self.tmp / 'c2.json'
+        _write(cp2, c)
+        cmd = [sys.executable, str(SCRIPT), '--matrix', str(self.mp),
+               '--coverage', str(cp2), '--ledger', str(self.lp), '--no-state']
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn('缺 derived_from', r.stdout)
+
+    # ---- F5：kind 变更必须触发漂移（id 集合不变也不行） ----
+    def test_kind_change_is_drift(self):
+        self._run()
+        m = json.loads(self.mp.read_text(encoding='utf-8'))
+        m['issues']['AUD-001']['assertions'][0]['kind'] = 'manual'
+        _write(self.mp, m)
+        r = self._run()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('DRIFT', r.stdout)
+
+    # ---- F3：--state 写路径 fail-closed ----
+    def test_state_pointing_at_governance_file_rejected(self):
+        target = ROOT / 'governance' / 'executor_pin.json'
+        cmd = [sys.executable, str(SCRIPT), '--matrix', str(self.mp),
+               '--coverage', str(self.cp), '--ledger', str(self.lp),
+               '--state', str(target)]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 2, r.stdout)
+        self.assertIn('受保护目录', r.stdout)
+        # 治理文件未被覆写
+        self.assertIn('commit_sha', target.read_text(encoding='utf-8'))
+
+    def test_state_same_as_input_rejected(self):
+        cmd = [sys.executable, str(SCRIPT), '--matrix', str(self.mp),
+               '--coverage', str(self.cp), '--ledger', str(self.lp),
+               '--state', str(self.mp)]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 2, r.stdout)
+        self.assertIn('不允许与输入文件相同', r.stdout)
+
+    # ---- F4：state 缺失/损坏时的基线回退 ----
+    def test_corrupt_state_degrades_to_baseline(self):
+        # 非 git 目录：git 回退不可用 -> 优雅降级为写新基线，exit 0
+        self.state.write_text('{corrupt json!!', encoding='utf-8')
+        r = self._run()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('BASELINE', r.stdout)
+
+    def test_git_history_baseline_detects_drift(self):
+        # 真实 git 仓库：提交 v1 -> 改矩阵再提交 -> 删 state -> 应从 HEAD~1
+        # 回退基线并报 DRIFT（CI 无状态文件时漂移不再失聪）
+        self.tmp.joinpath('m.json').exists()  # noop keep linters calm
+        for args in (['init'], ['config', 'user.email', 't@t'],
+                     ['config', 'user.name', 't'], ['add', '.'],
+                     ['commit', '-m', 'v1', '--no-gpg-sign']):
+            subprocess.run(['git', '-C', str(self.tmp), *args],
+                           capture_output=True)
+        m = json.loads(self.mp.read_text(encoding='utf-8'))
+        m['issues']['AUD-002'] = {'severity': 'P0', 'assertions': [
+            {'id': 'AUD-002-01', 'kind': 'test'}]}
+        _write(self.mp, m)
+        subprocess.run(['git', '-C', str(self.tmp), 'add', '.'],
+                       capture_output=True)
+        subprocess.run(['git', '-C', str(self.tmp),
+                        'commit', '-m', 'v2', '--no-gpg-sign'],
+                       capture_output=True)
+        # 不写 state：模拟 CI 首跑
+        r = self._run()
+        self.assertIn('DRIFT', r.stdout, r.stdout + r.stderr)
+        self.assertIn('git:HEAD~1', r.stdout)
+        # git 回退命中后 state 被固化，二跑无漂移
+        r2 = self._run()
+        self.assertEqual(r2.returncode, 0, r2.stderr)
+        self.assertIn('无漂移', r2.stdout)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
