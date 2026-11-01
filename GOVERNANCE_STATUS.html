@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十八工作日志 · 单人 + 多 Agent 模式 · 最新提交 8e11594（已推送，CI conclusion=success，18/18 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十八工作日志 · 单人 + 多 Agent 模式 · 最新提交 a0879b6（已推送，CI conclusion=success，18/18 必需检查落地；本地 --all 17/18——第 5 项 T-VD-01b 设计内不可判定）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 358 ≥ 358（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 363 ≥ 363（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -239,11 +239,25 @@
             <td><code>83c8b0e</code></td>
             <td>清单给出的五步命令链此前从没串起来跑过。<code>test_owner_chain_e2e</code> 在隔离目录用合成主体跑完整链路（accept-evidence → record_signoff → dry-run 断言矩阵未变 → apply → 重生成清单 → 自检），<b>当场抓出真 bug</b>：清单「已签署」节显示 <code>? · ? ·</code>——生成器读 <code>signoff.reviewer</code>，而 <code>apply_signoffs</code> 实际写的是 <code>by</code>。单测一直绿是因为 fixture 自造了 reviewer 键（测试自洽、现实不符）；已修并把 fixture 改成真实形状</td>
           </tr>
+          <tr>
+            <td>本地「一把梭」跑完全部再汇总（已知的红不该替其余项遮羞）</td>
+            <td><code>c642d74</code> <code>308b4c1</code></td>
+            <td><code>gov_run --all</code> 原先遇首个失败即 break。本机第 5 项 T-VD-01b 设计内必红，于是第 6–18 项永远停在「没跑过」——其中第 11/12/18 项（测试下限、基线漂移、清单指纹）恰是改完东西最容易红的。改后遍历全部 18 项、逐项记账、末尾打印 <code>ok/FAILED</code> 汇总（<code>17/18</code>），失败只决定退出码、不再决定还能看见多少；验收仍被拦住（未全绿即跳过 <code>--verify</code>）。3 条新测试。改动生效当轮即自证：未提交的 <code>gov_run.py</code> 触发 T-QA-04 红，旧实现根本不会显示这一行</td>
+          </tr>
+          <tr>
+            <td>T-QA-04 的「不得是未来时间」是一句假话</td>
+            <td><code>26a9658</code></td>
+            <td>原代码 <code>if reviewed_dt &gt; now: pass  # 仅记录</code>——既没拦也没记，而注释写着「不得是未来时间」。实测把时间写成 23:20（当时 19:11）照样 PASS。与 signature 同一类病：<b>算出来却没人看的值，等于没有</b>。现保留「不判失败」（时钟快的机器不该把门禁搞红），但真的输出 <code>WARN(T-QA-04)</code>；2 条用例含正向对照（过去时间戳不得告警）</td>
+          </tr>
+          <tr>
+            <td>正式评审交接包（选项 ③ 的输入，不是结论）</td>
+            <td><code>governance/review_handoff.md</code></td>
+            <td>给「新会话 + 不同家族 review-agent」的自包含输入：范围 <code>fe72107^..a0879b6</code> 共 20 个提交、F1–F7 状态与<b>独立验证命令</b>、前置②在本机不可能字面满足的口径（本地 <code>17/18</code> + CI 18/18）、已知限制（不要重复报）、以及 §5「作者最可能错的六处」（如 T-QA-04b 读不懂 <code>if:</code> 条件步骤、<code>check_args</code> 只保证声明过不保证声明对）。不产出 verdict，落账仍须评审主体自己执行</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
-
   <!-- Owner 待办 -->
   <section>
     <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 均已记录或指派；#4/#5 资源类仍待实质就位，verified 仍 0）</h2>
@@ -310,12 +324,11 @@
           <li><b>CI 启用 caretaker --strict</b>：默认漂移仅告警不阻塞；如需漂移即红，在 CI 设 <code>CARETAKER_STRICT=1</code>。</li>
           <li><b>配置 review-agent 绑定实值</b>：设 <code>GOV_REVIEW_AGENT</code> / <code>GOV_AUTHOR_IDENTITY</code> 后，apply 自动翻才强制绑定校验（当前 opt-in，未设则向后兼容）。</li>
           <li><b>#4/#5 真正解锁</b>：需 Owner 实际提供非模拟环境 + 独立账号/主机，并在该环境跑通验证脚本；届时 EXC-02 可视为不再需要、verified 方可翻转。</li>
-          <li><b>正式评审交接（选项 ③）</b>：/adversarial-review 首跑的正式评审（对 <code>fe72107</code> 的 F3–F6 修复）须由<b>不同家族的 review-agent 在新会话</b>执行（本会话为 draft 评审者，不可自评）；本 draft findings（F3–F7）作为其输入，F1（T-VD-01）与 F3–F6 已闭环，F7 记录为已知限制。</li>
+          <li><b>正式评审交接（选项 ③）</b>：正式评审须由<b>不同家族的 review-agent 在新会话</b>执行（本会话为 draft 评审者，不可自评）。<b>输入包已备好</b>：<code>governance/review_handoff.md</code>——范围 <code>fe72107^..a0879b6</code>（20 个提交，含首跑后新增的 7 项门禁与 4 处修复）、F1–F7 的状态与逐条独立验证命令、前置②的判定口径、已知限制清单，以及「作者最可能错的六处」。启动方式：新会话读该文件 → 按 §3 确认门禁口径 → 按 §4 复验 → 按 §7 落账。若要更保守，可从 <code>fe72107</code> 单独起一轮（只审 F3–F6 修复），再把 <code>372969d..a0879b6</code> 作为第二轮。</li>
         </ul>
       </div>
     </div>
     <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 仍为 0 字节；verified 仍 0、EXC-02 有效。</p>
-  </div>
 </section>
 
 </div>
