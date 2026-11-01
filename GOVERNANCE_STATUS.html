@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十五工作日志 · 单人 + 多 Agent 模式 · 最新提交 0c3c83d（已推送，CI conclusion=success，17/17 必需检查落地）</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十六工作日志 · 单人 + 多 Agent 模式 · 最新提交 7a575b9（已推送，CI conclusion=success，18/18 必需检查落地）</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -122,7 +122,7 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 345 ≥ 345（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 352 ≥ 352（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
@@ -138,6 +138,11 @@
             <td><code>T-EXP-01</code></td>
             <td>例外到期：已过期 → 红（效力用尽，须 Owner 三选一并留痕）；剩余 ≤90 天 → 告警不阻断；缺 <code>expires</code>/格式非法/id 重复 → 失败关闭</td>
             <td><span class="pill pass">PASS</span> EXC-01 (2027-01-31) / EXC-02 (2027-04-30) 均未过期</td>
+          </tr>
+          <tr>
+            <td><code>T-OWN-01</code></td>
+            <td>Owner 工作清单与矩阵同步（清单是投影，矩阵一变必须重生成；手改亦红）</td>
+            <td><span class="pill pass">PASS</span> 22 条投影一致</td>
           </tr>
           <tr>
             <td>全套件回归</td>
@@ -219,6 +224,11 @@
             <td><code>0c3c83d</code></td>
             <td>EXC-01/EXC-02 只有 <code>expires</code> 字段、从没人拿今天比过——带到期日的例外实际等价于永久例外。现在到期即红（须 Owner 三选一：延期/补齐能力/永久 excepted），剩余 ≤90 天告警不阻断；缺失/格式非法/重复 → 失败关闭。9 条单测；三腿接入时故意先加一腿，T-QA-04b 准确报出另外两腿缺失，补齐后 17↔17↔17</td>
           </tr>
+          <tr>
+            <td>Owner 签署工作清单（生成 + 防漂移）</td>
+            <td><code>7a575b9</code></td>
+            <td><code>governance/owner_worklist.md</code>：22 条 manual/excepted 按「仅需文档与判断 12 ／ 需真实环境或真机资源 9 ／ 例外内 1」保守分类，需资源那条带「所需资源」列；含 accept-evidence → record_signoff → dry-run → apply → 重生成 的完整命令模板。T-OWN-01 用 <code>--check</code> 模式钉住"清单与矩阵必须同步"（手改也红）；<code>check_args</code> 配 <code>[["--check"]]</code>——不带就是生成模式（每次改写文件且永远绿），这是显式档位第一次真实派上用场</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -241,7 +251,7 @@
           <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill wait">已记录 B·auto-flip 已实现（续十六）</span></td></tr>
         </tbody>
       </table>
-      <p class="note">落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。</p>
+      <p class="note"><b>逐条可执行清单：<code>governance/owner_worklist.md</code></b>（由矩阵自动生成，含分类、所需资源、签署命令模板；T-OWN-01 保证它与矩阵同步，手改即红）。落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。</p>
     </div>
   </section>
 
@@ -261,7 +271,7 @@
         <div class="kv"><span>EXC-02 到期</span><b>2027-04-30</b></div>
         <div class="kv"><span>两日期一致性</span><b>一致 ✓</b></div>
         <div class="kv"><span>代码引用命名分歧</span><b>已闭合（17 处）</b></div>
-        <div class="kv"><span>required_checks</span><b>17（含 caretaker + 接线校验 + 例外到期）</b></div>
+        <div class="kv"><span>required_checks</span><b>18（含 caretaker / 接线 / 例外到期 / Owner 清单）</b></div>
         <div class="kv"><span>T-REF-02 模式</span><b>严格（无归一化）</b></div>
         <div class="kv"><span>提交未直推 main</span><b>受 PR + static-gate 保护</b></div>
       </div>
