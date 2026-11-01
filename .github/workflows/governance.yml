@@ -100,6 +100,13 @@ jobs:
       - name: "T-QA-04b required checks wired in CI (bidirectional)"
         run: python scripts/gov_run.py --check scripts/verify_required_checks_wired.py
 
+      # T-EXP-01：例外到期。EXC-01（2027-01-31）/ EXC-02（2027-04-30）此前只有
+      # 一个 `expires` 字段，从没人拿今天跟它比——带到期日的例外实际等价于永久
+      # 例外，只是它自己不知道。现在到期即红（必须 Owner 三选一并留痕），
+      # 剩余 90 天内告警但不阻断（提前量是提醒，不是事实判定）。
+      - name: "T-EXP-01 exception expiry (expired exceptions fail closed)"
+        run: python scripts/gov_run.py --check scripts/verify_exception_expiry.py
+
       - name: "T-CLM-01 unbacked absolute claims lint (no unsupported capability claims)"
         run: python scripts/gov_run.py --check scripts/check_claims.py
 
