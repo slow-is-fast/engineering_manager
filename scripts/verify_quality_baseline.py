@@ -86,7 +86,8 @@ for chk in (b.get('required_checks') or []):
     if chk.endswith(('.py', '.json', '.yaml', '.yml')) and not (BASE / chk).exists():
         fail(f'required_checks points to missing file: {chk}')
 
-# reviewed_at 必须可解析为 ISO-8601，且不得是未来时间
+# reviewed_at 必须可解析为 ISO-8601。未来时间只告警不拦（本机时钟快一点
+# 不该让门禁变红），但必须**真的说出来**——见判定段末尾的说明。
 ra = str(b.get('reviewed_at') or '')
 try:
     reviewed_dt = datetime.fromisoformat(ra.replace('Z', '+00:00'))
@@ -135,8 +136,19 @@ rc, g_commit = git('log', '-1', '--format=%H', '--', *gov_paths())
 if rc != 0 or not g_commit:
     fail('cannot resolve last governance commit')
 
-if reviewed_dt > datetime.now(reviewed_dt.tzinfo).replace(tzinfo=reviewed_dt.tzinfo):
-    pass  # 未来时间戳：不作为硬失败，避免时钟偏差误伤；仅记录
+# reviewed_at 落在未来：不拦（本机时钟快一小时就会误伤，且"提前量是提醒，
+# 不是事实判定"），但也不能装作没看见。
+# 这一段原先是 `if <未来>: pass`，注释写着"仅记录"——实际既没拦也没记，
+# 一个算完就丢的条件和一个没写的条件，在审阅者眼里长得一模一样，而上面
+# 的注释还写着"不得是未来时间"。2026-11-01 实测：把 reviewed_at 写成
+# 23:20（当时 19:11）依然 PASS，说明"不得是未来时间"这句话当时是假的。
+# 同批修的还有 apply_signoffs 里那个从没人校验的 signature 字段——同一类
+# 病：**算出来却没人看的值，等于没有**。
+now_dt = datetime.now(reviewed_dt.tzinfo)
+if reviewed_dt > now_dt:
+    print(f'WARN(T-QA-04): reviewed_at={ra} 晚于当前时间 '
+          f'{now_dt.isoformat(timespec="seconds")}，大概率是时钟偏差；'
+          f'不判失败，但这个时间戳不能当作「何时审的」的证据。')
 
 # ---- C. 漂移：提交先后 ----
 if b_commit != g_commit:

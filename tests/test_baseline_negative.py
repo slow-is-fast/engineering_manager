@@ -283,6 +283,28 @@ class QualityBaselineTests(unittest.TestCase):
         rc, out = self.check()
         self.assertNotEqual(rc, 0, '不可解析的时间戳竟然通过')
 
+    # ---- 未来时间戳：不拦，但必须说出来（原先算了就丢） ----
+    def test_t_qa_04_future_reviewed_at_warns_but_passes(self):
+        """`reviewed_at` 落在未来时只告警。
+
+        原实现是 `if <未来>: pass`，注释写着"仅记录"——实际既没拦也没记。
+        2026-11-01 实测：把时间写成 23:20（当时 19:11）依然 PASS，说明注释里
+        那句"不得是未来时间"当时是假的。用例钉住"真的说了出来"，同时钉住
+        "不因此判失败"——时钟快一点的机器不该把门禁搞红。
+        """
+        self.commit_baseline(reviewed_at='2999-01-01T00:00:00+08:00')
+        rc, out = self.check()
+        self.assertEqual(rc, 0, out)
+        self.assertIn('WARN(T-QA-04)', out)
+        self.assertIn('2999-01-01', out)
+
+    def test_t_qa_04_past_reviewed_at_does_not_warn(self):
+        """正向对照：证明上一条不是"永远告警"。"""
+        self.commit_baseline()                 # 2026-10-30T00:00:00+08:00
+        rc, out = self.check()
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn('WARN(T-QA-04)', out)
+
     def test_t_qa_04_required_checks_must_point_to_real_file(self):
         write(self.tmp / 'governance' / 'quality_baseline.json',
               json.dumps(self.baseline(required_checks=['scripts/ghost.py'])))
