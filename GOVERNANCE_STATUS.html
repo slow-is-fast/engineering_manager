@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AASEGS v1.1 治理包 · 交付与门禁状态看板</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --ink: #2b2f36;
+    --muted: #6b7480;
+    --line: #e4e9f0;
+    --accent: #3b6ea5;
+    --accent-soft: #eaf1f8;
+    --green: #2e7d4f;
+    --green-bg: #e9f5ee;
+    --amber: #b9770e;
+    --amber-bg: #fbf2e0;
+    --red: #c0392b;
+    --red-bg: #fbecea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    line-height: 1.55;
+    font-size: 14px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 56px; }
+  header.hero {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(20,40,80,.05);
+  }
+  h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: .3px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0; }
+  .verdict {
+    margin-top: 16px;
+    display: flex; gap: 10px; align-items: center;
+    background: var(--accent-soft);
+    border: 1px solid #cfe0f1;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .verdict .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); flex: 0 0 auto; }
+  .verdict p { margin: 0; font-size: 13.5px; }
+  section { margin-top: 26px; }
+  .sec-title {
+    font-size: 15px; font-weight: 600; margin: 0 0 12px;
+    padding-left: 10px; border-left: 3px solid var(--accent);
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(20,40,80,.04);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: #fafbfd; }
+  tr:last-child td { border-bottom: none; }
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    background: #f1f4f8; padding: 1px 5px; border-radius: 5px; font-size: 12.5px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; line-height: 1.5;
+  }
+  .pill.pass { color: var(--green); background: var(--green-bg); }
+  .pill.wait { color: var(--amber); background: var(--amber-bg); }
+  .pill.block { color: var(--red); background: var(--red-bg); }
+  .muted { color: var(--muted); }
+  ul.tight { margin: 6px 0 0; padding-left: 18px; }
+  ul.tight li { margin: 3px 0; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 680px) { .grid2 { grid-template-columns: 1fr; } }
+  .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .kv:last-child { border-bottom: none; }
+  .kv b { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续十二工作日志 · 单人 + 多 Agent 模式</p>
+    <div class="verdict">
+      <span class="dot"></span>
+      <p><b>Agent 侧已彻底穷尽且全绿</b>；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
+    </div>
+  </header>
+
+  <!-- 门禁实时复验 -->
+  <section>
+    <h2 class="sec-title">一、门禁实时复验（本轮刚跑，全 PASS）</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>检查项</th><th>含义</th><th>结果</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>T-REF-02</code></td>
+            <td>代码注释里引用的规则/控制编号在 <code>rule-registry.json</code> / <code>control-catalog.yaml</code> 真实存在（含命名约定归一化）</td>
+            <td><span class="pill pass">PASS</span> 零悬空</td>
+          </tr>
+          <tr>
+            <td><code>T-REF-01</code></td>
+            <td>治理 JSON 结构化字段引用可解析；例外登记与基线日期一致</td>
+            <td><span class="pill pass">PASS</span></td>
+          </tr>
+          <tr>
+            <td><code>T-QA-02</code></td>
+            <td>测试下限：实际 acceptance cases ≥ floor</td>
+            <td><span class="pill pass">PASS</span> 303 ≥ 303</td>
+          </tr>
+          <tr>
+            <td>全套件回归</td>
+            <td>13 个 unittest 模块（含 <code>test_control_refs</code> 9 条）</td>
+            <td><span class="pill pass">OK</span> 296 tests</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">注：负向用例打印的 <code>FAIL(T-REF-01/02)</code> 为预期噪音（故意用 <code>DG-01</code> / <code>AGT-777</code> 验证检查器能拦住），不影响整体 OK。</p>
+    </div>
+  </section>
+
+  <!-- Agent 侧已交付 -->
+  <section>
+    <h2 class="sec-title">二、Agent 侧已交付清单（续八 ～ 续十二）</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>交付项</th><th>提交 / 形态</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>签署→闭环全链路 dry-run 演示</td>
+            <td>未改文件</td>
+            <td>隔离 <code>/tmp</code> + 合成"张三"，验证 <code>record_signoff ↔ apply_signoffs ↔ closure.py</code> 回路可用、守卫拦得住；真实 <code>signoffs.jsonl</code> 保持 0 字节</td>
+          </tr>
+          <tr>
+            <td>代码引用完整性检查 <code>T-REF-02</code></td>
+            <td><code>9fbe189</code></td>
+            <td>新建 <code>scripts/check_control_refs.py</code> + <code>tests/test_control_refs.py</code>（9 条）；接入 <code>quality_baseline.json</code>，下限 269→303</td>
+          </tr>
+          <tr>
+            <td>命名分歧闭合（注释对齐）</td>
+            <td><code>56d9daf</code></td>
+            <td>6 文件 17 处注释对齐到注册表规范形式：GOV 去前缀、AGT/SUP 加 <code>AASEGS-</code> 前缀；纯注释，无逻辑改动</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Owner 待办 -->
+  <section>
+    <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 任一落实方可推进）</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>#</th><th>需要 Owner 提供 / 拍板</th><th>关联断言</th><th>状态</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>独立 Reviewer 身份（非提交方本人）</td><td>AUD-001 / 002 / 014 / 020</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>2</td><td>Security Owner 角色建制</td><td>AUD-015-04（硬性）</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>3</td><td>数据矩阵责任人 owner 指派</td><td>AUD-016-04</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>4</td><td>真实环境资源（非模拟）</td><td>AUD-004 / 009 / 010 / 012（受 EXC-02）</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>5</td><td>独立账号 / 独立主机</td><td>解锁 EXC-02 → verified 可达</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill block">阻塞</span></td></tr>
+        </tbody>
+      </table>
+      <p class="note">落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。</p>
+    </div>
+  </section>
+
+  <!-- 成熟度与硬约束 -->
+  <section>
+    <h2 class="sec-title">四、成熟度与硬约束快照（2026-11-01 全门禁快照）</h2>
+    <div class="grid2">
+      <div class="card">
+        <div class="kv"><span>成熟度等级</span><b>G1</b></div>
+        <div class="kv"><span>未关闭 P0（阻断 G2）</span><b>10</b></div>
+        <div class="kv"><span>manual 断言（EXC-01 门控）</span><b>21</b></div>
+        <div class="kv"><span>verified 状态</span><b>0（受 EXC-02）</b></div>
+        <div class="kv"><span>unimplemented</span><b>0（已并入 manual）</b></div>
+      </div>
+      <div class="card">
+        <div class="kv"><span>EXC-01 到期</span><b>2027-01-31</b></div>
+        <div class="kv"><span>EXC-02 到期</span><b>2027-04-30</b></div>
+        <div class="kv"><span>两日期一致性</span><b>一致 ✓</b></div>
+        <div class="kv"><span>代码引用命名分歧</span><b>已闭合（17 处）</b></div>
+        <div class="kv"><span>提交未直推 main</span><b>受 PR + static-gate 保护</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 诚实边界 + 下一步 -->
+  <section>
+    <h2 class="sec-title">五、诚实边界与下一步可选</h2>
+    <div class="grid2">
+      <div class="card">
+        <p class="sub" style="margin-top:0">铁律（不得违反）</p>
+        <ul class="tight">
+          <li><code>tested ≠ verified ≠ closed</code>：机器验证过 ≠ 真实环境验证 ≠ 断言关闭</li>
+          <li>失败关闭：任一门禁不符即非零退出</li>
+          <li>不得用文档声明替代机器判定</li>
+          <li>不替 Owner 关闭断言 / 代签</li>
+          <li>禁止 <code>git add -A</code>（仅显式路径）；不直推受保护 <code>origin/main</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="sub" style="margin-top:0">可选增强（需 Owner 拍板或非 Agent 资源）</p>
+        <ul class="tight">
+          <li><b>收紧 T-REF-02</b>：去掉 AGT/SUP 短名归一化、仅接受限定名 —— 需 Owner 先确认规范形式（本轮对齐已按推荐默认执行）</li>
+          <li><b>verify_executor_pin 本地守卫</b>：当前本地无用例，需 <code>gh</code> 访问 gov-plane 仓，仅 CI 可验 —— "全绿快照"唯一未覆盖项</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 仍为 0 字节。</p>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
