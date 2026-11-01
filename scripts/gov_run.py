@@ -515,8 +515,8 @@ def main(argv=None):
         if code == EXIT_OK:
             code, msgs = verify(root=root, run_id=run_id)
         else:
-            msgs = [f'检查未全部通过（{len(failed)}/{len(names)}），跳过验收'
-                    f'（run_id={run_id}）']
+            msgs = [f'检查未全部通过：{len(failed)}/{len(names)} 项未通过，'
+                    f'跳过验收（run_id={run_id}）']
 
     for line in msgs:
         print(line)
