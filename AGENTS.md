@@ -29,9 +29,9 @@
 ## 2. 标准工作循环（每个任务）
 
 1. **读记忆**：`.workbuddy/memory/` 最新日志 + `GLOSSARY.md` 对齐用词 → 对齐上下文与未决项。
-2. **基线确认**：逐项跑本次触达的 required_checks（`python scripts/gov_run.py --check <路径>`）。注意 `--all` 在本地**必红**于 `verify_credential_domain`（T-VD-01b 设计内不可判定：人类 PAT 横跨两域），那不是回归；**"本地全绿"的正确定义 = 除该检查外 15 项全绿，加上 CI 里 16 项全绿**。
+2. **基线确认**：逐项跑本次触达的 required_checks（`python scripts/gov_run.py --check <路径>`）。也可以直接 `--all`：它现在**跑完全部 18 项再汇总**（2026-11-01 起不再遇首个失败即停——本地第 5 项 T-VD-01b 设计内必红，旧实现在那里 break，等于让一项已知的红替后面十三项遮羞）。`--all` 在本地**必红**于 `verify_credential_domain`（T-VD-01b 设计内不可判定：人类 PAT 横跨两域），那不是回归；判据是汇总行：**除 T-VD-01b 外 17 项全绿（`17/18`），加上 CI 里 18 项全绿**。汇总里出现第二项 FAILED，就是真问题。
 3. **改动**：同一文件的多次 Edit 必须**串行**（并行会基于同一快照互相覆盖，工具报成功但改动丢失）；改完 `grep` **双向核对**——该在的在、不该多的没有（`grep -c` 计数）。
-4. **门禁复验**：全套件（当前 358 tests ≥ floor 358，`discover -s tests -p "test_*.py"`）+ 本次触达的检查脚本；`gov_run --check` 的退出码要单独取（`echo $?`/`PIPESTATUS`，不要被管道尾命令吃掉）。
+4. **门禁复验**：全套件（`discover -s tests -p "test_*.py"` 356 条 unittest 全绿；T-QA-02 口径 363 acceptance cases ≥ floor 363）+ 本次触达的检查脚本；`gov_run --check` 的退出码要单独取（`echo $?`/`PIPESTATUS`，不要被管道尾命令吃掉）。
 5. **提交**：显式 `git add <路径列表>` → commit；正文含反引号/特殊字符一律用 `git commit -F - <<'EOF' … EOF`，不拼在命令行参数里。
 6. **留痕**：`.workbuddy/memory/当日.md` 追加（append-only，不覆写）。
 
@@ -44,7 +44,7 @@
 
 ## 4. 机器检查点（你的提交会被这些拦）
 
-- **18 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin`(T-VD-01) / `verify_credential_domain`(T-VD-01b，**本地必红属设计内**：人类 PAT 横跨两域不可判定) / `verify_test_floor`(T-QA-02, floor 358) / `verify_quality_baseline`(T-QA-04) / `verify_required_checks_wired`(T-QA-04b) / `verify_exception_expiry`(T-EXP-01，**例外到期即红**) / `export_owner_worklist`(T-OWN-01，`--check` 模式) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
+- **18 项 required_checks**（`governance/quality_baseline.json`）：`validate_controls` / `tests/negative_static` / `verify_executor_pin`(T-VD-01) / `verify_credential_domain`(T-VD-01b，**本地必红属设计内**：人类 PAT 横跨两域不可判定) / `verify_test_floor`(T-QA-02, floor 363) / `verify_quality_baseline`(T-QA-04) / `verify_required_checks_wired`(T-QA-04b) / `verify_exception_expiry`(T-EXP-01，**例外到期即红**) / `export_owner_worklist`(T-OWN-01，`--check` 模式) / `check_governance_refs`(T-REF-01) / `check_control_refs`(T-REF-02 **严格模式**：拼写分歧即悬空) / `matrix_caretaker` 等。
 - **接线三条腿必须同时成立**（2026-11-01 两次事故的沉淀，由 T-QA-04b 钉住）：
   1. **注册** —— 在 `quality_baseline.required_checks` 里；
   2. **执行** —— 在 `.github/workflows/*.yml` 里有 `gov_run.py --check <path>` 步骤；
