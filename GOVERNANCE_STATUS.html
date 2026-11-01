@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续十二工作日志 · 单人 + 多 Agent 模式</p>
+    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续十六工作日志 · 单人 + 多 Agent 模式 · 最新提交 e29e2a8</p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -111,7 +111,7 @@
         <tbody>
           <tr>
             <td><code>T-REF-02</code></td>
-            <td>代码注释里引用的规则/控制编号在 <code>rule-registry.json</code> / <code>control-catalog.yaml</code> 真实存在（含命名约定归一化）</td>
+            <td>代码注释里引用的规则/控制编号在 <code>rule-registry.json</code> / <code>control-catalog.yaml</code> 真实存在（<b>严格模式</b>：拼写分歧即悬空，无前缀归一化）</td>
             <td><span class="pill pass">PASS</span> 零悬空</td>
           </tr>
           <tr>
@@ -122,12 +122,17 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 303 ≥ 303</td>
+            <td><span class="pill pass">PASS</span> 315 ≥ 303</td>
+          </tr>
+          <tr>
+            <td><code>T-QA-04</code></td>
+            <td>质量基线完整性（required_checks 存在、漂移、单调性）</td>
+            <td><span class="pill pass">PASS</span> 15 项必需检查</td>
           </tr>
           <tr>
             <td>全套件回归</td>
-            <td>13 个 unittest 模块（含 <code>test_control_refs</code> 9 条）</td>
-            <td><span class="pill pass">OK</span> 296 tests</td>
+            <td>14 个 unittest 模块（含 <code>test_control_refs</code> 9 条 + <code>test_matrix_caretaker</code> 8 条）</td>
+            <td><span class="pill pass">OK</span> 308 tests</td>
           </tr>
         </tbody>
       </table>
@@ -137,7 +142,7 @@
 
   <!-- Agent 侧已交付 -->
   <section>
-    <h2 class="sec-title">二、Agent 侧已交付清单（续八 ～ 续十二）</h2>
+    <h2 class="sec-title">二、Agent 侧已交付清单（续八 ～ 续十六）</h2>
     <div class="card">
       <table>
         <thead>
@@ -159,6 +164,11 @@
             <td><code>56d9daf</code></td>
             <td>6 文件 17 处注释对齐到注册表规范形式：GOV 去前缀、AGT/SUP 加 <code>AASEGS-</code> 前缀；纯注释，无逻辑改动</td>
           </tr>
+          <tr>
+            <td>#2→B Security-Owner 代理 + #3 caretaker + #6 review-agent 绑定</td>
+            <td><code>e29e2a8</code></td>
+            <td>#2 由 A（Owner 兼任）改为 B（独立 AI agent 作 Security-Owner 代理）；新建 <code>scripts/matrix_caretaker.py</code>（只读巡检，结构违反→2、漂移告警默认0/--strict 3）；<code>apply_signoffs.py</code> 加 opt-in <code>GOV_REVIEW_AGENT</code> 绑定；caretaker 接入 <code>quality_baseline</code> required_checks（14→15）</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -166,22 +176,22 @@
 
   <!-- Owner 待办 -->
   <section>
-    <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 任一落实方可推进）</h2>
+    <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 指派/流程类已记录，资源类仍阻塞）</h2>
     <div class="card">
       <table>
         <thead>
           <tr><th>#</th><th>需要 Owner 提供 / 拍板</th><th>关联断言</th><th>状态</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>独立 Reviewer 身份（非提交方本人）</td><td>AUD-001 / 002 / 014 / 020</td><td><span class="pill block">阻塞</span></td></tr>
-          <tr><td>2</td><td>Security Owner 角色建制</td><td>AUD-015-04（硬性）</td><td><span class="pill block">阻塞</span></td></tr>
-          <tr><td>3</td><td>数据矩阵责任人 owner 指派</td><td>AUD-016-04</td><td><span class="pill block">阻塞</span></td></tr>
-          <tr><td>4</td><td>真实环境资源（非模拟）</td><td>AUD-004 / 009 / 010 / 012（受 EXC-02）</td><td><span class="pill block">阻塞</span></td></tr>
-          <tr><td>5</td><td>独立账号 / 独立主机</td><td>解锁 EXC-02 → verified 可达</td><td><span class="pill block">阻塞</span></td></tr>
-          <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill block">阻塞</span></td></tr>
+          <tr><td>1</td><td>独立 Reviewer 身份（非提交方本人）</td><td>AUD-001 / 002 / 014 / 020</td><td><span class="pill wait">已记录（续十四）</span></td></tr>
+          <tr><td>2</td><td>Security Owner 角色建制</td><td>AUD-015-04（硬性）</td><td><span class="pill wait">已记录 B（续十六）</span></td></tr>
+          <tr><td>3</td><td>数据矩阵责任人 owner 指派</td><td>AUD-016-04</td><td><span class="pill wait">已记录 C·caretaker 已实现（续十六）</span></td></tr>
+          <tr><td>4</td><td>真实环境资源（非模拟）</td><td>AUD-004 / 009 / 010 / 012（受 EXC-02）</td><td><span class="pill block">阻塞（资源）</span></td></tr>
+          <tr><td>5</td><td>独立账号 / 独立主机</td><td>解锁 EXC-02 → verified 可达</td><td><span class="pill block">阻塞（资源）</span></td></tr>
+          <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill wait">已记录 B·auto-flip 已实现（续十六）</span></td></tr>
         </tbody>
       </table>
-      <p class="note">落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。</p>
+      <p class="note">落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。</p>
     </div>
   </section>
 
@@ -201,6 +211,8 @@
         <div class="kv"><span>EXC-02 到期</span><b>2027-04-30</b></div>
         <div class="kv"><span>两日期一致性</span><b>一致 ✓</b></div>
         <div class="kv"><span>代码引用命名分歧</span><b>已闭合（17 处）</b></div>
+        <div class="kv"><span>required_checks</span><b>15（含 caretaker）</b></div>
+        <div class="kv"><span>T-REF-02 模式</span><b>严格（无归一化）</b></div>
         <div class="kv"><span>提交未直推 main</span><b>受 PR + static-gate 保护</b></div>
       </div>
     </div>
@@ -223,12 +235,14 @@
       <div class="card">
         <p class="sub" style="margin-top:0">可选增强（需 Owner 拍板或非 Agent 资源）</p>
         <ul class="tight">
-          <li><b>收紧 T-REF-02</b>：去掉 AGT/SUP 短名归一化、仅接受限定名 —— 需 Owner 先确认规范形式（本轮对齐已按推荐默认执行）</li>
-          <li><b>verify_executor_pin 本地守卫</b>：当前本地无用例，需 <code>gh</code> 访问 gov-plane 仓，仅 CI 可验 —— "全绿快照"唯一未覆盖项</li>
+          <li><b>收紧 T-REF-02（已完成）</b>：续十三已去掉 AGT/SUP 短名归一化、改为严格模式（拼写分歧即悬空）。</li>
+          <li><b>verify_executor_pin 本地守卫</b>：当前本地无用例，需 <code>gh</code> 访问 gov-plane 仓，仅 CI 可验 —— "全绿快照"唯一未覆盖项。</li>
+          <li><b>CI 启用 caretaker --strict</b>：默认漂移仅告警不阻塞；如需漂移即红，在 CI 设 <code>CARETAKER_STRICT=1</code>。</li>
+          <li><b>配置 review-agent 绑定实值</b>：设 <code>GOV_REVIEW_AGENT</code> / <code>GOV_AUTHOR_IDENTITY</code> 后，apply 自动翻才强制绑定校验（当前 opt-in，未设则向后兼容）。</li>
         </ul>
       </div>
     </div>
-    <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 仍为 0 字节。</p>
+    <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 仍为 0 字节；verified 仍 0、EXC-02 有效。</p>
   </div>
 </section>
 
