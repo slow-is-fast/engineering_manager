@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-01 · 数据来源：本轮实时复验 + 续八～续二十八工作日志 · 单人 + 多 Agent 模式 · 最新提交 a0879b6（已推送，CI conclusion=success，18/18 必需检查落地；本地 --all 17/18——第 5 项 T-VD-01b 设计内不可判定）</p>
+    <p class="sub">截至 2026-11-02 · 数据来源：本轮实时复验 + 续八～续三十工作日志 · 单人 + 多 Agent 模式 · 最新提交 41f5ce4（已推送，CI conclusion=success，18/18 必需检查落地；本地 --all 17/18——第 5 项 T-VD-01b 设计内不可判定） · <b>verified 1/22：AUD-001-03 已关闭（signoffs.jsonl 首条真实签署）</b></p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -259,13 +259,18 @@
             <td><code>eb124e5</code></td>
             <td>此前这条 <code>manual</code> 断言只有校验器一行 PASS，Owner 面对 59 条规则无从下手。新 <code>scripts/export_coverage_pack.py</code> 产出 <code>governance/coverage_pack_aud001.md</code>：覆盖率（<b>把「字符串里有引用」53/59 与「引用能解析」45/59 分成两个数</b>，合成一个就会让 76% 冒充 100%）、双向差异、以及按 <code>sha256(rule_id)</code> 排序取前 10 条的抽样清单（每条给规则原文＋控制证据＋用例源码＋三个待打勾判断）。<b>抓到真问题</b>：<code>rule-registry.json</code> 有 10 处 <code>verification.tests</code> 指向不存在的用例（含 2 条 P0 规则），根因是校验器只查控制目录侧、规则侧从无检查；其中 <code>T-QA-05</code> 正是 10-30 已发现过的幽灵用例，控制目录改了、注册表还留着。材料不下判断、不签署——它的价值全在「不替人下判断」；<code>--check</code> 有指纹但<b>未接入任何门禁</b>，文首明写，免得被读成「有人看着」</td>
           </tr>
+          <tr>
+            <td>EXC-03 登记 + 首条真实签署（verified 0 → 1）+ 指纹换行修复</td>
+            <td><code>5a61456</code> <code>fe15276</code> <code>41f5ce4</code></td>
+            <td>三件事：<b>① EXC-03</b>——9 条需真实环境的 manual 断言按 Owner 批准（原话"算EXC-03通过了"）定性为 excepted，expires 2027-04-30；其断言没有控制 target，旧 <code>exception_valid</code> 硬性要求 waives.controls 非空会逼出编造映射，故经上游 PR#2（28ef6b1）让 schema 接受断言级 waives 目标，pin 同批 bump（b337b3bf，29 文件与 vendor 逐字节一致），基线 <code>change_approvals</code> 原文记录批准语。<b>② 首条签署</b>——AUD-001-03 经完整链路关闭（evidence → accept → record → apply），证据如实披露已接受的 3 处抽样瑕疵，10 处悬空引用另立工作项。<b>③ CI 抓出指纹换行坑</b>——<code>_load</code> 按原始字节算指纹、apply 在 Windows 写 CRLF，本地绿 CI 必红；指纹规范化为 LF 并加双向用例钉住</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
   <!-- Owner 待办 -->
   <section>
-    <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 均已记录或指派；#4/#5 资源类仍待实质就位，verified 仍 0）</h2>
+    <h2 class="sec-title">三、Owner 待办清单（6 阻塞点 · 均已记录或指派；#4/#5 已按 EXC-03 定性（2027-04-30），verified 1/22）</h2>
     <div class="card">
       <table>
         <thead>
@@ -280,7 +285,7 @@
           <tr><td>6</td><td>签署后断言状态更新流程（manual→closed 由谁走、按何流程）</td><td>闭环流程治理</td><td><span class="pill wait">已记录 B·auto-flip 已实现（续十六）</span></td></tr>
         </tbody>
       </table>
-      <p class="note"><b>逐条可执行清单：<code>governance/owner_worklist.md</code></b>（由矩阵自动生成，含分类、所需资源、签署命令模板；T-OWN-01 保证它与矩阵同步，手改即红）。落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。这三条路径的具体做法、代价，以及为什么「永久 excepted」在本机制下不可表达（<code>T-EXP-01</code> 要求例外必须有到期日），见 <code>owner_action_plan.md</code> §7；注意 <code>EXC-02</code> 的 <code>waives.requirement</code> 只有 <code>verified</code>，<b>不覆盖这 9 条 manual 断言</b>，所以它们目前没有任何终止条件。AUD-001-03 的抽样材料已就绪：<code>governance/coverage_pack_aud001.md</code>（10 条，逐条三个勾）。</p>
+      <p class="note"><b>逐条可执行清单：<code>governance/owner_worklist.md</code></b>（由矩阵自动生成，含分类、所需资源、签署命令模板；T-OWN-01 保证它与矩阵同步，手改即红）。落实路径：先 <code>--dry-run</code> 投影 diff 给 Owner 看 → 确认后 <code>--apply --by &lt;Owner&gt;</code> 翻断言。严禁 Agent 代签 / 伪造签署。"已记录"仅代表流程/指派已落地，不等于断言已关闭或 verified 已翻转。其中 #4/#5 的「B」为<b>沿用 EXC-02 / 本地隔离近似的延期立场</b>，并非资源已就位，故 verified 仍 0、相关断言仍不可关闭。Owner 已于 2026-11-01 明确确认不提供真环境；2027-04-30 到期前再择「延期例外 / 补环境验证 / 永久 excepted」。这三条路径的具体做法、代价，以及为什么「永久 excepted」在本机制下不可表达（<code>T-EXP-01</code> 要求例外必须有到期日），见 <code>owner_action_plan.md</code> §7；注意 <code>EXC-02</code> 的 <code>waives.requirement</code> 只有 <code>verified</code>，<b>不覆盖这 9 条 manual 断言</b>，所以它们目前没有任何终止条件。AUD-001-03 的抽样材料已就绪：<code>governance/coverage_pack_aud001.md</code>（10 条，逐条三个勾），且其签署已落账：<b>2026-11-02 Owner 确认后经 record_signoff → apply_signoffs 关闭，verified 0 → 1</b>；证据 <code>evidence/aud001_sampling_review_20261102.md</code> 如实披露已接受的 3 处抽样瑕疵。9 条需环境断言已按 EXC-03 定性（excepted，2027-04-30 到期，仍计入未满足）。</p>
     </div>
   </section>
 
@@ -333,7 +338,7 @@
         </ul>
       </div>
     </div>
-    <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 仍为 0 字节；verified 仍 0、EXC-02 有效。</p>
+    <p class="note">本看板仅反映已验证状态，不关闭任何断言、不伪造任何签署。<code>signoffs.jsonl</code> 已有 1 条真实签署（AUD-001-03，slow-is-fast / independent-reviewer，录入方 agent-runner）；<b>verified 1/22</b>；EXC-01/02/03 有效。例外到期前均须重新三选一（T-EXP-01 到期即红）。</p>
 </section>
 
 </div>
