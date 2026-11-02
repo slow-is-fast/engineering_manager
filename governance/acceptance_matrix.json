@@ -38,7 +38,18 @@
           "id": "AUD-001-03",
           "kind": "manual",
           "human_gate": "sampling_review",
-          "text": "人工抽样复核记录（覆盖率的完备性无法自动判定）"
+          "text": "人工抽样复核记录（覆盖率的完备性无法自动判定）",
+          "signoff": {
+            "by": "slow-is-fast",
+            "role": "independent-reviewer",
+            "ref": "evidence/aud001_sampling_review_20261102.md",
+            "date": "2026-11-02",
+            "signature": "5862a659a7b37fba",
+            "applied_by": "agent-runner",
+            "applied_at": "2026-11-02T10:27:06.229824+08:00",
+            "review_agent": "agent-runner",
+            "flipped_at": "2026-11-02T10:27:06.229824+08:00"
+          }
         }
       ]
     },

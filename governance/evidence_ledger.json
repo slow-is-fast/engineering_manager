@@ -5,9 +5,9 @@
     "ISO-01"
   ],
   "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
-  "generated_at": "2026-10-31T22:55:56+0800",
-  "generated_by": "slow-is-fast (Owner)",
-  "reason": "建 EXC-01 签署证据脚手架：scripts/record_signoff.py（防自签硬约束 + 独立角色/必填证据/说明）+ tests/test_signoff.py 5 条守卫 + governance/signoffs.jsonl 空存储 + evidence/signoff_template.md 人用指南；防自签约束 1 处 fail-open 变异 0 逃逸；新增 evidence/signoff_scaffold_20261031T224100Z.md 与 evidence/signoff_template.md；quality_baseline.json 备注实际 276→281",
+  "generated_at": "2026-11-02T10:26:28+0800",
+  "generated_by": "agent-runner",
+  "reason": "AUD-001-03 抽样复核记录（Owner 结论落账）",
   "items": [
     {
       "id": "evidence/acceptance_layer_20261030T153000Z.md",
@@ -26,6 +26,12 @@
       "sha256": "48d77c1f0cfd678c7171a49fe899a4a176e17b30ca0b48fe1e0891e16bad0996",
       "category": "evidence",
       "created_at": 1793293800
+    },
+    {
+      "id": "evidence/aud001_sampling_review_20261102.md",
+      "sha256": "697f97abce8da8e8a69ec589ab5f0b5ef6a6917710c7f1e11b6cfeee39fd2188",
+      "category": "evidence",
+      "created_at": 1793586380.1071334
     },
     {
       "id": "evidence/audit_lifecycle_20261031T073000Z.md",

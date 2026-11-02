@@ -1,7 +1,7 @@
 # Owner 签署工作清单
 
 > **自动生成，勿手改。** 重新生成：`python scripts/export_owner_worklist.py`
-> 数据指纹：`acceptance_matrix.json` = `287345936479` ／ `exceptions`（id+expires）= `83935a25ed10`
+> 数据指纹：`acceptance_matrix.json` = `05172ff55be7` ／ `exceptions`（id+expires）= `83935a25ed10`
 > 矩阵变动后本文件必须重新生成；`--check` 会比对指纹并红。
 >
 > **铁律**：Agent 不得代签。每条签署须由独立主体执行（reviewer ≠ 执行者），
@@ -11,10 +11,16 @@
 
 | 分类 | 条数 | 说明 |
 |---|---|---|
-| 总计（manual + excepted） | 22 | 已签 0 ／ 未签 22 |
-| 一、仅需文档与判断 | 12 | 不需要真实环境资源，可立即推进 |
+| 总计（manual + excepted） | 22 | 已签 1 ／ 未签 21 |
+| 一、仅需文档与判断 | 11 | 不需要真实环境资源，可立即推进 |
 | 二、需要真实环境/系统 | 0 | 受 EXC-02 现实约束（Owner 已确认不提供真环境） |
 | 三、例外内（excepted） | 10 | 属于已知做不到，**仍计入未满足** |
+
+### 已签署
+
+（字段来自 `apply_signoffs.build_signoff_field`：`by` 是复核者，`applied_by` 是执行翻转的人。）
+
+- `AUD-001-03` · slow-is-fast（independent-reviewer）· 2026-11-02 · applied_by=agent-runner · sig=5862a659a7b…
 
 ## 一、可先做：仅需文档/审阅与 Owner 判断
 
@@ -23,18 +29,17 @@
 
 | # | 断言 | 所属 Issue | 严重度 | 人工闸 | 要求（矩阵原文） | Issue 闭合条件 |
 |---|---|---|---|---|---|---|
-| 1 | `AUD-001-03` | AUD-001 | P0 | `sampling_review` | 人工抽样复核记录（覆盖率的完备性无法自动判定） | 提交覆盖率报告、差异报告和人工抽样复核记录。 |
-| 2 | `AUD-002-03` | AUD-002 | P0 | `six_state_report_review` | 报告可区分六种状态的独立复核 | 状态机测试和负向测试通过；报告可区分六种状态。 |
-| 3 | `AUD-003-03` | AUD-003 | P1 | `schema_review` | schema 与校验器合并评审 | schema、校验器及正反例测试合并。 |
-| 4 | `AUD-007-03` | AUD-007 | P1 | `transition_log_review` | 日志 from/to/actor/decision/evidence 完整性抽查 | 状态机测试通过且日志完整记录 from/to/actor/decision/evidence。 |
-| 5 | `AUD-013-04` | AUD-013 | P1 | `permission_matrix_review` | 权限矩阵评审与高风险复核可追溯 | 权限矩阵和负向测试通过；高风险人工复核可追溯。 |
-| 6 | `AUD-014-04` | AUD-014 | P0 | `audit_backend_review` | 审计后端配置与完整性报告 | 审计后端配置、完整性报告、恢复演练及故障关闭测试通过。 |
-| 7 | `AUD-015-04` | AUD-015 | P0 | `security_owner_approval` | 响应手册经 Security Owner 批准 | Security Owner 批准响应手册，演练问题已分派并验证关闭。 |
-| 8 | `AUD-016-04` | AUD-016 | P0 | `data_matrix_approval` | 数据矩阵经责任人批准 | 数据矩阵获责任人批准，隔离和删除测试通过。 |
-| 9 | `AUD-017-04` | AUD-017 | P1 | `change_evidence_review` | 记录绑定版本/审批/回滚证据 | 变更状态机与测试通过，记录绑定版本、审批和回滚证据。 |
-| 10 | `AUD-019-02` | AUD-019 | P2 | `metric_dict_review` | 指标字典与阈值配置审核 | 指标字典、阈值配置和超限演练完成审核。 |
-| 11 | `AUD-020-04` | AUD-020 | P0 | `maturity_matrix_review` | 等级矩阵与试点评估报告独立复核 | 等级矩阵和试点评估报告经独立复核。 |
-| 12 | `AUD-022-04` | AUD-022 | P1 | `reverify_policy_approval` | 周期/事件复验策略审批 | 周期/事件触发复验策略及 CI 测试通过。 |
+| 1 | `AUD-002-03` | AUD-002 | P0 | `six_state_report_review` | 报告可区分六种状态的独立复核 | 状态机测试和负向测试通过；报告可区分六种状态。 |
+| 2 | `AUD-003-03` | AUD-003 | P1 | `schema_review` | schema 与校验器合并评审 | schema、校验器及正反例测试合并。 |
+| 3 | `AUD-007-03` | AUD-007 | P1 | `transition_log_review` | 日志 from/to/actor/decision/evidence 完整性抽查 | 状态机测试通过且日志完整记录 from/to/actor/decision/evidence。 |
+| 4 | `AUD-013-04` | AUD-013 | P1 | `permission_matrix_review` | 权限矩阵评审与高风险复核可追溯 | 权限矩阵和负向测试通过；高风险人工复核可追溯。 |
+| 5 | `AUD-014-04` | AUD-014 | P0 | `audit_backend_review` | 审计后端配置与完整性报告 | 审计后端配置、完整性报告、恢复演练及故障关闭测试通过。 |
+| 6 | `AUD-015-04` | AUD-015 | P0 | `security_owner_approval` | 响应手册经 Security Owner 批准 | Security Owner 批准响应手册，演练问题已分派并验证关闭。 |
+| 7 | `AUD-016-04` | AUD-016 | P0 | `data_matrix_approval` | 数据矩阵经责任人批准 | 数据矩阵获责任人批准，隔离和删除测试通过。 |
+| 8 | `AUD-017-04` | AUD-017 | P1 | `change_evidence_review` | 记录绑定版本/审批/回滚证据 | 变更状态机与测试通过，记录绑定版本、审批和回滚证据。 |
+| 9 | `AUD-019-02` | AUD-019 | P2 | `metric_dict_review` | 指标字典与阈值配置审核 | 指标字典、阈值配置和超限演练完成审核。 |
+| 10 | `AUD-020-04` | AUD-020 | P0 | `maturity_matrix_review` | 等级矩阵与试点评估报告独立复核 | 等级矩阵和试点评估报告经独立复核。 |
+| 11 | `AUD-022-04` | AUD-022 | P1 | `reverify_policy_approval` | 周期/事件复验策略审批 | 周期/事件触发复验策略及 CI 测试通过。 |
 
 ## 二、需要真实环境/真实系统（受 EXC-02 约束）
 
