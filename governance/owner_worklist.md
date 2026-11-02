@@ -1,7 +1,7 @@
 # Owner 签署工作清单
 
 > **自动生成，勿手改。** 重新生成：`python scripts/export_owner_worklist.py`
-> 数据指纹：`acceptance_matrix.json` = `093f774ca359` ／ `exceptions`（id+expires）= `a516d8e25313`
+> 数据指纹：`acceptance_matrix.json` = `287345936479` ／ `exceptions`（id+expires）= `83935a25ed10`
 > 矩阵变动后本文件必须重新生成；`--check` 会比对指纹并红。
 >
 > **铁律**：Agent 不得代签。每条签署须由独立主体执行（reviewer ≠ 执行者），
@@ -13,8 +13,8 @@
 |---|---|---|
 | 总计（manual + excepted） | 22 | 已签 0 ／ 未签 22 |
 | 一、仅需文档与判断 | 12 | 不需要真实环境资源，可立即推进 |
-| 二、需要真实环境/系统 | 9 | 受 EXC-02 现实约束（Owner 已确认不提供真环境） |
-| 三、例外内（excepted） | 1 | 属于已知做不到，**仍计入未满足** |
+| 二、需要真实环境/系统 | 0 | 受 EXC-02 现实约束（Owner 已确认不提供真环境） |
+| 三、例外内（excepted） | 10 | 属于已知做不到，**仍计入未满足** |
 
 ## 一、可先做：仅需文档/审阅与 Owner 判断
 
@@ -44,15 +44,6 @@ Owner 已明确不提供真环境（`owner_designations.md` #4 续二）。这�
 
 | # | 断言 | 所属 Issue | 严重度 | 人工闸 | 要求（矩阵原文） | Issue 闭合条件 | 所需资源 |
 |---|---|---|---|---|---|---|---|
-| 1 | `AUD-004-05` | AUD-004 | P0 | `isolated_env_integration_test` | 隔离环境集成测试通过并留存资源端拒绝证据 | 隔离环境集成测试通过并留存资源端拒绝证据。 | 隔离环境（容器/VM） |
-| 2 | `AUD-005-03` | AUD-005 | P1 | `tool_config_verification` | Claude Code / Codex 实际配置验证记录 | 能力矩阵、校验规则和 Claude Code/Codex 实际配置验证记录通过复核。 | Claude Code / Codex 真机配置 |
-| 3 | `AUD-006-05` | AUD-006 | P1 | `memory_integration_test` | 记忆状态机与检索/缓存集成测试 | 记忆状态机与检索/缓存集成测试通过。 | 记忆后端（检索/缓存） |
-| 4 | `AUD-009-04` | AUD-009 | P0 | `real_side_effect_e2e` | 真实代表性副作用端到端 + 远端结果证据 | 至少一个真实代表性副作用端到端测试通过并保存远端结果证据。 | 真实副作用系统 + 远端结果证据 |
-| 5 | `AUD-010-04` | AUD-010 | P0 | `recovery_drill` | 恢复演练 + 检查点与决策可追溯关联 | 恢复演练通过；检查点与恢复决策可追溯关联。 | 可制造故障并恢复的环境 |
-| 6 | `AUD-011-04` | AUD-011 | P1 | `breaker_drill` | 隔离环境演练记录 | 配置、测试结果和隔离环境演练记录齐全。 | 隔离环境 |
-| 7 | `AUD-012-03` | AUD-012 | P0 | `pilot_repo_inspection` | 真实试点仓库配置独立检查（含分支保护与 SHA 绑定） | 真实试点仓库配置经独立检查，负向测试证据齐全。 | 真实试点仓库（分支保护 + SHA 绑定） |
-| 8 | `AUD-018-03` | AUD-018 | P1 | `repo_gate_integration` | 审批与仓库门禁集成测试，例外自动失效可审计 | 审批/仓库门禁集成测试通过，例外自动失效且可审计。 | 真实仓库（分支保护 + 审批门禁） |
-| 9 | `AUD-021-03` | AUD-021 | P1 | `signed_evidence_package` | 受控真实仓库证据包 + 独立 Reviewer/Owner 签署 | 一个受控真实仓库完成证据包并由独立 Reviewer/Owner 签署。 | 受控真实仓库 + 独立 Reviewer/Owner |
 
 ## 三、例外内（excepted）
 
@@ -60,7 +51,16 @@ Owner 已明确不提供真环境（`owner_designations.md` #4 续二）。这�
 
 | # | 断言 | 所属 Issue | 严重度 | 人工闸 | 要求（矩阵原文） | Issue 闭合条件 |
 |---|---|---|---|---|---|---|
-| 1 | `AUD-013-03` | AUD-013 | P1 | `EXC-01` | 开发 Run 冒用 Reviewer 的第二凭证实测：第二人类主体不可达（EXC-01 已实证：第二 PAT 不构成独立审批主体，GitH… | 权限矩阵和负向测试通过；高风险人工复核可追溯。 |
+| 1 | `AUD-004-05` | AUD-004 | P0 | `isolated_env_integration_test` | 隔离环境集成测试通过并留存资源端拒绝证据。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_act… | 隔离环境集成测试通过并留存资源端拒绝证据。 |
+| 2 | `AUD-005-03` | AUD-005 | P1 | `tool_config_verification` | Claude Code / Codex 实际配置验证记录。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 o… | 能力矩阵、校验规则和 Claude Code/Codex 实际配置验证记录通过复核。 |
+| 3 | `AUD-006-05` | AUD-006 | P1 | `memory_integration_test` | 记忆状态机与检索/缓存集成测试。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_p… | 记忆状态机与检索/缓存集成测试通过。 |
+| 4 | `AUD-009-04` | AUD-009 | P0 | `real_side_effect_e2e` | 真实代表性副作用端到端 + 远端结果证据。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_act… | 至少一个真实代表性副作用端到端测试通过并保存远端结果证据。 |
+| 5 | `AUD-010-04` | AUD-010 | P0 | `recovery_drill` | 恢复演练 + 检查点与决策可追溯关联。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_actio… | 恢复演练通过；检查点与恢复决策可追溯关联。 |
+| 6 | `AUD-011-04` | AUD-011 | P1 | `breaker_drill` | 隔离环境演练记录。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 … | 配置、测试结果和隔离环境演练记录齐全。 |
+| 7 | `AUD-012-03` | AUD-012 | P0 | `pilot_repo_inspection` | 真实试点仓库配置独立检查（含分支保护与 SHA 绑定）。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 ow… | 真实试点仓库配置经独立检查，负向测试证据齐全。 |
+| 8 | `AUD-013-03` | AUD-013 | P1 | `EXC-01` | 开发 Run 冒用 Reviewer 的第二凭证实测：第二人类主体不可达（EXC-01 已实证：第二 PAT 不构成独立审批主体，GitH… | 权限矩阵和负向测试通过；高风险人工复核可追溯。 |
+| 9 | `AUD-018-03` | AUD-018 | P1 | `repo_gate_integration` | 审批与仓库门禁集成测试，例外自动失效可审计。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_ac… | 审批/仓库门禁集成测试通过，例外自动失效且可审计。 |
+| 10 | `AUD-021-03` | AUD-021 | P1 | `signed_evidence_package` | 受控真实仓库证据包 + 独立 Reviewer/Owner 签署。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批… | 一个受控真实仓库完成证据包并由独立 Reviewer/Owner 签署。 |
 
 ## 签署命令模板
 
@@ -104,6 +104,7 @@ python scripts/export_owner_worklist.py
 |---|---|---|
 | EXC-01 | 2027-01-31 | 有效（`T-EXP-01` 到期即红，不可默认沿用） |
 | EXC-02 | 2027-04-30 | 有效（`T-EXP-01` 到期即红，不可默认沿用） |
+| EXC-03 | 2027-04-30 | 有效（`T-EXP-01` 到期即红，不可默认沿用） |
 
 ---
 

@@ -34,7 +34,8 @@ from executor.toolgate import ToolGate, Denied as ToolDenied
 from executor.closure import ClosureEvaluator, ClosureIntegrityError
 from executor.credential import CredentialGuard, Denied as CredDenied
 from executor.incident import IncidentWorkflow, Rejected as IncidentRejected
-from executor.gate import AdmissionGate, GateInputError, AdmissionDenied
+from executor.gate import (AdmissionGate, GateInputError, AdmissionDenied,
+                           exception_valid)
 from executor.remote import RemoteGateway, RemoteRejected, MANUAL
 from executor.auditlifecycle import (ProvenanceRegistry, RetentionPolicy,
                                      recover, LifecycleRejected)
@@ -3062,6 +3063,63 @@ class DrillTests(unittest.TestCase):
         # 完成的记录里仍然只写着 simulated——没有任何字段声称过生产
         for s in SCENARIOS:
             self.assertEqual(self.o.records[s]["env"], "simulated")
+
+
+class ExceptionWaivesTargetTests(unittest.TestCase):
+    """T-EXC-01：exception_valid 的 waives 目标判定。
+
+    背景见 EXC-03（2026-11-02）：断言级例外（kind=excepted 的验收断言）的
+    对象是"需要真实环境做一次人工验证"的断言，它们没有对应的控制 target。
+    旧实现硬性要求 waives.controls 非空，逼着登记人给断言级例外编造控制
+    映射——那正是这套规范最反对的假覆盖。现改为 controls / assertions
+    二者有其一即可；audit_issues 单独存在仍不算（它的用途是登记
+    ACCEPTED_RISK，不是豁免目标）。
+    """
+    NOW = date(2026, 11, 2)
+
+    @staticmethod
+    def _exc(waives):
+        return {"id": "EXC-X", "status": "ACTIVE", "approver": "slow-is-fast",
+                "approver_type": "human", "created": "2026-11-01",
+                "expires": "2027-04-30", "scope": "fixture",
+                "waives": waives,
+                "compensating_controls": ["fixture 补偿控制"],
+                "revocation": "fixture 撤销条件"}
+
+    def test_t_exc_01_controls_only_still_valid(self):
+        """正向对照：旧形态（控制级）不受影响。"""
+        self.assertTrue(exception_valid(
+            self._exc({"controls": ["ISO-01"], "audit_issues": []}), self.NOW))
+
+    def test_t_exc_01_assertions_only_valid(self):
+        """断言级例外：9 条 manual 断言没有控制 target，不该被迫编映射。"""
+        self.assertTrue(exception_valid(
+            self._exc({"controls": [], "audit_issues": [],
+                       "assertions": ["AUD-004-05", "AUD-009-04"]}), self.NOW))
+
+    def test_t_exc_01_audit_issues_alone_invalid(self):
+        """只有 audit_issues 不构成豁免目标——它登记的是风险接受，不是例外作用对象。"""
+        self.assertFalse(exception_valid(
+            self._exc({"controls": [], "audit_issues": ["AUD-004"]}), self.NOW))
+
+    def test_t_exc_01_no_target_invalid(self):
+        """空 waives 依旧无效——例外必须说清它豁免的是什么。"""
+        self.assertFalse(exception_valid(self._exc({}), self.NOW))
+
+    def test_t_exc_01_other_gates_unchanged(self):
+        """waives 放宽不代表其他闸门放宽：缺补偿控制/撤销条件/人类批准人照旧无效。"""
+        e = self._exc({"assertions": ["AUD-004-05"]})
+        e["compensating_controls"] = []
+        self.assertFalse(exception_valid(e, self.NOW), "无补偿控制竟被采信")
+        e = self._exc({"assertions": ["AUD-004-05"]})
+        e["revocation"] = ""
+        self.assertFalse(exception_valid(e, self.NOW), "无撤销条件竟被采信")
+        e = self._exc({"assertions": ["AUD-004-05"]})
+        e["approver_type"] = "agent"
+        self.assertFalse(exception_valid(e, self.NOW), "Agent 批准的例外竟被采信")
+        e = self._exc({"assertions": ["AUD-004-05"]})
+        e["expires"] = "2026-01-01"
+        self.assertFalse(exception_valid(e, self.NOW), "已过期例外竟被采信")
 
 
 if __name__ == "__main__":

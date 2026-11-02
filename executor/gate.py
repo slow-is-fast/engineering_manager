@@ -159,7 +159,14 @@ def exception_valid(e, now):
         return False
     if not e.get("revocation"):
         return False
-    if not e.get("waives", {}).get("controls"):
+    w = e.get("waives", {})
+    # waives 目标有两级：控制级（controls，供 exception_waives 按 requirement
+    # 匹配）与断言级（assertions，供 kind=excepted 的断言引用）。断言级例外
+    # 的对象是"需要真实环境做一次人工验证"的验收断言，它们没有对应的控制
+    # target——硬造一个映射就是假覆盖，所以 assertions 与 controls 二者有其一
+    # 即可。audit_issues 不算豁免目标：那是 ACCEPTED_RISK 状态的登记位
+    # （closure 只用它判断"风险接受是否登记过"），不是例外的作用对象。
+    if not (w.get("controls") or w.get("assertions")):
         return False
     return True
 

@@ -123,9 +123,10 @@
         },
         {
           "id": "AUD-004-05",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "isolated_env_integration_test",
-          "text": "隔离环境集成测试通过并留存资源端拒绝证据"
+          "text": "隔离环境集成测试通过并留存资源端拒绝证据。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -148,9 +149,10 @@
         },
         {
           "id": "AUD-005-03",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "tool_config_verification",
-          "text": "Claude Code / Codex 实际配置验证记录"
+          "text": "Claude Code / Codex 实际配置验证记录。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -197,9 +199,10 @@
         },
         {
           "id": "AUD-006-05",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "memory_integration_test",
-          "text": "记忆状态机与检索/缓存集成测试"
+          "text": "记忆状态机与检索/缓存集成测试。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -303,9 +306,10 @@
         },
         {
           "id": "AUD-009-04",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "real_side_effect_e2e",
-          "text": "真实代表性副作用端到端 + 远端结果证据"
+          "text": "真实代表性副作用端到端 + 远端结果证据。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -335,9 +339,10 @@
         },
         {
           "id": "AUD-010-04",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "recovery_drill",
-          "text": "恢复演练 + 检查点与决策可追溯关联"
+          "text": "恢复演练 + 检查点与决策可追溯关联。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -366,9 +371,10 @@
         },
         {
           "id": "AUD-011-04",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "breaker_drill",
-          "text": "隔离环境演练记录"
+          "text": "隔离环境演练记录。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -391,9 +397,10 @@
         },
         {
           "id": "AUD-012-03",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "pilot_repo_inspection",
-          "text": "真实试点仓库配置独立检查（含分支保护与 SHA 绑定）"
+          "text": "真实试点仓库配置独立检查（含分支保护与 SHA 绑定）。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -582,9 +589,10 @@
         },
         {
           "id": "AUD-018-03",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "repo_gate_integration",
-          "text": "审批与仓库门禁集成测试，例外自动失效可审计"
+          "text": "审批与仓库门禁集成测试，例外自动失效可审计。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },
@@ -688,9 +696,10 @@
         },
         {
           "id": "AUD-021-03",
-          "kind": "manual",
+          "kind": "excepted",
           "human_gate": "signed_evidence_package",
-          "text": "受控真实仓库证据包 + 独立 Reviewer/Owner 签署"
+          "text": "受控真实仓库证据包 + 独立 Reviewer/Owner 签署。（EXC-03，2026-11-02：所需真实环境不可达，Owner 批准按 owner_action_plan §7 路径 1 定性。excepted 仍计入未满足，AUD-XXX 仍不得 machine_complete；环境到位即撤销例外改回 manual 补真实签署。）",
+          "exception_ref": "EXC-03"
         }
       ]
     },

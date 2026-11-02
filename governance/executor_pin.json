@@ -3,16 +3,17 @@
   "rule_ref": "GOV-14",
   "source_repo": "slow-is-fast/aasegs-gov-plane",
   "source_path": "executor/",
-  "commit_sha": "7c8a08610f77656abc880f51f7491998c0205821",
-  "tree_sha": "aec5b5602996a56e82f2f2dda7ea793e195ebb3d",
-  "content_hash_sha256": "e2f2ff7da1d4733776c5c23532b32a187ff81d25bd9fdbc01d5b961a4347e892",
+  "commit_sha": "28ef6b1e3651507c5ea8264e83e95cf07c4303a3",
+  "tree_sha": "bf330225876f3c965dcd4091094412fe3a597149",
+  "content_hash_sha256": "b337b3bfa70ef2b02680bb3359e134015c9577a1c245e04f34045117e67aa98e",
   "content_hash_scheme": "按 posix 相对路径升序遍历 executor/ 下全部文件（跳过 __pycache__，换行统一规范化为 LF），对每个文件向同一个 sha256 对象依次 update(relpath + '\\n' + 文件内容)，取最终 digest。注意是单次 digest 而非各文件 digest 拼接——实现见 scripts/verify_executor_pin.py 的 local_vendored_hash 与 content_hash。",
-  "pinned_at": "2026-11-01T14:31:17+08:00",
+  "pinned_at": "2026-11-02T10:15:10+08:00",
   "pinned_by": "slow-is-fast",
   "note": "数据面（engineering_manager）使用的执行器版本绑定到控制面不可变 commit。bump 必须显式修改本文件并过 PR 审批；T-VD-01 校验失败即阻止合并。",
   "previous": {
-    "commit_sha": "dd3c65a7559748d0e7943585ba337435d4563944",
-    "content_hash_sha256": "ee3533b3a6da1af764221065135f0098e5f48710fd2239b7a2330453c0f9ccaa"
+    "commit_sha": "7c8a08610f77656abc880f51f7491998c0205821",
+    "tree_sha": "aec5b5602996a56e82f2f2dda7ea793e195ebb3d",
+    "content_hash_sha256": "e2f2ff7da1d4733776c5c23532b32a187ff81d25bd9fdbc01d5b961a4347e892"
   },
-  "bump_reason": "注释对齐同步（PR slow-is-fast/aasegs-gov-plane#1，squash 后 7c8a086）：数据面 56d9daf 已对齐 executor 注释（GOV 家族去 AASEGS- 前缀、AGT/SUP 家族补前缀，纯注释无逻辑改动）但未 bump pin，T-VD-01 fail-closed 正确拦截本地 vendor 与 pin 的不一致（12 个提交未推送、CI 未见）。本提交把同一 5 文件补丁经 PR 同步到控制面，使上游与数据面重新一致；新 content_hash e2f2ff7d 与本地 vendor 实测值逐字节相同。教训沉淀：改 vendor 即触发 T-VD-01，任何触及 executor/ 的数据面提交必须同批走「上游 PR → 合并 → bump pin」闭环，不得事后补。"
+  "bump_reason": "断言级例外 schema 支持（PR slow-is-fast/aasegs-gov-plane#2，squash 后 28ef6b1）：EXC-03 需要把 9 条需真实环境的 manual 验收断言转 excepted，而这些断言没有对应的控制 target，旧 exception_valid 硬性要求 waives.controls 非空——要么编造控制映射（假覆盖），要么例外永远无效。改为 controls / assertions 二者有其一；exception_waives（控制级按 requirement 匹配）不变，assertions 键不会被控制级豁免读取，对既有控制状态判定零影响。新 content_hash b337b3bf 与本地 vendor 实测值逐字节相同（29 文件）。闭环再次成立：本地改 vendor → 上游 PR#2（executor-tests pass）→ admin squash 合并 → 重算 tarball 哈希 → bump pin，未出现 T-VD-01 潜伏红。"
 }

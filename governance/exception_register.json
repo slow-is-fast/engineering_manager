@@ -7,7 +7,9 @@
     "waives_requirement": "本字段限定例外能豁免**哪一类**要求。`[\"tested\"]` 可豁免「控制必须 tested」；`[\"verified\"]` 只能豁免「控制必须 verified」，不得用于豁免 tested 要求。省略时按 `[\"tested\"]` 处理（较宽），因此必须显式声明。",
     "not_a_fix": "ACCEPTED_RISK 不等于修复完成。例外只改变「是否阻断准入」，不改变控制自身的 tested/verified 状态字段。",
     "fail_closed": "例外缺批准人、批准人非人类、缺到期、已过期、缺补偿控制、缺撤销条件，或 waives 目标未覆盖当前阻断项时，该例外**一律不予采信**。",
-    "unwaivable": ["GATE-01"]
+    "unwaivable": [
+      "GATE-01"
+    ]
   },
   "exceptions": [
     {
@@ -22,9 +24,14 @@
       "scope": "本仓库单人开发场景下的独立人工验收/审批",
       "empirical_basis": "PR #5 演练：第二 PAT 不构成独立审批主体；GitHub 按主体而非凭证判定独立性，自批被服务器端拒绝（Can not approve your own pull request）。",
       "waives": {
-        "controls": ["RVW-01", "QA-03"],
+        "controls": [
+          "RVW-01",
+          "QA-03"
+        ],
         "audit_issues": [],
-        "requirement": ["tested"]
+        "requirement": [
+          "tested"
+        ]
       },
       "compensating_controls": [
         "评审与写入分凭证：评审 Agent 用只读凭证，写入 Agent 另用限域可写凭证，两者不得共用同一把 token",
@@ -49,9 +56,41 @@
       "scope": "VD-01 / GOV-14 及执行器类控制的 verified 状态授予",
       "empirical_basis": "控制面与数据面同属 GitHub 账号 slow-is-fast；无第二个账号或独立主机。",
       "waives": {
-        "controls": ["VD-01", "ID-02", "CTX-02", "CTX-03", "WF-01", "WF-02", "REC-01", "REC-03", "QA-01", "QA-02", "QA-04", "AUD-01", "REG-01", "REG-02", "ISO-01", "CNC-01", "EFF-01", "CKP-01", "BRK-01", "BASE-01", "EVD-01", "EVD-02", "CHG-01", "APR-01", "RVF-01", "WF-05", "WF-06", "ATT-01", "CLM-01"],
+        "controls": [
+          "VD-01",
+          "ID-02",
+          "CTX-02",
+          "CTX-03",
+          "WF-01",
+          "WF-02",
+          "REC-01",
+          "REC-03",
+          "QA-01",
+          "QA-02",
+          "QA-04",
+          "AUD-01",
+          "REG-01",
+          "REG-02",
+          "ISO-01",
+          "CNC-01",
+          "EFF-01",
+          "CKP-01",
+          "BRK-01",
+          "BASE-01",
+          "EVD-01",
+          "EVD-02",
+          "CHG-01",
+          "APR-01",
+          "RVF-01",
+          "WF-05",
+          "WF-06",
+          "ATT-01",
+          "CLM-01"
+        ],
         "audit_issues": [],
-        "requirement": ["verified"]
+        "requirement": [
+          "verified"
+        ]
       },
       "compensating_controls": [
         "控制面独立仓库 slow-is-fast/aasegs-gov-plane + 分支保护 + CODEOWNERS（已生效）",
@@ -63,6 +102,43 @@
       "revocation": "具备独立 org/账号；或执行器部署到独立主机/容器（独立凭证 + 只读挂载）后完成部署验收。",
       "evidence_uri": "governance/exceptions_2026-10-29.md#exc-02--verified-授予所需的独立账号主机不可达",
       "note": "信任域分离做到仓库级 + 凭证级，**不是账号级/主机级**。waives.requirement 限定为 verified，因此本例外不得用于豁免任何 tested 要求。"
+    },
+    {
+      "id": "EXC-03",
+      "title": "9 条验收断言所需的真实环境不可达（隔离环境/真实副作用/恢复演练/真机配置/试点仓库/真仓库门禁/证据包签署）",
+      "status": "ACTIVE",
+      "approver": "slow-is-fast",
+      "approver_type": "human",
+      "approver_principal_id": "github:slow-is-fast",
+      "created": "2026-11-02",
+      "expires": "2027-04-30",
+      "scope": "AUD-004-05 / AUD-005-03 / AUD-006-05 / AUD-009-04 / AUD-010-04 / AUD-011-04 / AUD-012-03 / AUD-018-03 / AUD-021-03 共 9 条 kind=manual 验收断言：其人工验证需要真实隔离环境、真实远端系统、可注入故障的恢复环境、Claude Code/Codex 真机配置、真实试点仓库与真实仓库门禁——Owner 已确认不提供（owner_action_plan §5 #4）",
+      "empirical_basis": "Owner 于 2026-11-01 明确确认不提供真环境；2026-11-02 批准按 owner_action_plan §7 路径 1 定性（会话原话：'算EXC-03通过了'）。控制面与数据面同属单一账号 slow-is-fast，无第二账号/独立主机/隔离环境——与 EXC-02 的经验事实同源，但 EXC-02 的 waives.requirement 只有 verified，不覆盖这 9 条 manual 断言，故需单独立项。",
+      "waives": {
+        "controls": [],
+        "audit_issues": [],
+        "assertions": [
+          "AUD-004-05",
+          "AUD-005-03",
+          "AUD-006-05",
+          "AUD-009-04",
+          "AUD-010-04",
+          "AUD-011-04",
+          "AUD-012-03",
+          "AUD-018-03",
+          "AUD-021-03"
+        ]
+      },
+      "compensating_controls": [
+        "机器侧同族断言持续由 CI 强制：18 项必需检查 18/18 全绿，本例外只豁免'人工验证半边'，机器已关的部分（test/script 断言）不受影响",
+        "executor 三重 pin（SHA + tree + 内容哈希）每次 CI 校验（T-VD-01），上游 PR#2 合并闭环后无潜伏不一致",
+        "运行时凭证分域实测持续有效（T-VD-01b：数据面 GITHUB_TOKEN 写控制面被拒，连续 CI 证明）",
+        "T-EXP-01 对本例外强制计时：剩余 ≤90 天（2027-01-30 起）出现 WARN，到期即红，不可默认沿用",
+        "撤销即转路径 2：任一真实环境到位即撤销本例外，按 manual_signoff_checklist 对应小节走真实签署——届时断言从 excepted 改回 manual 并补验证"
+      ],
+      "revocation": "任一真实环境到位（隔离环境 / 第二账号 / 独立主机 / 真实试点仓库）；或 2027-04-30 到期。到期前 Owner 必须重新三选一（延期 / 补环境 / 维持 excepted 并重新说明），不得默认沿用。",
+      "evidence_uri": "governance/owner_action_plan.md §7（9 条需要真环境断言的定性方案）",
+      "note": "断言级例外：waives.assertions 而非 controls——这 9 条断言没有对应的控制 target，硬造映射就是假覆盖（EXC-01/EXC-02 是控制级）。schema 支持见上游 PR slow-is-fast/aasegs-gov-plane#2（squash 28ef6b1，数据面 pin 已同批 bump）。excepted 仍计入未满足、仍阻止 machine_complete：本例外不制造任何 verified，只是把『永久挂着』变成『有计划地挂着』。"
     }
   ]
 }
