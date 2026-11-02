@@ -104,6 +104,23 @@ class OwnerWorklistTests(unittest.TestCase):
         self.assertIn('仅需文档与判断 | 1', text)
         self.assertIn('需要外部资源 | 3', text)
 
+    def test_gate_invocation_pins_check_flag(self):
+        """被门禁调用的双模式脚本，参数必须是校验模式，不是生成模式。
+
+        同源评审 2026-11-02 构造出的回归路径（review_handoff.md §5 第 2 条、
+        §10 第 2 条）：把 audit_policy.check_args 里 export_owner_worklist.py
+        的 [["--check"]] 改成 [[]]，接线校验（T-QA-04b 的 D 段）照样绿——
+        它只核对键存在与形状合法，**从不看参数值**；而 [[]] 会跑成生成模式：
+        每轮改写投影文件、exit 0、什么也没查，T-OWN-01 名存实亡。
+        这条测试钉住这一处的值。通用修法（脚本自声明被门禁调用时的必需参数）
+        仍敞着，已留给正式评审讨论。
+        """
+        policy = json.loads((ROOT / 'governance' / 'audit_policy.json')
+                            .read_text(encoding='utf-8'))
+        self.assertEqual(
+            policy['check_args']['scripts/export_owner_worklist.py'],
+            [['--check']])
+
     def test_check_passes_when_in_sync(self):
         _run(self.tmp)
         r = _run(self.tmp, ['--check'])

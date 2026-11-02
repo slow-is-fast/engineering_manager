@@ -205,7 +205,12 @@ def main():
     ap.add_argument('--state', default=str(DEFAULT_STATE),
                     help='快照状态文件路径（默认仓库根 .caretaker_state.json，被 gitignore）')
     ap.add_argument('--no-state', action='store_true',
-                    help='不读/写快照（仅做当次结构校验，不做漂移比对）')
+                    help='不读/写快照（仅做当次结构校验，不做漂移比对）。'
+                         '**注意：漂移检测会被整体跳过**——本开关在漂移逻辑'
+                         '之前就退出（第 230 行附近），所以它不是"跳过基线'
+                         '写入"，是"跳过比对"。想验证 F4/漂移检测是否工作，'
+                         '别用这个开关；同源评审 2026-11-02 实测踩过：'
+                         '加上它得到的是无告警的假阴性。')
     ap.add_argument('--strict', action='store_true',
                     help='漂移视为失败（退出 3）；默认漂移仅告警（退出 0）')
     args = ap.parse_args()

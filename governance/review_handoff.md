@@ -48,8 +48,30 @@ git log --oneline --reverse fe72107^..HEAD
 | `c642d74` `308b4c1` `26a9658` | `--all` 跑完全部再汇总 / 措辞 / `reviewed_at` 未来时间告警 | 三处"算出来却没人看"的同族缺陷 |
 | `8e3532a` `1a1d9fc` `dd2b6c2` `74dd673` `275d19d` `090835b` `9a7902b` `f0fde31` `a0879b6` `6206abf` | 看板刷新 + 本交接包 | 只改 `GOVERNANCE_STATUS.html` 与本文件，可略读；但请核对看板数字是否与事实一致（用例数、门禁条数、最新提交号） |
 
-**不在范围**：`executor/` 下的产品代码本轮未改（只 bump 了 vendor pin）；
-`evidence/` 未新增证据文件——本轮新增的都是自动化门禁，"证据"即 CI 运行记录本身。
+### 2.1 上表之后新增的提交（2026-11-02 追加，逐条说明）
+
+「范围只增不减」一句不足以让你覆盖它们——下面这 12 个提交里有**第一条真实签署**、
+一个新例外、一个新门禁，都是实质变更，不是文档刷新：
+
+| 提交 | 内容 | 评审要点 |
+|---|---|---|
+| `f4fff10` | 修本文件 §2 范围终点写法 | 纯文档 |
+| `eb124e5` | `export_coverage_pack.py` + `coverage_pack_aud001.md`（AUD-001-03 复核材料） | 第一次跑就抓出 10 处悬空用例引用——**那 10 处当时真实存在**，可 `git show eb124e5:governance/coverage_pack_aud001.md` 复核 |
+| `598e206` | 9 条「需真环境」断言的定性方案文档 | 纯文档，是 `5a61456` 的前置 |
+| `5a61456` | **EXC-03 登记**：9 条断言 `manual → excepted`；为此经上游 PR#2 改 `executor/gate.py` schema 并 bump pin | 核对 `exception_register.json` 的 EXC-03 六道闸字段是否齐、基线 `change_approvals` 是否有记录、pin 闭环是否真实（PR#2 → `28ef6b1` → 重算哈希） |
+| `fe15276` | **`signoffs.jsonl` 第一条真实签署**（`AUD-001-03`，0 → 1） | 看签署链路四步是否都有产物：evidence → accept-evidence → record → apply |
+| `41f5ce4` | 指纹对换行不敏感（`export_owner_worklist` / `apply_signoffs` / `export_coverage_pack` 三处 `read_bytes().replace(b'\r\n', b'\n')`） | 本地绿 CI 红的实证；对照 `tests/test_owner_worklist.py` 的换行用例 |
+| `b2773d7` | 看板刷新 | 略读 |
+| `f378d27` | **10 处悬空引用清零 + 新门禁 `T-REF-03`**（`required_checks` 18 → 19） | 3 处改对编号、7 处删除并写 `enforcement.gap`、6 条 `gap=null` 补文字；`scripts/check_rule_tests.py` 是否真的只在"引用指不到"时红 |
+| `103e019` | `reviewed_at` 从"未来 31 秒"回填 | 只动一个字段 |
+| `eeda982` | 看板刷新 + 本文件 §9 | 略读 |
+| `3f14712` | **六态报告** `sixstate_report.md` + 清单分类修正（11 → 8 条） | `degraded` 零读取点这个结论值得独立验：`grep -rn "'degraded'" scripts/ executor/`，看除了写入还有没有消费 |
+| `1465b4a` | 看板刷新 | 略读 |
+
+**不在范围**：`executor/` 下的产品代码本轮未改（只 bump 了 vendor pin）。
+~~`evidence/` 未新增证据文件~~ ——**此句已失效，2026-11-02 更正**：`fe15276` 新增并
+入库了 `evidence/aud001_sampling_review_20261102.md`，且同提交是 `signoffs.jsonl`
+的第一条真实签署（`AUD-001-03`，reviewer=slow-is-fast）。它在评审范围内，请看。
 如果你的判断是"改门禁也该附 evidence"，这就是一条 finding，请照报。
 
 ## 3. 前置②怎么满足（这里有个坑，先说清楚）
@@ -65,13 +87,17 @@ python scripts/gov_run.py --all     # → exit 1，汇总行 17/18
 可写控制面与数据面，测不到"数据面运行时凭证不得写控制面"这件事。脚本的原话是
 "不可判定即拒绝：请在 CI 中运行"。把它做成绿只有两种办法，两种都是造假。
 
-因此判定口径是：
+因此判定口径是（**写成判定式而不是写死数字**——上一版把 `17/18` 写死在本文里，
+两天后仓库变成 19 项检查，字面照做就会把正常结果误判成异常。数字会变，判定式不会）：
 
-1. **本地**：`--all` 汇总行必须是 `17/18`，且唯一的 `FAILED` 必须是
-   `scripts/verify_credential_domain.py`。出现第二个 `FAILED` 就是真问题。
-2. **CI**：`governance` workflow 全绿（18 个 `--check` 步骤全 pass）。
-   `gh run list --limit 5 --json headSha,conclusion` 交叉核对，**不要只信
-   `gh run watch --exit-status` 的退出码**（本轮踩过：它报了 success，实际是 failure）。
+1. **本地**：跑 `python scripts/gov_run.py --all`，汇总行形如 `N-1/N 通过`，
+   且**唯一的 `FAILED` 必须是 `scripts/verify_credential_domain.py`**。
+   `N` 以 `governance/quality_baseline.json` 的 `required_checks` 长度为准
+   （本文写作时是 19）。出现第二个 `FAILED` 就是真问题。
+2. **CI**：`governance` workflow 全绿（每个 `--check` 步骤 pass，条数与
+   `required_checks` 一致）。`gh run list --limit 5 --json headSha,conclusion`
+   交叉核对，**不要只信 `gh run watch --exit-status` 的退出码**（本轮踩过：
+   它报了 success，实际是 failure）。
 
 若你认为"本地有一项红就不能算满足前置②"，**这个分歧本身就该写成 finding**，
 不要沉默地降级继续，也不要替它发明例外。
@@ -96,12 +122,13 @@ export GOV_ACTING_IDENTITY=agent-runner    # 执行工具的那一方，也不�
 | F6 | L | 多条分支无用例 | 已补 9 条 | 读 `tests/test_matrix_caretaker.py`；重点看"损坏 state 降级""假 kind""`audit_driven` 缺 `issue`"是否真的断言了失败原因，而不只是断言非零退出 |
 | F7 | L | `GOV_REVIEW_AGENT` 等 env 身份是**咨询性信任**，非密码学 | **不修**，记录为已知限制 | 见 §6。若你认为它该被升格成强制，请说明用什么机制落地 |
 
-一键复验（作者跑过的，仅作参照——**不要以它的 PASS 行为准**）：
+一键复验（**数字以你跑到的为准**，判定式见 §3——下面这些数字只是本文写作时的快照，
+过期不代表有回归，对照判定式即可）：
 
 ```bash
-python -m unittest discover -s tests -p "test_*.py"      # 356 tests
-python scripts/gov_run.py --all                           # 17/18，见 §3
-python scripts/verify_test_floor.py                        # 363 >= 363
+python -m unittest discover -s tests -p "test_*.py"      # 本文写作时 387 tests
+python scripts/gov_run.py --all                           # 唯一 FAILED 应为 verify_credential_domain
+python scripts/verify_test_floor.py                        # 实际数 >= 基线下限
 python scripts/export_owner_worklist.py --check            # 清单与矩阵指纹一致
 ```
 
@@ -192,3 +219,35 @@ python scripts/record_signoff.py \
    自述，`T-REF-03` 只能保证它们非空。若某段把原因写错了，机器不会红——这仍是
    §三 那类需要人读的判断题。
 
+
+## 10. 同源对抗评审已做（2026-11-02）——它是预过滤，不是替代
+
+| 项 | 内容 |
+|---|---|
+| 报告 | `evidence/agent_review_20261102.md` |
+| 主体 | 与作者**同模型家族**的 Agent（上下文独立，模型同源） |
+| 效力 | **不满足前置③，不得作为 `independent-reviewer` 签署依据。** 它能覆盖机械性问题（数字过期、文档与代码不一致、命令跑不通）；模型家族的共同盲区它看不见——**如果它全绿，那恰恰是同源评审无效的证据，不是好消息** |
+
+它抓到的三件实事（作者已核实命令与行号，不是转述）：
+
+1. **[H] 本交接包数字全面过期 + §2 一处事实陈述失效**——本文 §3 / §4 / §2.1 就是按它修的。
+   教训写在这里：**给陌生评审者的入口文件，判定口径不能写死数字**（数字两天就过期），
+   要写判定式（"唯一的 FAILED 必须是谁"）。
+2. **[敞口] `check_args` 只保证"声明了"，不保证"声明对了"**（§5 第 2 条，本次评审
+   构造出了具体回归路径：把 `export_owner_worklist.py` 的 `[["--check"]]` 改成 `[[]]`，
+   `--all` 照样全绿，T-OWN-01 名存实亡）。同源评审后作者加了一条测试钉住这一处；
+   **通用修法**（脚本自声明被门禁调用时必需的参数）仍敞着，留给你评审时讨论。
+3. **[L] `matrix_caretaker --no-state` 会静默跳过漂移检测**（`sys.exit(0)` 在漂移
+   逻辑之前）。不是 bug，但 F4 的验证方法若被"顺手"加上 `--no-state` 会得到假阴性
+   ——同源评审者自己就踩了这个坑。已在脚本 docstring 写明。
+
+另有一条是**好消息的否定**：§5 第 6 条（`--all` 失败也记 completed）经查代码
+**已有对策、作者多虑了**——`gov_run.py` 验收统计明确过滤 `verdict == 'ok'`，
+失败项不会算作落地。作者自己最可能错清单上有一条是错的，这本身就该记录。
+
+### 你（正式评审者）拿到这份文件后，建议的顺序
+
+1. 先读同源报告 §四（交接包数字核对），核对其结论——**别信它，它同源**；
+2. 再跑 §3 的判定式 + §4 的 F1–F7；
+3. 同源报告 §七「未验证的怀疑」那 4 条，是你最该优先补验的——它们正是
+   同源评审自己承认够不到的地方。
