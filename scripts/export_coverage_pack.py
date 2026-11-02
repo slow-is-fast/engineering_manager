@@ -363,9 +363,11 @@ def build(root=ROOT):
     index = _test_index(root)
     stats, rows, controls = coverage(rules, catalog, index, root)
     diff = diff_report(rules, rows, controls, index, root)
+    # 与 verify_executor_pin 同一 autocrlf 坑：Windows 磁盘 CRLF、仓库/CI LF，
+    # 字节指纹必须先规范化，否则材料在 CI 上永远"过期"。
     src = hashlib.sha256(
-        (Path(root) / 'rule-registry.json').read_bytes() +
-        (Path(root) / 'control-catalog.yaml').read_bytes()
+        (Path(root) / 'rule-registry.json').read_bytes().replace(b'\r\n', b'\n') +
+        (Path(root) / 'control-catalog.yaml').read_bytes().replace(b'\r\n', b'\n')
     ).hexdigest()[:12]
     picks = sample(rows, SAMPLE_N)
     fp = fingerprint(stats, rows, src, picks)

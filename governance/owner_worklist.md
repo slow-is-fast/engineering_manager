@@ -1,7 +1,7 @@
 # Owner 签署工作清单
 
 > **自动生成，勿手改。** 重新生成：`python scripts/export_owner_worklist.py`
-> 数据指纹：`acceptance_matrix.json` = `05172ff55be7` ／ `exceptions`（id+expires）= `83935a25ed10`
+> 数据指纹：`acceptance_matrix.json` = `d3914933e271` ／ `exceptions`（id+expires）= `83935a25ed10`
 > 矩阵变动后本文件必须重新生成；`--check` 会比对指纹并红。
 >
 > **铁律**：Agent 不得代签。每条签署须由独立主体执行（reviewer ≠ 执行者），

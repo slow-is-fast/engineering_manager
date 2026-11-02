@@ -62,7 +62,11 @@ RESOURCE_HINT = {
 def _load(path):
     if not path.is_file():
         sys.exit(f'FAIL(worklist): 缺少输入 {path}')
-    raw = path.read_bytes()
+    raw = path.read_bytes().replace(b'\r\n', b'\n')
+    # 指纹必须对换行不敏感：Windows autocrlf 会把磁盘上的 CRLF 在入库时转成
+    # LF，CI 检出的字节与生成清单时的字节不同——2026-11-02 实测 CI 因此红
+    # （本地 --check 绿、远端 failure，正是"判据要用与门禁同一把尺子"的反例）。
+    # 与 verify_executor_pin 的 content_hash 同一修法：统一规范化为 LF。
     return json.loads(raw.decode('utf-8')), hashlib.sha256(raw).hexdigest()[:12]
 
 
@@ -268,7 +272,7 @@ def main():
               f'{len(rows)} 条）')
         return
 
-    out.write_text(text, encoding='utf-8')
+    out.write_text(text, encoding='utf-8', newline='\n')
     unsigned = sum(1 for r in rows if not r['signed'])
     print(f'WROTE(worklist): {out} — {len(rows)} 条（未签 {unsigned}），'
           f'matrix={fp_m}, exceptions={fp_e}')

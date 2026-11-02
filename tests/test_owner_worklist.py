@@ -116,6 +116,25 @@ class OwnerWorklistTests(unittest.TestCase):
         self.assertIn('alice', text)
         self.assertIn('已签 1 ／ 未签 2', text)
 
+    def test_check_is_newline_insensitive(self):
+        """autocrlf 坑（2026-11-02 CI 实测）：矩阵/清单磁盘字节是 CRLF、仓库是
+        LF 时，按原始字节算的指纹只在生成它的那台机器上成立——本地 --check 绿、
+        CI 必红。指纹必须先规范化 CRLF→LF（与 verify_executor_pin 同一修法）。
+        """
+        _run(self.tmp)                                   # 生成清单
+        m = self.tmp / 'governance' / 'acceptance_matrix.json'
+        w = self.tmp / 'governance' / 'owner_worklist.md'
+        # 模拟 Windows 文本模式写盘：两个文件全部转成 CRLF
+        for f in (m, w):
+            f.write_bytes(f.read_bytes().replace(b'\n', b'\r\n'))
+        r = _run(self.tmp, ['--check'])
+        self.assertEqual(r.returncode, 0, out(r))
+        # 再模拟 git 入库后 CI 检出：全部转回 LF，同样必须绿
+        for f in (m, w):
+            f.write_bytes(f.read_bytes().replace(b'\r\n', b'\n'))
+        r = _run(self.tmp, ['--check'])
+        self.assertEqual(r.returncode, 0, out(r))
+
     def test_real_repo_selfcheck(self):
         # 真实清单必须与真实矩阵一致（矩阵变动后忘重生成即红）
         r = _run(ROOT, ['--check'])

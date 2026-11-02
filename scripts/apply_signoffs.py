@@ -208,7 +208,7 @@ def apply(matrix_path, matrix, entries, acting, by):
                                                 if e['assertion_id'] == aid), by)
         print(f'  CLOSED {aid} (issue {iid}) <- {rev}/{role}')
     matrix_path.write_text(json.dumps(matrix, ensure_ascii=False, indent=2),
-                           encoding='utf-8')
+                           encoding='utf-8', newline='\n')  # 固定 LF：指纹按字节算，别让平台换行差异进仓库
     print(f'APPLIED: {len(will_close)} 条断言已标记 closed -> {matrix_path}')
     print('下一步：人工 review 改动后提交（本工具不自动 commit）。')
     return 0
