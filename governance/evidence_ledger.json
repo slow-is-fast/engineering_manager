@@ -5,15 +5,21 @@
     "ISO-01"
   ],
   "purpose": "证据登记台账。新增证据必须显式登记；登记后内容改动、未经批准消失、批准删除后重新出现，都会被 gov_run --verify 判红。",
-  "generated_at": "2026-11-02T10:26:28+0800",
-  "generated_by": "agent-runner",
-  "reason": "AUD-001-03 抽样复核记录（Owner 结论落账）",
+  "generated_at": "2026-11-02T14:09:44+0800",
+  "generated_by": "slow-is-fast",
+  "reason": "同源对抗评审落档（agent-review，非选项③，效力声明见文件头）",
   "items": [
     {
       "id": "evidence/acceptance_layer_20261030T153000Z.md",
       "sha256": "69afcf9a9e770d1e14213838165c54c8a8c552750d267138f1ca68a62aff5498",
       "category": "evidence",
       "created_at": 1793374200
+    },
+    {
+      "id": "evidence/agent_review_20261102.md",
+      "sha256": "73619878b5804854989bdac5063303603418ddea41b9f9903e6037e658761695",
+      "category": "evidence",
+      "created_at": 1793599227.6822085
     },
     {
       "id": "evidence/apr01_20261029T192000Z.md",
