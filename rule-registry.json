@@ -36,7 +36,7 @@
       ],
       "verification": {
         "tests": [
-          "T-ID-02"
+          "T-VD-01b"
         ]
       },
       "status": {
@@ -67,7 +67,7 @@
           "QA-03",
           "RVW-01"
         ],
-        "gap": null
+        "gap": "QA-03 / RVW-01 均为 not_enforced：职责分离要靠第二个独立人类主体，而第二 PAT 不构成独立主体（PR #5 实证），需第二人类账号或 App 身份，当前单人环境不可得。本规则因此无机器覆盖，只由 §8 评审交接与 review_handoff.md 的换人流程执行——换人就是这条规则的执行方式。"
       },
       "evidence_required": [
         "rule_id",
@@ -80,10 +80,7 @@
         "emit_audit_event"
       ],
       "verification": {
-        "tests": [
-          "T-QA-03",
-          "T-RVW-01"
-        ]
+        "tests": []
       },
       "status": {
         "documented": true,
@@ -128,7 +125,7 @@
       "verification": {
         "tests": [
           "T-EVD-01",
-          "T-QA-05"
+          "T-CLOSE"
         ]
       },
       "status": {
@@ -856,7 +853,7 @@
           "QA-03",
           "RVW-01"
         ],
-        "gap": null
+        "gap": "QA-03 / RVW-01 均为 not_enforced，且这是 P0：自审禁止目前只有流程约束（§8 换人评审），没有任何机器判定能证明「审核者不是开发者」。凭证分离不等于主体分离（PR #5 实证），第二人类账号当前不可得。缺口不因写进这条而缩小；写在这里是为了它能被搜索到、能被计入 P0 缺口清单。"
       },
       "evidence_required": [
         "rule_id",
@@ -869,10 +866,7 @@
         "emit_audit_event"
       ],
       "verification": {
-        "tests": [
-          "T-QA-03",
-          "T-RVW-01"
-        ]
+        "tests": []
       },
       "status": {
         "documented": true,
@@ -917,7 +911,7 @@
       "verification": {
         "tests": [
           "T-ID-01",
-          "T-ID-02"
+          "T-VD-01b"
         ]
       },
       "status": {
@@ -1658,7 +1652,7 @@
           "EFF-01",
           "REC-04"
         ],
-        "gap": null
+        "gap": "REC-04（补偿计划审批，owner=Human owner）为 not_enforced：不可逆操作前的补偿方案需要人类批准，没有可自动化的判定点。可选路径这一半由 T-EFF-01 覆盖；本规则缺的是「谁批准了补偿方案」这一半。"
       },
       "evidence_required": [
         "rule_id",
@@ -1746,7 +1740,7 @@
         "controls": [
           "RVW-01"
         ],
-        "gap": null
+        "gap": "RVW-01 为 not_enforced：「Reviewer 处于独立会话与只读环境」需要独立主体 + 独立凭证两样同时成立；只隔离会话不构成独立性证明（§8 原文口径）。当前环境只能做到会话分离，故无机器覆盖。"
       },
       "evidence_required": [
         "rule_id",
@@ -1759,9 +1753,7 @@
         "emit_audit_event"
       ],
       "verification": {
-        "tests": [
-          "T-RVW-01"
-        ]
+        "tests": []
       },
       "status": {
         "documented": true,
@@ -1792,7 +1784,7 @@
           "QA-02",
           "QA-03"
         ],
-        "gap": null
+        "gap": "反作弊三条子里有两条已自动化：QA-01（CI 固定到 40 位 SHA）、QA-02（用例数下限），分别由 T-QA-01 / T-QA-02 判定。QA-03（冒用 Reviewer）为 not_enforced：伪造评审身份的前提是存在第二身份，单人环境既构造不出也检测不出。"
       },
       "evidence_required": [
         "rule_id",
@@ -1807,8 +1799,7 @@
       "verification": {
         "tests": [
           "T-QA-01",
-          "T-QA-02",
-          "T-QA-03"
+          "T-QA-02"
         ]
       },
       "status": {
@@ -2150,7 +2141,7 @@
         "controls": [
           "AUD-02"
         ],
-        "gap": null
+        "gap": "AUD-02 为 not_enforced：要的是由外部主体签署的集成测试报告，自签不成立。签署机制本身已由 T-SO / T-AS 系列守卫，但那些守卫的是「签署链路没被绕过」，不是「签署人独立」。当前无外部主体，故无机器覆盖。"
       },
       "evidence_required": [
         "rule_id",
@@ -2163,9 +2154,7 @@
         "emit_audit_event"
       ],
       "verification": {
-        "tests": [
-          "T-AUD-02"
-        ]
+        "tests": []
       },
       "status": {
         "documented": true,

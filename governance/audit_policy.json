@@ -52,6 +52,7 @@
     "scripts/export_owner_worklist.py": [["--check"]],
     "scripts/check_governance_refs.py": [[]],
     "scripts/check_control_refs.py": [[]],
+    "scripts/check_rule_tests.py": [[]],
     "scripts/matrix_caretaker.py": [[]]
   },
   "honest_limits": [

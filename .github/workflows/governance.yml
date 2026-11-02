@@ -135,6 +135,19 @@ jobs:
       - name: "T-REF-02 code reference integrity (strict, no prefix normalization)"
         run: python scripts/gov_run.py --check scripts/check_control_refs.py
 
+      # T-REF-03：规则侧用例引用完整性。2026-11-02 补：T-REF-01 与 T-REF-02 的
+      # docstring 都写着「T-* 用例名由审计闭环判，本脚本不扫 tests/」——而审计
+      # 闭环判的是 §四 断言的 verdict 与证据，从不解析 rule-registry 的
+      # verification.tests。全仓库唯一读该字段的是 export_coverage_pack.py，
+      # 而它没接线。两处注释都指向一个不存在的执行者，于是 10 处悬空引用
+      # （T-ID-02 / T-QA-03 / T-RVW-01 / T-QA-05 / T-AUD-02）躺了很久：用
+      # git log -S 查 tests/ 全历史，它们一次都没出现过——不是被删掉的用例，
+      # 是从来就没有过。指向不存在的用例比不写用例更糟，读的人会以为有。
+      # 同时钉第二件事：引用 not_enforced 控制的规则，enforcement.gap 不得为
+      # null——"技术强制、无缺口"是这套登记里最容易骗人的一句话。
+      - name: "T-REF-03 rule-side test refs resolve (no phantom test IDs)"
+        run: python scripts/gov_run.py --check scripts/check_rule_tests.py
+
       # AUD-016-04 决策 C：caretaker 只读巡检。2026-11-01 补：e29e2a8 接入
       # required_checks 时同样漏了 workflow 步骤（同上，被 --verify 拦下）。
       # CI 无状态文件 → caretaker 自动回退 git HEAD~1 基线（F4），漂移按

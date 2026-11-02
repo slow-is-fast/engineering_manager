@@ -27,10 +27,14 @@
 
 发现会直接写进差异报告
 ----------------------
-本脚本第一次跑就抓到一件真实的事：`rule-registry.json` 里有 5 个用例引用
-指向**不存在的测试方法**，而现有校验器只查控制目录侧（且只查
+本脚本第一次跑就抓到一件真实的事：`rule-registry.json` 里有 10 处用例引用
+（5 个编号）指向**不存在的测试方法**，而当时的校验器只查控制目录侧（且只查
 `status=tested & evidence_kind=automated` 的控制），**规则侧无人校验**。
 这不是抽样抽出来的，是算差异算出来的——所以它进"差异报告"，不进"待判断"。
+
+那 10 处已于 2026-11-02 清理完（3 处改对引用、7 处删除并写 `enforcement.gap`），
+并由 `scripts/check_rule_tests.py`（T-REF-03）接管为门禁。本脚本从此只负责
+**报告**这件事，不负责拦它——报告没人读时不会有人红，那正是当初的漏洞。
 """
 import argparse
 import ast
@@ -211,9 +215,26 @@ def render(stats, rows, controls, diff, picks, index, root, fp, rules):
     w('')
     w(f"- 成立：每条规则都能被追到至少一条控制（{stats['rules_with_controls']}/{stats['rules']}），"
       f"控制目录与控制定义双向无缺项——这是校验器管的部分。")
-    w(f"- **不成立**：有 {stats['rules_with_tests'] - stats['rules_tests_all_resolve']} 条规则的用例引用"
-      f"落不到任何真实用例上（见第二节）。它们的状态本来就是 `tested=false`，所以没有人"
-      f"声称它们被测过；但 `verification.tests` 里写着一个不存在的编号，读的人会以为有。")
+    dangling_rules = stats['rules_with_tests'] - stats['rules_tests_all_resolve']
+    if dangling_rules:
+        w(f"- **不成立**：有 {dangling_rules} 条规则的用例引用"
+          f"落不到任何真实用例上（见第二节）。它们的状态本来就是 `tested=false`，所以没有人"
+          f"声称它们被测过；但 `verification.tests` 里写着一个不存在的编号，读的人会以为有。")
+    else:
+        w(f"- 成立：声明了 `verification.tests` 的 {stats['rules_with_tests']} 条规则，"
+          f"引用全部落得到真实方法或 CI 步骤——这一条自 T-REF-03 起由门禁强制，"
+          f"不再依赖本材料被谁读到。")
+    w('')
+    w('> **同一栏里两个数不能相减当覆盖率。** 「字符串」数的是"声明了至少一条引用"，')
+    w('> 「可解析」数的是"声明的引用全都落得到"；分母都是 59 条规则，但含义不同。')
+    w('> 一次整改如果把悬空引用**删掉**，该规则会同时从这两栏里消失——比值可能因此上升，')
+    w('> 而事情只是"不再声称有覆盖"，不是"有了覆盖"。判断覆盖有没有变好，看 2.3 与第三节，')
+    w('> 不看这两个数字的比值。2026-11-02 那次整改就是这种情况，拆开看是三件事同时发生：')
+    w('> ① 3 条规则靠**改对引用**重回可解析（`T-ID-02`×2 → `T-VD-01b`，`T-QA-05` → `T-CLOSE`）；')
+    w('> ② 1 条规则（`AASEGS-SEC-003`）删掉悬空的那 1 处后，剩余引用全部可解析；')
+    w('> ③ 4 条规则（`GOV-02`/`AASEGS-AGT-001`/`AASEGS-SEC-002`/`AASEGS-SUP-002`）把引用')
+    w('> 全删了，于是从两栏里同时消失（「字符串」一栏因此 53 → 49）。')
+    w('> 只有 ① 是真的变好；② 是账面变干净；③ 是承认缺口——三种都算进步，但不是同一种。')
     w('')
     w('## 二、差异报告（双向，含悬空引用）')
     w('')
@@ -256,6 +277,21 @@ def render(stats, rows, controls, diff, picks, index, root, fp, rules):
         w('')
     else:
         w('无。')
+        w('')
+        w('> 这一栏空了，但**不是因为从来没出过问题**。2026-11-02 之前它列着 10 处，')
+        w('> 分属 5 个编号：`T-ID-02` / `T-QA-03` / `T-RVW-01` / `T-QA-05` / `T-AUD-02`。')
+        w('> 用 `git log -S` 查 `tests/` 全历史，这五个编号一次都没出现过——它们不是')
+        w('> 「被删掉的用例」，是从来就没有过。')
+        w('>')
+        w('> 处理方式按"控制有没有真东西可引用"分成两类：控制已 `tested` 且有自己的 `test`')
+        w('> 字段的，把引用**改对**（那是抄错编号）；控制本身 `not_enforced` 的，**删掉引用**')
+        w('> 并在 `enforcement.gap` 里写明缺口为什么补不出来——单人类环境里写一条"两个 token')
+        w('> 不相等"的用例不是补覆盖，是给缺口加一层伪装。')
+        w('>')
+        w('> 同年同日新增 `T-REF-03`（`scripts/check_rule_tests.py`）补上这个空档：它是第一个')
+        w('> 真正校验规则侧 `verification.tests` 的门禁。此前 T-REF-01 与 T-REF-02 的 docstring')
+        w('> 都写着"T-* 由审计闭环管"——而审计闭环判的是 §四 断言的 verdict 与证据，从不解析')
+        w('> 这个字段。两处注释指向了同一个不存在的执行者，那才是这 10 处能躺这么久的真正原因。')
         w('')
     if diff['test_field_missing']:
         w(f"### 2.4 `test` 字段为空的控制（{len(diff['test_field_missing'])} 条）")
