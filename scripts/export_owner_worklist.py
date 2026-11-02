@@ -30,9 +30,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# 需要真实环境/真实系统/真机配置的 human_gate（其余 manual 只凭文档与判断即可）。
-# 分类取**保守**：看起来"也许能做"但实际要外部资源的，一律归到需资源那侧——
-# 乐观分类会让人做到一半卡住，比根本不开始更伤人。
+# 需要外部资源（真环境 / 角色建制 / 责任人指派）的 human_gate，其余 manual
+# 只凭文档与判断即可。分类取**保守**：看起来"也许能做"但实际要外部资源的，
+# 一律归到需资源那侧——乐观分类会让人做到一半卡住，比根本不开始更伤人。
+#
+# 2026-11-02 补三条：此前 audit_backend_review / security_owner_approval /
+# data_matrix_approval 被留在"仅需文档"那侧，于是清单写着"11 条可立即推进"。
+# 实际三条都缺前置：审计后端要**已经部署并在运行**、Security Owner 角色
+# **尚未建制**（owner_worklist #2）、数据矩阵责任人**尚未指派**（#3）。
+# 补环境不会让后两条变可做——它们缺的不是环境，是"这个人/这个角色还不存在"。
 NEEDS_ENV = {
     'isolated_env_integration_test',
     'memory_integration_test',
@@ -43,6 +49,9 @@ NEEDS_ENV = {
     'pilot_repo_inspection',      # 需要真实试点仓库（分支保护 + SHA 绑定）
     'signed_evidence_package',    # 需要受控真实仓库 + 独立 Reviewer
     'tool_config_verification',   # 需要 Claude Code / Codex 真机配置
+    'audit_backend_review',       # 需要审计后端已实际部署运行（验证其在线）
+    'security_owner_approval',    # 需要 Security Owner 角色先建制
+    'data_matrix_approval',       # 需要数据矩阵责任人先指派
 }
 
 # 每条"需资源"条目到底缺什么——照这个去准备，不用回来问
@@ -56,6 +65,9 @@ RESOURCE_HINT = {
     'pilot_repo_inspection': '真实试点仓库（分支保护 + SHA 绑定）',
     'signed_evidence_package': '受控真实仓库 + 独立 Reviewer/Owner',
     'tool_config_verification': 'Claude Code / Codex 真机配置',
+    'audit_backend_review': '已部署运行的审计后端（在线可验证）',
+    'security_owner_approval': 'Security Owner 角色建制（人，不是环境）',
+    'data_matrix_approval': '数据矩阵责任人指派（人，不是环境）',
 }
 
 
@@ -147,8 +159,8 @@ def render(rows, exps, fp_matrix, fp_exceptions):
     A('| 分类 | 条数 | 说明 |')
     A('|---|---|---|')
     A(f'| 总计（manual + excepted） | {len(rows)} | 已签 {len(signed)} ／ 未签 {len(unsigned)} |')
-    A(f'| 一、仅需文档与判断 | {len(by["evidence_only"])} | 不需要真实环境资源，可立即推进 |')
-    A(f'| 二、需要真实环境/系统 | {len(by["needs_env"])} | 受 EXC-02 现实约束（Owner 已确认不提供真环境） |')
+    A(f'| 一、仅需文档与判断 | {len(by["evidence_only"])} | 只需人读并下判断，不需要外部资源 |')
+    A(f'| 二、需要外部资源 | {len(by["needs_env"])} | 真环境 / 角色建制 / 责任人指派，缺其一就做不了 |')
     A(f'| 三、例外内（excepted） | {len(by["excepted"])} | 属于已知做不到，**仍计入未满足** |')
     A('')
     if signed:
@@ -168,16 +180,27 @@ def render(rows, exps, fp_matrix, fp_exceptions):
 
     A('## 一、可先做：仅需文档/审阅与 Owner 判断')
     A('')
-    A('这些条目不需要真环境，是当前**唯一能真正推进闭环**的部分。建议按 Issue 编号顺序做：')
+    A('这些条目不需要外部资源，是当前**唯一能真正推进闭环**的部分。建议按 Issue 编号顺序做：')
     A('每完成一条就签一条，签完整批由人审后 commit。')
+    A('')
+    A('> **"仅需文档与判断"不等于"材料现成"。** 这批条目的 `evidence_refs` 目前全是空的，')
+    A('> 多数需要先造一份"能在十分钟内下判断"的材料——做法见')
+    A('> `evidence/audit001_sampling_review_20261102.md`（把 59 条规则压成 10 条 × 三个勾）。')
+    A('> **没有材料的签署，只是把"没看"写成"看过"。**')
     A('')
     L += _table(by['evidence_only'])
     A('')
 
-    A('## 二、需要真实环境/真实系统（受 EXC-02 约束）')
+    A('## 二、需要外部资源（真环境 / 角色建制 / 责任人指派）')
     A('')
-    A('Owner 已明确不提供真环境（`owner_designations.md` #4 续二）。这些条目在')
-    A(f'`{exps.get("EXC-02", "2027-04-30")}` 到期前必须三选一：延期 / 补环境验证 / 永久 excepted。')
+    A('两类，别混在一起看：')
+    A('')
+    A('- **真环境类**：Owner 已明确不提供真环境（`owner_designations.md` #4 续二）。')
+    A(f'  这些在 `{exps.get("EXC-02", "2027-04-30")}` 到期前必须三选一：延期 / 补环境验证 / 永久 excepted。')
+    A('- **建制类**：不是环境问题，是"这个人 / 这个角色还不存在"。')
+    A('  `security_owner_approval` 要 Security Owner 角色先建制，')
+    A('  `data_matrix_approval` 要数据矩阵责任人先指派——**补环境不会让它们变可做**。')
+    A('')
     A('**在此之前不得签 approved**——签了就是伪造验证。')
     A('')
     L += _table(by['needs_env'], with_resource=True)

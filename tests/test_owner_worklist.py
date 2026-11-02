@@ -5,6 +5,7 @@
 它就从工具变成陷阱。所以这里钉住：分类、计数、已签投影、--check 比对。
 """
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -70,12 +71,38 @@ class OwnerWorklistTests(unittest.TestCase):
         # manual + excepted 共 3 条（test 类不进入清单）
         self.assertIn('总计（manual + excepted） | 3', text)
         self.assertIn('仅需文档与判断 | 1', text)
-        self.assertIn('需要真实环境/系统 | 1', text)
+        self.assertIn('需要外部资源 | 1', text)
         self.assertIn('例外内（excepted） | 1', text)
         self.assertIn('AUD-001-03', text)
         self.assertIn('AUD-004-05', text)
         self.assertNotIn('AUD-002-01', text)   # test 类不该出现在人工清单里
         self.assertIn('隔离环境（容器/VM）', text)  # 所需资源列
+
+    def test_role_and_deployment_gates_need_resources(self):
+        """角色建制 / 责任人指派 / 后端部署 不属于"仅需文档"，必须归到需资源那侧。
+
+        2026-11-02 修的分类错误：`security_owner_approval`、`data_matrix_approval`、
+        `audit_backend_review` 三条此前被算进"可立即推进"，清单因此写着 11 条；
+        照做会卡在"这个角色/这个人还不存在"。脚本注释自己写着"分类取保守，
+        看起来也许能做但实际要外部资源的一律归到需资源那侧"——这次是没执行。
+        """
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        gates = (('AUD-003-03', 'schema_review'),                # 纯评审
+                 ('AUD-015-04', 'security_owner_approval'),      # 角色建制
+                 ('AUD-016-04', 'data_matrix_approval'),         # 责任人指派
+                 ('AUD-014-04', 'audit_backend_review'))         # 后端已部署
+        issues = {aid[:7]: {'severity': 'P0', 'criteria': 'x', 'close_condition': 'y',
+                            'assertions': [{'id': aid, 'kind': 'manual',
+                                            'human_gate': gate, 'text': 't'}]}
+                  for aid, gate in gates}
+        _write(tmp / 'governance' / 'acceptance_matrix.json', {'issues': issues})
+        _write(tmp / 'governance' / 'quality_baseline.json', {'exceptions': []})
+        r = _run(tmp)
+        self.assertEqual(r.returncode, 0, out(r))
+        text = (tmp / 'governance' / 'owner_worklist.md').read_text(encoding='utf-8')
+        self.assertIn('仅需文档与判断 | 1', text)
+        self.assertIn('需要外部资源 | 3', text)
 
     def test_check_passes_when_in_sync(self):
         _run(self.tmp)
