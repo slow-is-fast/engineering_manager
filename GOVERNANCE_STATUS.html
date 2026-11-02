@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-02 · 数据来源：本轮实时复验 + 续八～续三十工作日志 · 单人 + 多 Agent 模式 · 最新提交 41f5ce4（已推送，CI conclusion=success，18/18 必需检查落地；本地 --all 17/18——第 5 项 T-VD-01b 设计内不可判定） · <b>verified 1/22：AUD-001-03 已关闭（signoffs.jsonl 首条真实签署）</b></p>
+    <p class="sub">截至 2026-11-02 · 数据来源：本轮实时复验 + 续八～续三十一工作日志 · 单人 + 多 Agent 模式 · 最新提交 103e019（已推送，CI conclusion=success，<b>19/19 必需检查落地</b>；本地 --all 18/19——第 5 项 T-VD-01b 设计内不可判定） · <b>verified 1/22：AUD-001-03 已关闭（signoffs.jsonl 首条真实签署）</b> · <b>规则侧悬空引用 10 → 0，并由新增 T-REF-03 接管为门禁</b></p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -110,6 +110,11 @@
         </thead>
         <tbody>
           <tr>
+            <td><code>T-REF-03</code></td>
+            <td>规则侧用例引用：<code>verification.tests</code> 每项必须落到真实用例方法或 CI 步骤；引用了 <code>not_enforced</code> 控制的规则，<code>enforcement.gap</code> 不得为 null / 空串</td>
+            <td><span class="pill pass">PASS</span> 10 处悬空 → 0，6 条空转缺口已写明</td>
+          </tr>
+          <tr>
             <td><code>T-REF-02</code></td>
             <td>代码注释里引用的规则/控制编号在 <code>rule-registry.json</code> / <code>control-catalog.yaml</code> 真实存在（<b>严格模式</b>：拼写分歧即悬空，无前缀归一化）</td>
             <td><span class="pill pass">PASS</span> 零悬空</td>
@@ -122,22 +127,22 @@
           <tr>
             <td><code>T-QA-02</code></td>
             <td>测试下限：实际 acceptance cases ≥ floor</td>
-            <td><span class="pill pass">PASS</span> 363 ≥ 363（删除余量 0）</td>
+            <td><span class="pill pass">PASS</span> 385 ≥ 385（删除余量 0）</td>
           </tr>
           <tr>
             <td><code>T-QA-04</code></td>
             <td>质量基线完整性（required_checks 存在、漂移、单调性）</td>
-            <td><span class="pill pass">PASS</span> 16 项必需检查</td>
+            <td><span class="pill pass">PASS</span> 19 项必需检查</td>
           </tr>
           <tr>
             <td><code>T-QA-04b</code></td>
             <td>接线校验三条腿：<code>required_checks</code> ↔ workflow <code>--check</code> 步骤 ↔ <code>audit_policy.check_args</code> 显式档位声明（任一腿缺失/多余/形状非法 → 红）</td>
-            <td><span class="pill pass">PASS</span> 17 ↔ 17 ↔ 17 三向一致</td>
+            <td><span class="pill pass">PASS</span> 19 ↔ 19 ↔ 19 三向一致</td>
           </tr>
           <tr>
             <td><code>T-EXP-01</code></td>
             <td>例外到期：已过期 → 红（效力用尽，须 Owner 三选一并留痕）；剩余 ≤90 天 → 告警不阻断；缺 <code>expires</code>/格式非法/id 重复 → 失败关闭</td>
-            <td><span class="pill pass">PASS</span> EXC-01 (2027-01-31) / EXC-02 (2027-04-30) 均未过期</td>
+            <td><span class="pill pass">PASS</span> EXC-01 (2027-01-31) / EXC-02 (2027-04-30) / EXC-03 (2027-04-30) 均未过期</td>
           </tr>
           <tr>
             <td><code>T-OWN-01</code></td>
@@ -147,12 +152,12 @@
           <tr>
             <td>全套件回归</td>
             <td>unittest 模块（含 <code>test_matrix_caretaker</code> 16 条 + <code>test_apply_signoffs</code> 18 条）</td>
-            <td><span class="pill pass">OK</span> 324 tests</td>
+            <td><span class="pill pass">OK</span> 378 tests</td>
           </tr>
           <tr>
             <td><code>T-VD-01</code></td>
             <td>executor pin 三重校验（commit 真实存在 / tree 一致 / tarball 与本地 vendor 内容哈希一致）</td>
-            <td><span class="pill pass">PASS</span> pin=7c8a086 content=e2f2ff7d（评审捕获的潜伏红已闭环）</td>
+            <td><span class="pill pass">PASS</span> pin=28ef6b1 content=b337b3bf（断言级 waives 经上游 PR#2 合入后同批 bump）</td>
           </tr>
         </tbody>
       </table>
@@ -257,12 +262,17 @@
           <tr>
             <td>AUD-001-03 复核材料（人工抽样复核的输入，第一次跑就抓出 10 处悬空引用）</td>
             <td><code>eb124e5</code></td>
-            <td>此前这条 <code>manual</code> 断言只有校验器一行 PASS，Owner 面对 59 条规则无从下手。新 <code>scripts/export_coverage_pack.py</code> 产出 <code>governance/coverage_pack_aud001.md</code>：覆盖率（<b>把「字符串里有引用」53/59 与「引用能解析」45/59 分成两个数</b>，合成一个就会让 76% 冒充 100%）、双向差异、以及按 <code>sha256(rule_id)</code> 排序取前 10 条的抽样清单（每条给规则原文＋控制证据＋用例源码＋三个待打勾判断）。<b>抓到真问题</b>：<code>rule-registry.json</code> 有 10 处 <code>verification.tests</code> 指向不存在的用例（含 2 条 P0 规则），根因是校验器只查控制目录侧、规则侧从无检查；其中 <code>T-QA-05</code> 正是 10-30 已发现过的幽灵用例，控制目录改了、注册表还留着。材料不下判断、不签署——它的价值全在「不替人下判断」；<code>--check</code> 有指纹但<b>未接入任何门禁</b>，文首明写，免得被读成「有人看着」</td>
+            <td>此前这条 <code>manual</code> 断言只有校验器一行 PASS，Owner 面对 59 条规则无从下手。新 <code>scripts/export_coverage_pack.py</code> 产出 <code>governance/coverage_pack_aud001.md</code>：覆盖率（<b>把「字符串里有引用」53/59 与「引用能解析」45/59 分成两个数</b>，合成一个就会让 76% 冒充 100%）、双向差异、以及按 <code>sha256(rule_id)</code> 排序取前 10 条的抽样清单（每条给规则原文＋控制证据＋用例源码＋三个待打勾判断）。<b>抓到真问题</b>：<code>rule-registry.json</code> 有 10 处 <code>verification.tests</code> 指向不存在的用例（含 2 条 P0 规则），根因是校验器只查控制目录侧、规则侧从无检查；其中 <code>T-QA-05</code> 正是 10-30 已发现过的幽灵用例，控制目录改了、注册表还留着。材料不下判断、不签署——它的价值全在「不替人下判断」；<code>--check</code> 有指纹但<b>当时未接入任何门禁</b>，文首明写，免得被读成「有人看着」（2026-11-02 由新增 T-REF-03 接管，见下一行）</td>
           </tr>
           <tr>
             <td>EXC-03 登记 + 首条真实签署（verified 0 → 1）+ 指纹换行修复</td>
             <td><code>5a61456</code> <code>fe15276</code> <code>41f5ce4</code></td>
             <td>三件事：<b>① EXC-03</b>——9 条需真实环境的 manual 断言按 Owner 批准（原话"算EXC-03通过了"）定性为 excepted，expires 2027-04-30；其断言没有控制 target，旧 <code>exception_valid</code> 硬性要求 waives.controls 非空会逼出编造映射，故经上游 PR#2（28ef6b1）让 schema 接受断言级 waives 目标，pin 同批 bump（b337b3bf，29 文件与 vendor 逐字节一致），基线 <code>change_approvals</code> 原文记录批准语。<b>② 首条签署</b>——AUD-001-03 经完整链路关闭（evidence → accept → record → apply），证据如实披露已接受的 3 处抽样瑕疵，10 处悬空引用另立工作项。<b>③ CI 抓出指纹换行坑</b>——<code>_load</code> 按原始字节算指纹、apply 在 Windows 写 CRLF，本地绿 CI 必红；指纹规范化为 LF 并加双向用例钉住</td>
+          </tr>
+          <tr>
+            <td>规则侧 10 处悬空引用清零 + 第一个真正管它的门禁（T-REF-03）</td>
+            <td><code>f378d27</code> <code>103e019</code></td>
+            <td>上一行交付把 10 处悬空引用<b>记下来</b>了，但没人<b>管</b>它。查根因时发现更糟的一件事：<code>T-REF-01</code> 与 <code>T-REF-02</code> 的 docstring 都写着「T-* 用例名由审计闭环判」，而 <code>check_audit_closure.py</code> 判的是 §四 断言的 verdict 与证据，<b>从不解析 <code>verification.tests</code></b>；全仓库唯一读这个字段的是 <code>export_coverage_pack.py</code>，而它没接线。<b>两处注释指向同一个不存在的执行者</b>——那才是这 10 处能躺这么久的真正原因。用 <code>git log -S</code> 查 <code>tests/</code> 全历史，<code>T-QA-03</code>/<code>T-RVW-01</code>/<code>T-AUD-02</code> 一次都没出现过：不是被删掉的用例，是从来就没有过。处理按「这个控制有没有真东西可引用」分两类：<b>3 处改对编号</b>（<code>T-ID-02</code>×2→<code>T-VD-01b</code>、<code>T-QA-05</code>→<code>T-CLOSE</code>——控制目录早就更正过，注册表漏改）、<b>7 处删掉并在 <code>enforcement.gap</code> 写明缺口</b>（控制本身 <code>not_enforced</code>；这三个缺口要的是第二个独立人类主体，而第二 PAT 不构成独立主体是 PR #5 已经实证过的事，硬补出来的用例只能断言「两个 token 不相等」——那不是补覆盖，是给缺口加一层伪装）。顺带发现同一个病还有一半没被那 10 处清单覆盖：<b>6 条规则 <code>gap=null</code> 而控制是 <code>not_enforced</code></b>，读起来是「技术强制、无缺口」，其中 <code>AASEGS-WFL-007</code> 根本没有悬空引用、只修引用会漏掉它。新增 <code>T-REF-03</code>：引用可解析（复用同一份 <code>resolve_test</code>——两个解析器一定会漂移，而漂移正是这类缺陷的成因）＋ 空转缺口必须写明 ＋ 空串不算写了；接线三条腿全走，守卫 9 条，两次变异各自被对应用例捕获。<b>数字口径写进材料而不是让人自己猜</b>：字符串 53/59→49/59、可解析 45/59→49/59，两者相等不是巧合——4 条规则把引用删了、从两栏里一起消失；「①改对 ②账面变干净 ③承认缺口」三种进步不是同一种</td>
           </tr>
         </tbody>
       </table>
