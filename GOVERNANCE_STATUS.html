@@ -93,7 +93,7 @@
 
   <header class="hero">
     <h1>AASEGS v1.1 治理包 · 交付与门禁状态看板</h1>
-    <p class="sub">截至 2026-11-02 · 数据来源：本轮实时复验 + 续八～续三十一工作日志 · 单人 + 多 Agent 模式 · 最新提交 103e019（已推送，CI conclusion=success，<b>19/19 必需检查落地</b>；本地 --all 18/19——第 5 项 T-VD-01b 设计内不可判定） · <b>verified 1/22：AUD-001-03 已关闭（signoffs.jsonl 首条真实签署）</b> · <b>规则侧悬空引用 10 → 0，并由新增 T-REF-03 接管为门禁</b></p>
+    <p class="sub">截至 2026-11-02 · 数据来源：本轮实时复验 + 续八～续三十二工作日志 · 单人 + 多 Agent 模式 · 最新提交 3f14712（已推送，CI conclusion=success，<b>19/19 必需检查落地</b>；本地 --all 18/19——第 5 项 T-VD-01b 设计内不可判定） · <b>verified 1/22</b> · <b>规则侧悬空引用 10 → 0（T-REF-03 接管）</b> · <b>待签 21 条里真正「只需人读」的只有 8 条，其中 1 条（AUD-002-03）材料已备</b></p>
     <div class="verdict">
       <span class="dot"></span>
       <p><b>Agent 侧已彻底穷尽且全绿</b>；/adversarial-review 首跑捕获的 T-VD-01 潜伏红已通过上游 PR #1 + pin bump 闭环，draft findings F3–F6 已修复；闭环唯一卡点在 <b>Owner 输入</b>（6 项阻塞），任何一项落实前不得据实翻断言。</p>
@@ -273,6 +273,11 @@
             <td>规则侧 10 处悬空引用清零 + 第一个真正管它的门禁（T-REF-03）</td>
             <td><code>f378d27</code> <code>103e019</code></td>
             <td>上一行交付把 10 处悬空引用<b>记下来</b>了，但没人<b>管</b>它。查根因时发现更糟的一件事：<code>T-REF-01</code> 与 <code>T-REF-02</code> 的 docstring 都写着「T-* 用例名由审计闭环判」，而 <code>check_audit_closure.py</code> 判的是 §四 断言的 verdict 与证据，<b>从不解析 <code>verification.tests</code></b>；全仓库唯一读这个字段的是 <code>export_coverage_pack.py</code>，而它没接线。<b>两处注释指向同一个不存在的执行者</b>——那才是这 10 处能躺这么久的真正原因。用 <code>git log -S</code> 查 <code>tests/</code> 全历史，<code>T-QA-03</code>/<code>T-RVW-01</code>/<code>T-AUD-02</code> 一次都没出现过：不是被删掉的用例，是从来就没有过。处理按「这个控制有没有真东西可引用」分两类：<b>3 处改对编号</b>（<code>T-ID-02</code>×2→<code>T-VD-01b</code>、<code>T-QA-05</code>→<code>T-CLOSE</code>——控制目录早就更正过，注册表漏改）、<b>7 处删掉并在 <code>enforcement.gap</code> 写明缺口</b>（控制本身 <code>not_enforced</code>；这三个缺口要的是第二个独立人类主体，而第二 PAT 不构成独立主体是 PR #5 已经实证过的事，硬补出来的用例只能断言「两个 token 不相等」——那不是补覆盖，是给缺口加一层伪装）。顺带发现同一个病还有一半没被那 10 处清单覆盖：<b>6 条规则 <code>gap=null</code> 而控制是 <code>not_enforced</code></b>，读起来是「技术强制、无缺口」，其中 <code>AASEGS-WFL-007</code> 根本没有悬空引用、只修引用会漏掉它。新增 <code>T-REF-03</code>：引用可解析（复用同一份 <code>resolve_test</code>——两个解析器一定会漂移，而漂移正是这类缺陷的成因）＋ 空转缺口必须写明 ＋ 空串不算写了；接线三条腿全走，守卫 9 条，两次变异各自被对应用例捕获。<b>数字口径写进材料而不是让人自己猜</b>：字符串 53/59→49/59、可解析 45/59→49/59，两者相等不是巧合——4 条规则把引用删了、从两栏里一起消失；「①改对 ②账面变干净 ③承认缺口」三种进步不是同一种</td>
+          </tr>
+          <tr>
+            <td>把「11 条可立即做」改成 8 条 + 补上 AUD-002-03 缺的那份六态报告</td>
+            <td><code>3f14712</code></td>
+            <td>两件事源于同一个问题：<b>写在清单上的数字没人核对过</b>。<b>① 分类是错的</b>——<code>audit_backend_review</code>（要审计后端已实际部署）、<code>security_owner_approval</code>（Security Owner 角色尚未建制）、<code>data_matrix_approval</code>（责任人尚未指派）三条不在 <code>NEEDS_ENV</code> 表里，被算成"可立即推进"；照做会卡在"这个角色/这个人还不存在"。脚本注释自己写着"分类取保守，看起来也许能做但实际要外部资源的一律归到需资源那侧"——<b>这次是没执行</b>。改后 11 → 8，第二节从"需要真实环境/系统"改为"需要外部资源"并分出真环境类与建制类（补环境不会让后两条变可做）。<b>② AUD-002-03（P0）缺的那份"报告"此前根本不存在</b>——实测三份候选报告里 <code>documented</code>/<code>configured</code>/<code>degraded</code> 三个词<b>一次都没出现过</b>，它们讲的是 Issue 与断言，不是控制层六态；让 Owner 对着它们签"报告可区分六态"等于签一份不存在的东西。新增 <code>scripts/export_sixstate_report.py</code> → <code>governance/sixstate_report.md</code>，方法是<b>"一个状态字段有没有用，不看它在 schema 里出现过，看谁读它"</b>，扫出三件事：控制层 <code>verified</code>/<code>degraded</code>/<code>excepted</code> 三态从未取值为真；<code>degraded</code> 有唯一写入点、<b>零读取点</b>（降级实际靠顺手置 <code>tested=false</code> 生效——旁边那个字段替它把活干了，症状因此被掩盖）；<code>excepted</code> 在控制层零使用，例外的真实登记在断言层，<b>同一件事被表达了两遍</b>。配套复核材料 <code>sixstate_pack_aud002.md</code> 的三个待打勾判断里，第 ② 条故意把反对答案放前面——勾"算"就得评 needs-work 而非 approved。过程中还抓到自己一个假测试：<code>test_fingerprint_ignores_crlf</code> 用单行 json 做 CRLF 对比，替换什么都没做，两边字节完全相同，所以它稳定通过——那个测试对换行是瞎的</td>
           </tr>
         </tbody>
       </table>
